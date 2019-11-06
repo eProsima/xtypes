@@ -18,34 +18,14 @@ option(XTYPES_BUILD_EXAMPLES "Build examples." OFF)
 #####################################################################################
 add_library(${PROJECT_NAME} INTERFACE)
 
-target_sources(${PROJECT_NAME}
-    INTERFACE
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/xtypes/AggregationType.hpp>
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/xtypes/ArrayType.hpp>
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/xtypes/CollectionType.hpp>
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/xtypes/DynamicData.hpp>
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/xtypes/DynamicDataImpl.hpp>
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/xtypes/DynamicType.hpp>
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/xtypes/Instanceable.hpp>
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/xtypes/Member.hpp>
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/xtypes/MutableCollectionType.hpp>
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/xtypes/PrimitiveType.hpp>
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/xtypes/SequenceInstance.hpp>
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/xtypes/SequenceType.hpp>
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/xtypes/StringType.hpp>
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/xtypes/TypeConsistency.hpp>
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/xtypes/TypeKind.hpp>
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/xtypes/xtypes.hpp>
-    )
-
 target_include_directories(${PROJECT_NAME}
     INTERFACE
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     )
 
-target_compile_features(${PROJECT_NAME}
-    INTERFACE
-        cxx_range_for #"equivalent" to cxx_std_11
+set_target_properties(${EXAMPLE_NAME}
+    PROPERTIES
+        CXX_STANDARD 11
     )
 
 #####################################################################################
