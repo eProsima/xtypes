@@ -1,5 +1,4 @@
 /*
- * Copyright 2010, Object Management Group, Inc.
  * Copyright 2019, Proyectos y Sistemas de Mantenimiento SL (eProsima).
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,13 +15,12 @@
  *
 */
 
-#ifndef OMG_DDS_CORE_XTYPES_MUTABLE_COLLECTION_TYPE_HPP_
-#define OMG_DDS_CORE_XTYPES_MUTABLE_COLLECTION_TYPE_HPP_
+#ifndef EPROSIMA_XTYPES_MUTABLE_COLLECTION_TYPE_HPP_
+#define EPROSIMA_XTYPES_MUTABLE_COLLECTION_TYPE_HPP_
 
-#include <dds/core/xtypes/CollectionType.hpp>
+#include <xtypes/CollectionType.hpp>
 
-namespace dds {
-namespace core {
+namespace eprosima {
 namespace xtypes {
 
 /// \brief DynamicType representing mutable collection of elements.
@@ -52,7 +50,6 @@ private:
 };
 
 } //namespace xtypes
-} //namespace core
-} //namespace dds
+} //namespace eprosima
 
-#endif //OMG_DDS_CORE_XTYPES_MUTABLE_COLLECTION_TYPE_HPP_
+#endif //EPROSIMA_XTYPES_MUTABLE_COLLECTION_TYPE_HPP_

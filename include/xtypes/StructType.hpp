@@ -1,5 +1,4 @@
 /*
- * Copyright 2010, Object Management Group, Inc.
  * Copyright 2019, Proyectos y Sistemas de Mantenimiento SL (eProsima).
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,17 +15,16 @@
  *
 */
 
-#ifndef OMG_DDS_CORE_XTYPES_STRUCT_TYPE_HPP_
-#define OMG_DDS_CORE_XTYPES_STRUCT_TYPE_HPP_
+#ifndef EPROSIMA_XTYPES_STRUCT_TYPE_HPP_
+#define EPROSIMA_XTYPES_STRUCT_TYPE_HPP_
 
-#include <dds/core/xtypes/AggregationType.hpp>
+#include <xtypes/AggregationType.hpp>
 
 #include <string>
 #include <map>
 #include <vector>
 
-namespace dds {
-namespace core {
+namespace eprosima {
 namespace xtypes {
 
 /// \brief DynamicType representing a structure.
@@ -246,7 +244,6 @@ private:
 };
 
 } //namespace xtypes
-} //namespace core
-} //namespace dds
+} //namespace eprosima
 
-#endif //OMG_DDS_CORE_XTYPES_STRUCT_TYPE_HPP_
+#endif //EPROSIMA_XTYPES_STRUCT_TYPE_HPP_

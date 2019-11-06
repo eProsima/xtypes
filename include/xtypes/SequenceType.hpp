@@ -1,5 +1,4 @@
 /*
- * Copyright 2010, Object Management Group, Inc.
  * Copyright 2019, Proyectos y Sistemas de Mantenimiento SL (eProsima).
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,17 +15,16 @@
  *
 */
 
-#ifndef OMG_DDS_CORE_XTYPES_SEQUENCE_TYPE_HPP_
-#define OMG_DDS_CORE_XTYPES_SEQUENCE_TYPE_HPP_
+#ifndef EPROSIMA_XTYPES_SEQUENCE_TYPE_HPP_
+#define EPROSIMA_XTYPES_SEQUENCE_TYPE_HPP_
 
-#include <dds/core/xtypes/MutableCollectionType.hpp>
-#include <dds/core/xtypes/SequenceInstance.hpp>
+#include <xtypes/MutableCollectionType.hpp>
+#include <xtypes/SequenceInstance.hpp>
 
 #include <vector>
 #include <cassert>
 
-namespace dds {
-namespace core {
+namespace eprosima {
 namespace xtypes {
 
 /// \brief DynamicType representing mutable sequence of elements.
@@ -193,7 +191,6 @@ protected:
 };
 
 } //namespace xtypes
-} //namespace core
-} //namespace dds
+} //namespace eprosima
 
-#endif //OMG_DDS_CORE_XTYPES_SEQUENCE_TYPE_HPP_
+#endif //EPROSIMA_XTYPES_SEQUENCE_TYPE_HPP_

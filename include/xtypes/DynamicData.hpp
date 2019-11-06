@@ -1,5 +1,4 @@
 /*
- * Copyright 2010, Object Management Group, Inc.
  * Copyright 2019, Proyectos y Sistemas de Mantenimiento SL (eProsima).
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,19 +14,18 @@
  * limitations under the License.
  */
 
-#ifndef OMG_DDS_CORE_XTYPES_DYNAMIC_DATA_HPP_
-#define OMG_DDS_CORE_XTYPES_DYNAMIC_DATA_HPP_
+#ifndef EPROSIMA_XTYPES_DYNAMIC_DATA_HPP_
+#define EPROSIMA_XTYPES_DYNAMIC_DATA_HPP_
 
-#include <dds/core/xtypes/StructType.hpp>
-#include <dds/core/xtypes/CollectionType.hpp>
-#include <dds/core/xtypes/SequenceType.hpp>
-#include <dds/core/xtypes/PrimitiveType.hpp>
+#include <xtypes/StructType.hpp>
+#include <xtypes/CollectionType.hpp>
+#include <xtypes/SequenceType.hpp>
+#include <xtypes/PrimitiveType.hpp>
 
 #include <cassert>
 #include <iostream>
 
-namespace dds {
-namespace core {
+namespace eprosima {
 namespace xtypes {
 
 /// \brief Check if a C type can promote to a PrimitiveType or StringType.
@@ -539,9 +537,8 @@ public:
 };
 
 } //namespace xtypes
-} //namespace core
-} //namespace dds
+} //namespace eprosima
 
-#include <dds/core/xtypes/DynamicDataImpl.hpp>
+#include <xtypes/DynamicDataImpl.hpp>
 
-#endif //OMG_DDS_CORE_XTYPES_DYNAMIC_DATA_HPP_
+#endif //EPROSIMA_XTYPES_DYNAMIC_DATA_HPP_

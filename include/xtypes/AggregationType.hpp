@@ -1,5 +1,4 @@
 /*
- * Copyright 2010, Object Management Group, Inc.
  * Copyright 2019, Proyectos y Sistemas de Mantenimiento SL (eProsima).
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,19 +15,18 @@
  *
 */
 
-#ifndef OMG_DDS_CORE_XTYPES_AGGREGATION_TYPE_HPP_
-#define OMG_DDS_CORE_XTYPES_AGGREGATION_TYPE_HPP_
+#ifndef EPROSIMA_AGGREGATION_TYPE_HPP_
+#define EPROSIMA_AGGREGATION_TYPE_HPP_
 
-#include <dds/core/xtypes/DynamicType.hpp>
-#include <dds/core/xtypes/Member.hpp>
+#include <xtypes/DynamicType.hpp>
+#include <xtypes/Member.hpp>
 
 #include <string>
 #include <map>
 #include <vector>
 #include <cassert>
 
-namespace dds {
-namespace core {
+namespace eprosima {
 namespace xtypes {
 
 /// \brief DynamicType representing an aggregation of members.
@@ -90,7 +88,6 @@ private:
 };
 
 } //namespace xtypes
-} //namespace core
-} //namespace dds
+} //namespace eprosima
 
-#endif //OMG_DDS_CORE_XTYPES_AGGREGATION_TYPE_HPP_
+#endif //EPROSIMA_XTYPES_AGGREGATION_TYPE_HPP_

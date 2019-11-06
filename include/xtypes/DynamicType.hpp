@@ -1,5 +1,4 @@
 /*
- * Copyright 2010, Object Management Group, Inc.
  * Copyright 2019, Proyectos y Sistemas de Mantenimiento SL (eProsima).
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,18 +14,18 @@
  * limitations under the License.
  *
 */
-#ifndef OMG_DDS_CORE_XTYPES_DYNAMIC_TYPE_HPP_
-#define OMG_DDS_CORE_XTYPES_DYNAMIC_TYPE_HPP_
 
-#include <dds/core/xtypes/Instanceable.hpp>
-#include <dds/core/xtypes/TypeKind.hpp>
-#include <dds/core/xtypes/TypeConsistency.hpp>
+#ifndef EPROSIMA_XTYPES_DYNAMIC_TYPE_HPP_
+#define EPROSIMA_XTYPES_DYNAMIC_TYPE_HPP_
+
+#include <xtypes/Instanceable.hpp>
+#include <xtypes/TypeKind.hpp>
+#include <xtypes/TypeConsistency.hpp>
 
 #include <string>
 #include <cassert>
 
-namespace dds {
-namespace core {
+namespace eprosima {
 namespace xtypes {
 
 /// \brief Abstract base class for all dynamic types.
@@ -174,7 +173,6 @@ public:
 };
 
 } //namespace xtypes
-} //namespace core
-} //namespace dds
+} //namespace eprosima
 
-#endif //OMG_DDS_CORE_XTYPES_DYNAMIC_TYPE_HPP_
+#endif //EPROSIMA_XTYPES_DYNAMIC_TYPE_HPP_

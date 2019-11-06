@@ -1,5 +1,4 @@
 /*
- * Copyright 2010, Object Management Group, Inc.
  * Copyright 2019, Proyectos y Sistemas de Mantenimiento SL (eProsima).
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,17 +14,16 @@
  * limitations under the License.
  */
 
-#ifndef OMG_DDS_CORE_XTYPES_DYNAMIC_DATA_IMPL_HPP_
-#define OMG_DDS_CORE_XTYPES_DYNAMIC_DATA_IMPL_HPP_
+#ifndef EPROSIMA_XTYPES_DYNAMIC_DATA_IMPL_HPP_
+#define EPROSIMA_XTYPES_DYNAMIC_DATA_IMPL_HPP_
 
-#include <dds/core/xtypes/DynamicData.hpp>
+#include <xtypes/DynamicData.hpp>
 
 #include <sstream>
 #include <locale>
 #include <codecvt>
 
-namespace dds {
-namespace core {
+namespace eprosima {
 namespace xtypes {
 
 
@@ -111,7 +109,6 @@ inline std::string ReadableDynamicDataRef::to_string() const
 
 
 } //namespace xtypes
-} //namespace core
-} //namespace dds
+} //namespace eprosima
 
-#endif //OMG_DDS_CORE_XTYPES_DYNAMIC_DATA_IMPL_HPP_
+#endif //EPROSIMA_XTYPES_DYNAMIC_DATA_IMPL_HPP_

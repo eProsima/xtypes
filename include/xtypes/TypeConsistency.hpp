@@ -1,5 +1,4 @@
 /*
- * Copyright 2010, Object Management Group, Inc.
  * Copyright 2019, Proyectos y Sistemas de Mantenimiento SL (eProsima).
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,13 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef OMG_DDS_XTYPES_TYPE_CONSISTENCY_HPP_
-#define OMG_DDS_XTYPES_TYPE_CONSISTENCY_HPP_
+#ifndef EPROSIMA_XTYPES_TYPE_CONSISTENCY_HPP_
+#define EPROSIMA_XTYPES_TYPE_CONSISTENCY_HPP_
 
 #include <type_traits>
 
-namespace dds {
-namespace core {
+namespace eprosima {
 namespace xtypes {
 
 /// \brief Differents type consistencies available for type compatibility.
@@ -87,8 +85,7 @@ inline TypeConsistency& operator &= (TypeConsistency& lhs, TypeConsistency rhs)
 }
 
 } //namespace xtypes
-} //namespace core
-} //namespace dds
+} //namespace eprosima
 
-#endif //OMG_DDS_XTYPES_TYPE_CONSISTENCY_HPP_
+#endif //EPROSIMA_XTYPES_TYPE_CONSISTENCY_HPP_
 
