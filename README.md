@@ -59,7 +59,7 @@ target_link_libraries(${PROJECT_NAME} xtypes)
 ```
 
 ### Examples
-To compile the examples located in `examples/` folder, enable the `XTYPES_BUILD_EXAMPLES` cmake flag.
+To compile the examples located in the `examples/` folder, enable the `XTYPES_BUILD_EXAMPLES` cmake flag.
 Supposing you are in a `build` folder inside of `xtypes` top folder, you can run the following to compile the examples.
 ```bash
 $ cmake .. -DXTYPES_BUILD_EXAMPLES=ON
