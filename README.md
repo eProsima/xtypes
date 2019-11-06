@@ -32,7 +32,7 @@ Once these types have been defined, you can instatiate them and access their dat
 DynamicData data(outer);
 //write value
 data["b"]["a"].value(42);
-data["b"]["a"] = 23; //shortcut 
+data["b"]["a"] = 23; //shortcut
 
 // read value
 int32_t my_value = data["b"]["a"].value<int32_t>();
@@ -278,7 +278,7 @@ inner.add_member("m_array", ArrayType(primitive_type<uint16_t>(), 4));
 DynamicData data(inner);
 ```
 Such data will be represented in memory as follows. Only one memory allocation is needed:
-![](inner-memory.png)
+![](docs/inner-memory.png)
 
 The next complex type:
 ```c++
@@ -291,7 +291,7 @@ outer.add_member("m_string", StringType());
 DynamicData data(outer);
 ```
 In this case, two allocations will be needed: one for the sequence, and a second one for the string:
-![](outer-memory.png)
+![](docs/outer-memory.png)
 
 ## Debugging DynamicData
 As a `DynamicData` is fully built at runtime, no static checks can ensure its correct behaviour.

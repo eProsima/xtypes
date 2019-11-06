@@ -20,7 +20,7 @@
 #define OMG_DDS_CORE_XTYPES_STRING_TYPE_HPP_
 
 #include <dds/core/xtypes/MutableCollectionType.hpp>
-#include <dds/core/xtypes/PrimitiveTypes.hpp>
+#include <dds/core/xtypes/PrimitiveType.hpp>
 #include <dds/core/xtypes/SequenceInstance.hpp>
 
 namespace dds {

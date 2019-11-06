@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef OMG_DDS_CORE_XTYPES_PRIMITIVE_TYPES_HPP_
-#define OMG_DDS_CORE_XTYPES_PRIMITIVE_TYPES_HPP_
+#ifndef OMG_DDS_CORE_XTYPES_PRIMITIVE_TYPE_HPP_
+#define OMG_DDS_CORE_XTYPES_PRIMITIVE_TYPE_HPP_
 
 #include <dds/core/xtypes/DynamicType.hpp>
 
@@ -197,14 +197,14 @@ protected:
     }
 };
 
-/// \brief Helper function to create PrimitiveTypes.
-/// The creation of DynamicTypes representing a PrimitiveType
-/// must be always created by this function.
+/// \brief Helper function to create a PrimitiveType.
+/// The creation of a PrimitiveType
+/// must be always done by this function.
 /// \returns A DynamicType representing a PrimitiveType<T>
 template<typename T>
 const DynamicType& primitive_type()
 {
-    // The creation of PrimitiveType must be always created
+    // The creation of PrimitiveType must be always done
     // by this function in order to not broken the DynamicType::Ptr
     // optimizations for PrimitiveType
     static PrimitiveType<T> p;
@@ -215,4 +215,4 @@ const DynamicType& primitive_type()
 } //namespace core
 } //namespace dds
 
-#endif //OMG_DDS_CORE_XTYPES_PRIMITIVE_TYPES_HPP_
+#endif //OMG_DDS_CORE_XTYPES_PRIMITIVE_TYPE_HPP_

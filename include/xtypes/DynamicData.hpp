@@ -21,7 +21,7 @@
 #include <dds/core/xtypes/StructType.hpp>
 #include <dds/core/xtypes/CollectionType.hpp>
 #include <dds/core/xtypes/SequenceType.hpp>
-#include <dds/core/xtypes/PrimitiveTypes.hpp>
+#include <dds/core/xtypes/PrimitiveType.hpp>
 
 #include <cassert>
 #include <iostream>

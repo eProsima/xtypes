@@ -36,10 +36,10 @@ enum class TypeConsistency
     /// \brief The types are totally equals.
     EQUALS = 0,
 
-    /// \brief Ignore sign at PrimitiveTypes is required to interpret the types as equivalents.
+    /// \brief Ignore sign of primitive types is required to interpret the types as equivalents.
     IGNORE_TYPE_SIGN = 1,
 
-    /// \brief Ignore width at PrimitiveTypes is required to interpret the types as equivalents.
+    /// \brief Ignore width of primitive types is required to interpret the types as equivalents.
     IGNORE_TYPE_WIDTH = 2,
 
     /// \brief Ignore sequence bounds is required to interpret the types as equivalents.
