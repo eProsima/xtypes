@@ -1,3 +1,6 @@
+#####################################################################################
+#                             Top xtypes build system
+#####################################################################################
 cmake_minimum_required(VERSION 3.1.0 FATAL_ERROR)
 
 project(xtypes
@@ -79,14 +82,18 @@ endif()
 macro(compile_test TEST_NAME TEST_SOURCE)
     compile_example(${TEST_NAME} ${TEST_SOURCE})
 
-    target_include_directories(${TEST_NAME}
+    target_link_libraries(${TEST_NAME}
         PRIVATE
-            ${PROJECT_SOURCE_DIR}/test/thirdparty/catch2/include
+            libgtest
         )
 
+    add_test(NAME ${TEST_NAME} COMMAND test)
 endmacro()
 
 if(XTYPES_BUILD_TESTS)
+    include(test/gtest.cmake)
+    enable_testing()
+
     compile_test(${PROJECT_NAME}_test_unitary test/unitary/main.cpp)
     # ...
 endif()

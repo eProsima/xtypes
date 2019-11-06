@@ -1,8 +1,8 @@
-#include <dds/core/xtypes/xtypes.hpp>
+#include <xtypes/xtypes.hpp>
 
 #include <iostream>
 
-using namespace dds::core::xtypes;
+using namespace eprosima::xtypes;
 
 int main()
 {

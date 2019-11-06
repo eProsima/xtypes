@@ -13,14 +13,14 @@
 // limitations under the License.
 
 #include <gtest/gtest.h>
-#include <dds/core/xtypes/xtypes.hpp>
+#include <xtypes/xtypes.hpp>
 #include <iostream>
 
 #include <cmath>
 #include <bitset>
 
 using namespace std;
-using namespace dds::core::xtypes;
+using namespace eprosima::xtypes;
 
 
 #define UINT8 250
@@ -958,8 +958,8 @@ TEST (QoS, wstring)
 
 TEST (QoS, array)
 {
-    ArrayType a(primitive_type<uint16_t>(), 10);
-    ArrayType b(primitive_type<uint16_t>(), 20);
+    ArrayType a(primitive_type<int>(), 10);
+    ArrayType b(primitive_type<int>(), 20);
 
     DynamicData d(a);
     d[8].value(10);
@@ -968,14 +968,14 @@ TEST (QoS, array)
     EXPECT_NE(e , d);
     for (size_t i = 0; i < d.size(); ++i)
     {
-        EXPECT_EQ( d[i].value<uint16_t>() , e[i].value<uint16_t>() );
+        EXPECT_EQ( d[i].value<int>() , e[i].value<int>() );
     }
 }
 
 TEST (QoS, other_array)
 {
-    ArrayType a(primitive_type<uint16_t>(), 20);
-    ArrayType b(primitive_type<uint16_t>(), 10);
+    ArrayType a(primitive_type<int>(), 20);
+    ArrayType b(primitive_type<int>(), 10);
 
     DynamicData d(a);
     d[8].value(10);
@@ -985,14 +985,14 @@ TEST (QoS, other_array)
     EXPECT_NE(true, e != d);
     for (size_t i = 0; i < e.size(); ++i)
     {
-        EXPECT_EQ( d[i].value<uint16_t>() , e[i].value<uint16_t>() );
+        EXPECT_EQ( d[i].value<int>() , e[i].value<int>() );
     }
 }
 
 TEST (QoS, Array_qos)
 {
 
-    ArrayType a_arr(primitive_type<uint16_t>(), 10);
+    ArrayType a_arr(primitive_type<uint8_t>(), 10);
     ArrayType b_arr(primitive_type<int32_t>(), 11);
 
     EXPECT_EQ(TypeConsistency::IGNORE_ARRAY_BOUNDS |
@@ -1040,8 +1040,6 @@ TEST (QoS, mixed_types)
               TypeConsistency::IGNORE_SEQUENCE_BOUNDS |
               TypeConsistency::IGNORE_ARRAY_BOUNDS |
               TypeConsistency::IGNORE_MEMBERS , a.is_compatible(b));
-
-
 }
 
 TEST (QoS, ignore_member)
@@ -1050,8 +1048,8 @@ TEST (QoS, ignore_member)
     StructType b("composition");
 
     StringType string(10);
-    SequenceType seq(primitive_type<int16_t>(), 10);
-    ArrayType arr(primitive_type<float>(), 10);
+    SequenceType seq(primitive_type<int>(), 10);
+    ArrayType arr(primitive_type<float>(), 10.0);
 
     a.add_member(
             Member("string", string)).add_member(
