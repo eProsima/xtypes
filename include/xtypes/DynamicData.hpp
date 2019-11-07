@@ -376,22 +376,6 @@ public:
         uint8_t* data_;
     };
 
-protected:
-    ReadableDynamicDataRef(
-            const DynamicType& type,
-            uint8_t* source)
-        : type_(type)
-        , instance_(source)
-    {}
-
-    const DynamicType& type_;
-    uint8_t* instance_;
-
-    /// \brief protected access to other DynamicData instace.
-    /// \param[in] other readable reference from who get the instance.
-    /// \result The raw instance.
-    uint8_t* p_instance(const ReadableDynamicDataRef& other) const { return other.instance_; }
-
     class MemberIterator : Iterator
     {
     public:
@@ -402,7 +386,7 @@ protected:
             , ref_(ref)
         {}
 
-        MemberPair operator * () const
+        const MemberPair operator * () const
         {
             const AggregationType& aggregation = static_cast<const AggregationType&>(type_);
             return MemberPair(
@@ -434,8 +418,6 @@ protected:
         }
     };
 
-public:
-
     /// \brief Returns an iterable representation of an aggregation dynamic data.
     /// \pre The DynamicData must represent an AggregationType.
     /// \returns An iterable representation of an aggregation dynamic data.
@@ -444,6 +426,22 @@ public:
         assert(type_.is_aggregation_type());
         return MemberIterator(*this);
     }
+
+protected:
+    ReadableDynamicDataRef(
+            const DynamicType& type,
+            uint8_t* source)
+        : type_(type)
+        , instance_(source)
+    {}
+
+    const DynamicType& type_;
+    uint8_t* instance_;
+
+    /// \brief protected access to other DynamicData instace.
+    /// \param[in] other readable reference from who get the instance.
+    /// \result The raw instance.
+    uint8_t* p_instance(const ReadableDynamicDataRef& other) const { return other.instance_; }
 
 };
 
@@ -674,10 +672,10 @@ public:
         return Iterator(*this, true);
     }
 
-    class WritableMemberPair : public ReadableDynamicDataRef::MemberPair
+    class MemberPair : public ReadableDynamicDataRef::MemberPair
     {
     public:
-        WritableMemberPair(
+        MemberPair(
                 const Member& member,
                 uint8_t* data)
             : ReadableDynamicDataRef::MemberPair(member, data)
@@ -778,24 +776,6 @@ public:
         }
     };
 
-protected:
-    WritableDynamicDataRef(
-            const DynamicType& type,
-            uint8_t* source)
-        : ReadableDynamicDataRef(type, source)
-    {}
-
-    /// \brief Internal cast from readable to writable
-    WritableDynamicDataRef(
-            const ReadableDynamicDataRef& other)
-        : ReadableDynamicDataRef(other)
-    {}
-
-    WritableDynamicDataRef(
-            ReadableDynamicDataRef&& other)
-        : ReadableDynamicDataRef(std::move(other))
-    {}
-
     class MemberIterator : public Iterator
     {
     public:
@@ -806,10 +786,10 @@ protected:
             , ref_(ref)
         {}
 
-        WritableMemberPair operator * ()
+        MemberPair operator * ()
         {
             const AggregationType& aggregation = static_cast<const AggregationType&>(type_);
-            return WritableMemberPair(
+            return MemberPair(
                 aggregation.member(index_),
                 data_ + aggregation.member(index_).offset());
         }
@@ -838,8 +818,6 @@ protected:
         }
     };
 
-public:
-
     /// \brief Returns an iterable representation of an aggregation dynamic data.
     /// \pre The DynamicData must represent an AggregationType.
     /// \returns An iterable representation of an aggregation dynamic data.
@@ -848,6 +826,33 @@ public:
         assert(type_.is_aggregation_type());
         return MemberIterator(*this);
     }
+
+    /// \brief Returns a read-only iterable representation of an aggregation dynamic data.
+    /// \pre The DynamicData must represent an AggregationType.
+    /// \returns An iterable representation of an aggregation dynamic data.
+    ReadableDynamicDataRef::MemberIterator citems()
+    {
+        assert(type_.is_aggregation_type());
+        return ReadableDynamicDataRef::MemberIterator(*this);
+    }
+
+protected:
+    WritableDynamicDataRef(
+            const DynamicType& type,
+            uint8_t* source)
+        : ReadableDynamicDataRef(type, source)
+    {}
+
+    /// \brief Internal cast from readable to writable
+    WritableDynamicDataRef(
+            const ReadableDynamicDataRef& other)
+        : ReadableDynamicDataRef(other)
+    {}
+
+    WritableDynamicDataRef(
+            ReadableDynamicDataRef&& other)
+        : ReadableDynamicDataRef(std::move(other))
+    {}
 
 };
 

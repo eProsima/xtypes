@@ -18,4 +18,8 @@ Annotation concepts has been embebed into the places where they are necessary in
 * [] operator to access members and indexes.
 * `for_each`
 * `is_subset`
-
+* Iterators:
+    - Collection iterators: DynamicData representing a CollectionType (StringType, WStringType, ArrayType and
+      SequenceType) gives the user the expected behaviour of a C++11 iterable object.
+    - Aggregation iterators: DynamicData representing an AggregationTYpe (StructType) allows to the user to iterate
+      through its members using the method *items()*.
