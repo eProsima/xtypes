@@ -217,7 +217,7 @@ The following methods are available when:
     size_t size = data.size(); //size of collection
     for (WritableDynamicDataRef&& elem : data) // Iterate through its contents.
     {
-        elem.value<int32_t>(0);
+        elem = 0;
     }
     ```
 1. `DynamicData` represents a `StringType`.
@@ -228,7 +228,7 @@ The following methods are available when:
     const std::string& s2 = data.string(); // shortcut version for string
     for (WritableDynamicDataRef&& elem : data) // Iterate through its contents.
     {
-        elem.value<char>('A');
+        elem = 'A';
     }
     ```
 1. `DynamicData` represents a `WStringType`.
@@ -239,7 +239,7 @@ The following methods are available when:
     const std::wstring& s2 = data.wstring(); // shortcut version for string
     for (WritableDynamicDataRef&& elem : data) // Iterate through its contents.
     {
-        elem.value<wchar_t>(L'A');
+        elem = L'A';
     }
     ```
 1. `DynamicData` represents a `SequenceType`.
@@ -250,7 +250,7 @@ The following methods are available when:
     data.resize(20); //resize the vector (same behaviour as std::vector::resize())
     for (WritableDynamicDataRef&& elem : data) // Iterate through its contents.
     {
-        elem.value<int32_t>(0);
+        elem = 0;
     }
     ```
 

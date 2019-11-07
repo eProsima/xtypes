@@ -1098,7 +1098,7 @@ TEST (Iterators, iterators_tests)
 
         for (WritableDynamicDataRef&& elem : str1)
         {
-            elem.value<char>('X');
+            elem = 'X';
         }
 
         std::cout << "CHANGED STRING: ";
@@ -1125,7 +1125,7 @@ TEST (Iterators, iterators_tests)
 
         for (WritableDynamicDataRef&& elem : str1)
         {
-            elem.value<wchar_t>(L'a');
+            elem = L'a';
         }
 
         std::cout << "CHANGED WSTRING: ";
@@ -1155,7 +1155,7 @@ TEST (Iterators, iterators_tests)
 
         for (WritableDynamicDataRef&& elem : array)
         {
-            elem.value<int32_t>(elem.value<int32_t>() * 2);
+            elem = elem.value<int32_t>() * 2;
         }
 
         std::cout << "CHANGED ARRAY: ";
@@ -1191,7 +1191,7 @@ TEST (Iterators, iterators_tests)
 
         for (WritableDynamicDataRef&& elem : seq)
         {
-            elem.value<int32_t>(elem.value<int32_t>() * 2);
+            elem = elem.value<int32_t>() * 2;
         }
 
         std::cout << "CHANGED SEQUENCE: ";
@@ -1216,8 +1216,8 @@ TEST (Iterators, iterators_tests)
         std::cout << "MANUAL ITERATOR: ";
         auto it = my_data.citems().begin();
         auto wit = my_data.items().begin();
-        std::cout << (*it).name() << std::endl;
-        std::cout << (*wit).name() << std::endl;
+        std::cout << (*it).member().name() << std::endl;
+        std::cout << (*wit).member().name() << std::endl;
 
         std::cout << "ORIGINAL STRUCT: ";
         for (ReadableDynamicDataRef::MemberPair&& elem : my_data.items())
@@ -1225,10 +1225,10 @@ TEST (Iterators, iterators_tests)
             switch(elem.kind())
             {
             case TypeKind::INT_32_TYPE:
-                std::cout << elem.name() << ":" << elem.value<int32_t>() << " ";
+                std::cout << elem.member().name() << ":" << elem.data().value<int32_t>() << " ";
                 break;
             case TypeKind::FLOAT_64_TYPE:
-                std::cout << elem.name() << ":" << elem.value<double>() << " ";
+                std::cout << elem.member().name() << ":" << elem.data().value<double>() << " ";
                 break;
             default:
                 break;
@@ -1241,10 +1241,10 @@ TEST (Iterators, iterators_tests)
             switch(elem.kind())
             {
             case TypeKind::INT_32_TYPE:
-                elem.value<int32_t>(elem.value<int32_t>() * 2);
+                elem.data() = elem.data().value<int32_t>() * 2;
                 break;
             case TypeKind::FLOAT_64_TYPE:
-                elem.value<double>(elem.value<double>() * 2);
+                elem.data() = elem.data().value<double>() * 2;
                 break;
             default:
                 break;
@@ -1257,10 +1257,10 @@ TEST (Iterators, iterators_tests)
             switch(elem.kind())
             {
             case TypeKind::INT_32_TYPE:
-                std::cout << elem.name() << ":" << elem.value<int32_t>() << " ";
+                std::cout << elem.member().name() << ":" << elem.data().value<int32_t>() << " ";
                 break;
             case TypeKind::FLOAT_64_TYPE:
-                std::cout << elem.name() << ":" << elem.value<double>() << " ";
+                std::cout << elem.member().name() << ":" << elem.data().value<double>() << " ";
                 break;
             default:
                 break;

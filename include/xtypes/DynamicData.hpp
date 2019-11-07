@@ -322,53 +322,10 @@ public:
             return ReadableDynamicDataRef(member_.type(), data_);
         }
 
-        // Shortcuts
+        //! Shortcut to member().type().kind() or data().type().kind()
         TypeKind kind() const
         {
             return member_.type().kind();
-        }
-
-        const DynamicType& type() const
-        {
-            return member_.type();
-        }
-
-        const std::string& name() const
-        {
-            return member_.name();
-        }
-
-        template<typename T, class = PrimitiveOrString<T>>
-        T& value() const
-        {
-            return data().value<T>();
-        }
-
-        const std::string& string() const
-        {
-            return data().string();
-        }
-
-        const std::wstring& wstring() const
-        {
-            return data().wstring();
-        }
-
-        ReadableDynamicDataRef operator [] (
-                const std::string& member_name) const
-        {
-            return data().operator[](member_name);
-        }
-
-        ReadableDynamicDataRef operator [] (
-                size_t index) const
-        {
-            return data().operator[](index);
-        }
-
-        size_t size() const
-        {
-            return data().size();
         }
 
     protected:
@@ -686,94 +643,11 @@ public:
             return WritableDynamicDataRef(member_.type(), data_);
         }
 
-        WritableDynamicDataRef data() const
+        ReadableDynamicDataRef data() const
         {
-            return WritableDynamicDataRef(member_.type(), data_);
+            return ReadableDynamicDataRef::MemberPair::data();
         }
 
-        template<typename T, class = PrimitiveOrString<T>>
-        WritableDynamicDataRef& operator = (
-                const T& other)
-        {
-            return data().operator=(other);
-        }
-
-        WritableDynamicDataRef& operator = (
-                const std::string& other)
-        {
-            return data().operator=(other);
-        }
-
-        WritableDynamicDataRef& operator = (
-                const std::wstring& other)
-        {
-            return data().operator=(other);
-        }
-
-        ReadableDynamicDataRef cref() const
-        {
-            return data().cref();
-        }
-
-        template<typename T, class = PrimitiveOrString<T>>
-        const T& value()
-        {
-            return data().value<T>();
-        }
-
-        const std::string& string()
-        {
-            return data().string();
-        }
-
-        const std::wstring& wstring()
-        {
-            return data().wstring();
-        }
-
-        WritableDynamicDataRef operator [] (
-                const std::string& member_name)
-        {
-            return data().operator[](member_name);
-        }
-
-        WritableDynamicDataRef operator [] (
-                size_t index)
-        {
-            return data().operator[](index);
-        }
-
-        template<typename T, class = PrimitiveOrString<T>>
-        void value(const T& t)
-        {
-            data().value<T>(t);
-        }
-
-        void string(const std::string& s)
-        {
-            data().string(s);
-        }
-
-        void wstring(const std::wstring& s)
-        {
-            data().wstring(s);
-        }
-
-        template<typename T, class = PrimitiveOrString<T>>
-        WritableDynamicDataRef& push(const T& t) // this = SequenceType
-        {
-            return data().push<T>(t);
-        }
-
-        WritableDynamicDataRef& push(const ReadableDynamicDataRef& data_ref) // this = SequenceType
-        {
-            return data().push(data_ref);
-        }
-
-        WritableDynamicDataRef& resize(size_t size) // this = SequenceType
-        {
-            return data().resize(size);
-        }
     };
 
     class MemberIterator : public Iterator
