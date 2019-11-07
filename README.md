@@ -76,7 +76,7 @@ $ make
 ```
 
 ## API usage
-*Examples can be found in [example folder](../../examples/ModernC++/xtypes).*
+*Examples can be found in [example folder](examples).*
 
 The API is divided into two different and yet related conceps.
 1. Type definition: classes and methods needed for your runtime type definition.
@@ -208,7 +208,7 @@ The following methods are available when:
     WritableDynamicDataRef ref = data[2]; //references to a DynamicData that represents a collection
     size_t size = data.size(); //size of collection
     ```
-1. `DynamicData` represents a `StringType`
+1. `DynamicData` represents a `StringType`.
     Same as `CollectionType` plus:
     ```c++
     data.value<std::string>("Hello data!"); //sets the string value
@@ -217,7 +217,7 @@ The following methods are available when:
     const std::string& s1 = data.value<std::string>(); //read the string value
     const std::string& s2 = data.string(); // shortcut version for string
     ```
-1. `DynamicData` represents a `WStringType`
+1. `DynamicData` represents a `WStringType`.
     Same as `CollectionType` plus:
     ```c++
     data.value<std::wstring>(L"Hello data! \u263A"); //sets the string value
@@ -226,7 +226,7 @@ The following methods are available when:
     const std::wstring& s1 = data.value<std::wstring>(); //read the string value
     const std::wstring& s2 = data.wstring(); // shortcut version for string
     ```
-1. `DynamicData` represents a `SequenceType`
+1. `DynamicData` represents a `SequenceType`.
     Same as `CollectionType` plus:
     ```c++
     data.push(42); // push back new value to the sequence.
