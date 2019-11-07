@@ -8,8 +8,6 @@ project(xtypes
     LANGUAGES CXX
     )
 
-include(GNUInstallDirs)
-
 option(XTYPES_BUILD_TESTS "Build tests." OFF)
 option(XTYPES_BUILD_EXAMPLES "Build examples." OFF)
 
@@ -21,11 +19,12 @@ add_library(${PROJECT_NAME} INTERFACE)
 target_include_directories(${PROJECT_NAME}
     INTERFACE
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
     )
 
-set_target_properties(${EXAMPLE_NAME}
-    PROPERTIES
-        CXX_STANDARD 11
+target_compile_features(${PROJECT_NAME}
+    INTERFACE
+        cxx_std_11
     )
 
 #####################################################################################
@@ -81,32 +80,67 @@ endif()
 #####################################################################################
 #                                   Installation
 #####################################################################################
+include(GNUInstallDirs)
+set(BIN_INSTALL_DIR     ${CMAKE_INSTALL_BINDIR}     CACHE PATH "Installation directory for binaries")
+set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR} CACHE PATH "Installation directory for C headers")
+set(LIB_INSTALL_DIR     ${CMAKE_INSTALL_LIBDIR}     CACHE PATH "Installation directory for libraries")
+set(DATA_INSTALL_DIR    ${CMAKE_INSTALL_DATADIR}    CACHE PATH "Installation directory for data")
+
+include(CMakePackageConfigHelpers)
+
+configure_package_config_file(
+    ${PROJECT_SOURCE_DIR}/cmake/config.cmake.in
+    ${PROJECT_BINARY_DIR}/cmake/config/${PROJECT_NAME}-config.cmake
+    INSTALL_DESTINATION
+        ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/cmake
+    PATH_VARS
+        BIN_INSTALL_DIR
+        INCLUDE_INSTALL_DIR
+        LIB_INSTALL_DIR
+        DATA_INSTALL_DIR
+    )
+
+write_basic_package_version_file(
+    ${PROJECT_BINARY_DIR}/cmake/config/${PROJECT_NAME}-config-version.cmake
+    VERSION
+        ${PROJECT_VERSION}
+    COMPATIBILITY
+        SameMajorVersion
+    )
+
 install(
     TARGETS
         ${PROJECT_NAME}
     EXPORT
-        ${PROJECT_NAME}_Targets
+        ${PROJECT_NAME}-targets
     RUNTIME DESTINATION
-        ${CMAKE_INSTALL_BINDIR}
+        ${BIN_INSTALL_DIR}
     LIBRARY DESTINATION
-        ${CMAKE_INSTALL_LIBDIR}
+        ${LIB_INSTALL_DIR}
     ARCHIVE DESTINATION
-        ${CMAKE_INSTALL_LIBDIR}
+        ${LIB_INSTALL_DIR}
     )
 
 install(
     DIRECTORY
         ${PROJECT_SOURCE_DIR}/include/xtypes/
     DESTINATION
-        ${CMAKE_INSTALL_INCLUDEDIR}/xtypes
+        ${INCLUDE_INSTALL_DIR}/xtypes
     FILES_MATCHING
         PATTERN "*.hpp"
     )
 
 install(
     EXPORT
-        ${PROJECT_NAME}_Targets
+        ${PROJECT_NAME}-targets
     DESTINATION
-        ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/cmake
+        ${DATA_INSTALL_DIR}/${PROJECT_NAME}/cmake
     )
 
+install(
+    FILES
+        ${PROJECT_BINARY_DIR}/cmake/config/${PROJECT_NAME}-config.cmake
+        ${PROJECT_BINARY_DIR}/cmake/config/${PROJECT_NAME}-config-version.cmake
+    DESTINATION
+        ${DATA_INSTALL_DIR}/${PROJECT_NAME}/cmake
+    )
