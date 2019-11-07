@@ -57,6 +57,14 @@ public:
         return !(*this == other);
     }
 
+    /// \brief Enable a transparent access to the internal value of the PrimitiveType or W/StringType.
+    /// Avoid the use of .value<T>() at return.
+    template<typename T>
+    operator T() const
+    {
+        return value<T>();
+    }
+
     /// \brief The representing type of this DynamicData.
     /// \returns a reference to the representing DynamicType
     const DynamicType& type() const { return type_; }

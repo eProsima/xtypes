@@ -35,7 +35,7 @@ DynamicData data(outer);
 data["b"]["a"] = 42;
 
 // read value
-int32_t my_value = data["b"]["a"].value<int32_t>();
+int32_t my_value = data["b"]["a"];
 ```
 
 ## Why should you use *eProsima xtypes*?
@@ -187,23 +187,22 @@ The following methods are available when:
     data.value(42); //sets the value to 42
     data = 23; // Analogous to the one above, assignment from primitive, sets the value to 23
     int32_t value = data.value<int32_t>(); //read the value
+    int32_t value = data; //By casting operator
     ```
 1. `DynamicData` represents an `AggregationType`
     ```c++
-    data["member_name"].value(42); //set value 42 to the int member called "member_name"
-    data[2].value(42); //set value 42 to the third int member called "member_name"
     data["member_name"] = 42; //set value 42 to the int member called "member_name"
-    data[2] = 42; //set value 42 to the third int member called "member_name"
-    int32_t value = data["member_name"].value<int32_t>(); //get value from int member called "member_name"
+    data[2] = 42; //set value 42 to the third int member.
+    int32_t value = data["member_name"]; // get the value from member_name member.
+    int32_t value = data[2]; // get the value from third member.
     data["member_name"].value(dynamic_data_representing_a_value);
     WritableDynamicDataRef ref = data["member_name"];
     size_t size = data.size(); //number of members
     ```
 1. `DynamicData` represents a `CollectionType`
     ```c++
-    data[2].value(42); // set value 42 to position 2 of the collection.
     data[2] = 42; // set value 42 to position 2 of the collection.
-    int32_t value = data[2].value<int32_t>(); // get value from position 2 of the collection.
+    int32_t value = data[2]; // get value from position 2 of the collection
     data[2] = dynamic_data_representing_a_value;
     WritableDynamicDataRef ref = data[2]; //references to a DynamicData that represents a collection
     size_t size = data.size(); //size of collection
@@ -211,18 +210,14 @@ The following methods are available when:
 1. `DynamicData` represents a `StringType`.
     Same as `CollectionType` plus:
     ```c++
-    data.value<std::string>("Hello data!"); //sets the string value
-    data.string("Hello again!"); // shortcut version for string
-    data = "Hello again!"; // assignment version for string
+    data = "Hello again!"; // set string value
     const std::string& s1 = data.value<std::string>(); //read the string value
     const std::string& s2 = data.string(); // shortcut version for string
     ```
 1. `DynamicData` represents a `WStringType`.
     Same as `CollectionType` plus:
     ```c++
-    data.value<std::wstring>(L"Hello data! \u263A"); //sets the string value
-    data.wstring(L"Hello again! \u263A"); // shortcut version for string
-    data = L"Hello again! \u263A"; // assignment version for string
+    data = L"Hello again! \u263A"; // set string value
     const std::wstring& s1 = data.value<std::wstring>(); //read the string value
     const std::wstring& s2 = data.wstring(); // shortcut version for string
     ```
