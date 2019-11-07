@@ -1080,6 +1080,196 @@ TEST (QoS, ignore_member_simple_primitive)
 
 }
 
+TEST (Iterators, iterators_tests)
+{
+    //SECTION("StringType")
+    {
+        StringType string;
+        DynamicData str1(string);
+
+        str1.value<std::string>("Hola!");
+
+        std::cout << "ORIGINAL STRING: ";
+        for (ReadableDynamicDataRef&& elem : str1)
+        {
+            std::cout << elem.value<char>();
+        }
+        std::cout << std::endl;
+
+        for (WritableDynamicDataRef&& elem : str1)
+        {
+            elem.value<char>('X');
+        }
+
+        std::cout << "CHANGED STRING: ";
+        for (ReadableDynamicDataRef&& elem : str1)
+        {
+            std::cout << elem.value<char>();
+        }
+        std::cout << std::endl;
+    }
+
+    //SECTION("WStringType")
+    {
+        WStringType string;
+        DynamicData str1(string);
+
+        str1.value<std::wstring>(L"Hola!");
+
+        std::cout << "ORIGINAL WSTRING: ";
+        for (ReadableDynamicDataRef&& elem : str1)
+        {
+            std::wcout << elem.value<wchar_t>();
+        }
+        std::cout << std::endl;
+
+        for (WritableDynamicDataRef&& elem : str1)
+        {
+            elem.value<wchar_t>(L'a');
+        }
+
+        std::cout << "CHANGED WSTRING: ";
+        for (ReadableDynamicDataRef&& elem : str1)
+        {
+            std::wcout << elem.value<wchar_t>();
+        }
+        std::cout << std::endl;
+    }
+
+    //SECTION("ArrayType")
+    {
+        ArrayType array_type(primitive_type<int32_t>(), 10);
+        DynamicData array(array_type);
+
+        for (int i = 0; i < 10; ++i)
+        {
+            array[i] = 5 * i;
+        }
+
+        std::cout << "ORIGINAL ARRAY: ";
+        for (ReadableDynamicDataRef&& elem : array)
+        {
+            std::cout << elem.value<int32_t>() << " ";
+        }
+        std::cout << std::endl;
+
+        for (WritableDynamicDataRef&& elem : array)
+        {
+            elem.value<int32_t>(elem.value<int32_t>() * 2);
+        }
+
+        std::cout << "CHANGED ARRAY: ";
+        for (ReadableDynamicDataRef&& elem : array)
+        {
+            std::cout << elem.value<int32_t>() << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    //SECTION("SequenceType")
+    {
+        SequenceType seq_type(primitive_type<int32_t>());
+        DynamicData seq(seq_type);
+
+        for (int i = 0; i < 10; ++i)
+        {
+            seq.push(5 * i);
+        }
+
+        std::cout << "MANUAL ITERATOR: ";
+        ReadableDynamicDataRef::Iterator it = seq.begin();
+        WritableDynamicDataRef::Iterator wit = seq.begin();
+        std::cout << (*it).value<int32_t>() << std::endl;
+        std::cout << (*wit).value<int32_t>() << std::endl;
+
+        std::cout << "ORIGINAL SEQUENCE: ";
+        for (ReadableDynamicDataRef&& elem : seq)
+        {
+            std::cout << elem.value<int32_t>() << " ";
+        }
+        std::cout << std::endl;
+
+        for (WritableDynamicDataRef&& elem : seq)
+        {
+            elem.value<int32_t>(elem.value<int32_t>() * 2);
+        }
+
+        std::cout << "CHANGED SEQUENCE: ";
+        for (ReadableDynamicDataRef&& elem : seq)
+        {
+            std::cout << elem.value<int32_t>() << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    //SECTION("StructType")
+    {
+        StructType my_struct("MyStruct");
+        my_struct.add_member("my_int", primitive_type<int32_t>());
+        my_struct.add_member("my_double", primitive_type<double>());
+
+        DynamicData my_data(my_struct);
+        my_data["my_int"] = 55;
+        my_data["my_double"] = -23.44;
+
+        //ReadableDynamicDataRef::MemberIterator it = my_data.citems().begin();
+        std::cout << "MANUAL ITERATOR: ";
+        auto it = my_data.citems().begin();
+        auto wit = my_data.items().begin();
+        std::cout << (*it).name() << std::endl;
+        std::cout << (*wit).name() << std::endl;
+
+        std::cout << "ORIGINAL STRUCT: ";
+        for (ReadableDynamicDataRef::MemberPair&& elem : my_data.items())
+        {
+            switch(elem.kind())
+            {
+            case TypeKind::INT_32_TYPE:
+                std::cout << elem.name() << ":" << elem.value<int32_t>() << " ";
+                break;
+            case TypeKind::FLOAT_64_TYPE:
+                std::cout << elem.name() << ":" << elem.value<double>() << " ";
+                break;
+            default:
+                break;
+            }
+        }
+        std::cout << std::endl;
+
+        for (WritableDynamicDataRef::MemberPair&& elem : my_data.items())
+        {
+            switch(elem.kind())
+            {
+            case TypeKind::INT_32_TYPE:
+                elem.value<int32_t>(elem.value<int32_t>() * 2);
+                break;
+            case TypeKind::FLOAT_64_TYPE:
+                elem.value<double>(elem.value<double>() * 2);
+                break;
+            default:
+                break;
+            }
+        }
+
+        std::cout << "CHANGED STRUCT: ";
+        for (ReadableDynamicDataRef::MemberPair&& elem : my_data.items())
+        {
+            switch(elem.kind())
+            {
+            case TypeKind::INT_32_TYPE:
+                std::cout << elem.name() << ":" << elem.value<int32_t>() << " ";
+                break;
+            case TypeKind::FLOAT_64_TYPE:
+                std::cout << elem.name() << ":" << elem.value<double>() << " ";
+                break;
+            default:
+                break;
+            }
+        }
+        std::cout << std::endl;
+    }
+}
+
 int main(int argc, char** argv)
 {
     testing::InitGoogleTest(&argc, argv);
