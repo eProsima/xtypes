@@ -82,6 +82,67 @@ public:
     ///   See TypeConsistency for more information.
     virtual TypeConsistency is_compatible(const DynamicType& other) const = 0;
 
+    /// \brief Internal structure used to iterate the DynamicType tree.
+    class TypeNode
+    {
+        const TypeNode* parent_;
+        const DynamicType& type_;
+        size_t deep_;
+        size_t from_index_;
+        const Member* from_member_;
+
+    public:
+        const TypeNode& parent() const { return *parent_; }
+        bool has_parent() const { return parent_ != nullptr; }
+        const DynamicType& type() const { return type_; }
+        size_t deep() const { return deep_; }
+        size_t from_index() const { return from_index_; }
+        const Member* from_member() const { return from_member_; }
+
+        TypeNode(
+                const DynamicType& type)
+            : parent_(nullptr)
+            , type_(type)
+            , deep_(0)
+            , from_index_(0)
+            , from_member_(nullptr)
+        {}
+
+        TypeNode(
+                const TypeNode& parent,
+                const DynamicType& type,
+                size_t from_index,
+                const Member* from_member)
+            : parent_(&parent)
+            , type_(type)
+            , deep_(parent.deep_ + 1)
+            , from_index_(from_index)
+            , from_member_(from_member)
+        {}
+    };
+
+    using TypeVisitor = std::function<void(const TypeNode& node)>;
+
+    /// \brief Function used to iterate the DynamicType tree.
+    /// The iteration will go through the tree in deep, calling the visitor function for each type.
+    /// \param[in] node Relative information about the current type iteration.
+    /// \param[in] visitor Function called each time a new node in the tree is visited.
+    virtual void for_each_type(const TypeNode& node, TypeVisitor visitor) const = 0;
+
+    /// \brief Iterate the DynamicType in deep. Each node visited will call to the user visitor function.
+    /// \param[in] visitor User visitor function.
+    /// \returns true if no exceptions by the user were throw. Otherwise, the user boolean exception value.
+    bool for_each(TypeVisitor visitor) const
+    {
+        TypeNode root(*this);
+        try
+        {
+            for_each_type(root, visitor);
+            return true;
+        }
+        catch(bool value) { return value; }
+    }
+
 protected:
     DynamicType(
             TypeKind kind,

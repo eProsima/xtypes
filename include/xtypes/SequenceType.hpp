@@ -156,6 +156,15 @@ public:
         }
     }
 
+    virtual void for_each_type(
+            const TypeNode& node,
+            TypeVisitor visitor) const override
+    {
+        visitor(node);
+        TypeNode child(node, content_type(), 0, nullptr);
+        content_type().for_each_type(child, visitor);
+    }
+
     /// \brief Push a value to a sequence instance.
     /// \param[in, out] instance Memory instance representing a SequenceInstance.
     /// \param[in] value to add into the sequence.
