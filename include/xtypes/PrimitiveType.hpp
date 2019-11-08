@@ -70,6 +70,9 @@ private:
         : DynamicType(PrimitiveTypeKindTrait<T>::kind, PrimitiveTypeKindTrait<T>::name)
     {}
 
+    PrimitiveType(const PrimitiveType& other) = delete;
+    PrimitiveType(PrimitiveType&& other) = delete;
+
     virtual size_t memory_size() const override
     {
         return sizeof(T);
