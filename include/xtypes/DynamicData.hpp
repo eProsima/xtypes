@@ -263,7 +263,7 @@ public:
     WritableDynamicDataRef& operator = (
             const std::string& other)
     {
-        string(other);
+        value<std::string>(other);
         return *this;
     }
 
@@ -271,7 +271,7 @@ public:
     WritableDynamicDataRef& operator = (
             const std::wstring& other)
     {
-        wstring(other);
+        value<std::wstring>(other);
         return *this;
     }
 
@@ -501,6 +501,28 @@ public:
         type_.destroy_instance(instance_);
         type_.copy_instance(instance_, p_instance(other));
         return *this;
+    }
+
+    /// \brief See WritableDynamicDataRef::operator =()
+    template<typename T, class = PrimitiveOrString<T>>
+    WritableDynamicDataRef& operator = (
+            const T& other)
+    {
+        return WritableDynamicDataRef::operator=(other);
+    }
+
+    /// \brief See WritableDynamicDataRef::operator =()
+    WritableDynamicDataRef& operator = (
+            const std::string& other)
+    {
+        return WritableDynamicDataRef::operator=(other);
+    }
+
+    /// \brief See WritableDynamicDataRef::operator =()
+    WritableDynamicDataRef& operator = (
+            const std::wstring& other)
+    {
+        return WritableDynamicDataRef::operator=(other);
     }
 
     virtual ~DynamicData() override
