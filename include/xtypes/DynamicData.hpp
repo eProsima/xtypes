@@ -89,24 +89,6 @@ public:
         return *reinterpret_cast<T*>(instance_);
     }
 
-    /// \brief Returns a value as string.
-    /// \pre The DynamicData must represent StringType.
-    /// \returns the value stored in the DynamicData.
-    const std::string& string() const
-    {
-        assert(type_.kind() == TypeKind::STRING_TYPE);
-        return value<std::string>();
-    }
-
-    /// \brief Returns a value as string of wchars.
-    /// \pre The DynamicData must represent WStringType.
-    /// \returns the value stored in the DynamicData.
-    const std::wstring& wstring() const
-    {
-        assert(type_.kind() == TypeKind::WSTRING_TYPE);
-        return value<std::wstring>();
-    }
-
     /// \brief Member access operator by name.
     /// \param[in] member_name Name of the member to access.
     /// \pre The DynamicData must represent an AggregationType.
@@ -302,18 +284,6 @@ public:
     const T& value()
     {
         return ReadableDynamicDataRef::value<T>();
-    }
-
-    /// \brief See ReadableDynamicDataRef::string()
-    const std::string& string()
-    {
-        return ReadableDynamicDataRef::string();
-    }
-
-    /// \brief See ReadableDynamicDataRef::wstring()
-    const std::wstring& wstring()
-    {
-        return ReadableDynamicDataRef::wstring();
     }
 
     /// \brief See ReadableDynamicDataRef::operator[]()
