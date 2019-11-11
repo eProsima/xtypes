@@ -50,6 +50,9 @@ inline std::string ReadableDynamicDataRef::to_string() const
             case TypeKind::CHAR_16_TYPE:
                 ss << "<" << type_name << ">  " << node.data().value<char32_t>();
                 break;
+            case TypeKind::INT_8_TYPE:
+                ss << "<" << type_name << ">  " << node.data().value<int8_t>();
+                break;
             case TypeKind::UINT_8_TYPE:
                 ss << "<" << type_name << ">  " << node.data().value<uint8_t>();
                 break;
