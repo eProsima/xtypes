@@ -16,9 +16,12 @@ option(XTYPES_BUILD_EXAMPLES "Build examples." OFF)
 #####################################################################################
 add_library(${PROJECT_NAME} INTERFACE)
 
+add_subdirectory(thirdparty/cpp-peglib)
+
 target_include_directories(${PROJECT_NAME}
     INTERFACE
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/thirdparty/cpp-peglib>
         $<INSTALL_INTERFACE:include>
     )
 
@@ -128,6 +131,13 @@ install(
         ${INCLUDE_INSTALL_DIR}/xtypes
     FILES_MATCHING
         PATTERN "*.hpp"
+    )
+
+install(
+    FILES
+        ${PROJECT_SOURCE_DIR}/thirdparty/cpp-peglib/peglib.h
+    DESTINATION
+        ${INCLUDE_INSTALL_DIR}
     )
 
 install(
