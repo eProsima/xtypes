@@ -22,7 +22,7 @@ using namespace eprosima::xtypes::idl;
 
 TEST (IDLParser, simple_struct_test)
 {
-    std::map<std::string, std::shared_ptr<DynamicType>> result;
+    std::map<std::string, DynamicType::Ptr> result;
     result = parse(R"(
         struct SimpleStruct
         {

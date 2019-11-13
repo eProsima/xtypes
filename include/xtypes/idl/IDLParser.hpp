@@ -71,14 +71,14 @@ public:
     }
 
     void get_all_types(
-            std::map<std::string, std::shared_ptr<DynamicType>>& types_map)
+            std::map<std::string, DynamicType::Ptr>& types_map)
     {
         types_map = types_map_;
     }
 
 private:
     peg::parser parser_;
-    std::map<std::string, std::shared_ptr<DynamicType>> types_map_;
+    std::map<std::string, DynamicType::Ptr> types_map_;
 
     bool read_file(
             const char* path,
@@ -152,7 +152,7 @@ private:
             return false;
         }
 
-        std::shared_ptr<DynamicType> get_type(
+        DynamicType::Ptr get_type(
                 const std::string& name) const
         {
             auto it = structs.find(name);
@@ -164,16 +164,34 @@ private:
             {
                 return outer->get_type(name);
             }
-            return std::shared_ptr<DynamicType>(nullptr);
+            return DynamicType::Ptr();
+        }
+
+        std::map<std::string, DynamicType::Ptr> get_all_types() const
+        {
+            std::map<std::string, DynamicType::Ptr> result;
+            fill_all_types(result);
+            return result;
+        }
+
+        void fill_all_types(
+                std::map<std::string, DynamicType::Ptr>& map) const
+        {
+            map.insert(structs.begin(), structs.end());
+            for (const std::shared_ptr<SymbolScope>& scope : inner)
+            {
+                scope->fill_all_types(map);
+            }
         }
 
         //std::map<std::string, std::shared_ptr<Constants>> constants;
         //std::map<std::string, std::shared_ptr<Module>> modules;
-        //std::map<std::string, std::shared_ptr<DynamicType>> types;
+        //std::map<std::string, DynamicType::Ptr> types;
         //std::map<std::string, std::shared_ptr<StructType>> structs;
-        std::map<std::string, std::shared_ptr<DynamicType>> structs;
+        std::map<std::string, DynamicType::Ptr> structs;
         //std::map<std::string, std::shared_ptr<AnnotationType>> annotations;
         std::shared_ptr<SymbolScope> outer;
+        std::vector<std::shared_ptr<SymbolScope>> inner;
     };
 
     void build_on_ast(
@@ -181,6 +199,10 @@ private:
             std::shared_ptr<SymbolScope> scope = nullptr)
     {
         using namespace peg::udl;
+        if (scope == nullptr)
+        {
+            scope = std::make_shared<SymbolScope>(nullptr);
+        }
         switch (ast->tag){
             //case "MODULE_DCL"_:
             //    module_dcl(ast, scope);
@@ -201,7 +223,8 @@ private:
                 }
                 break;
         }
-        types_map_ = scope->structs;
+        types_map_.clear();
+        scope->fill_all_types(types_map_);
     }
 
     void struct_def(
@@ -210,6 +233,7 @@ private:
     {
         using namespace peg::udl;
         auto scope = std::make_shared<SymbolScope>(outer);
+        outer->inner.push_back(scope);
         std::string name;
         std::map<std::string, Member> member_list;
         for (const auto& node : ast->nodes)
@@ -228,12 +252,11 @@ private:
             }
         }
         StructType result(name);
-        //std::shared_ptr<DynamicType> result = std::make_shared<StructType>(name);
         for (auto& member : member_list)
         {
             result.add_member(std::move(member.second));
         }
-        scope->structs.emplace(name, std::make_shared<StructType>(std::move(result)));
+        scope->structs.emplace(name, std::move(result));
     }
 
     void member_def(
@@ -242,11 +265,11 @@ private:
             std::map<std::string, Member>& result)
     {
         using namespace peg::udl;
-        std::shared_ptr<DynamicType> type;
+        DynamicType::Ptr type;
 
         for (const auto& node : ast->nodes)
         {
-            switch (node->tag)
+            switch (node->original_tag)
             {
                 case "TYPE_SPEC"_:
                     type = type_spec(node, outer);
@@ -258,81 +281,91 @@ private:
         }
     }
 
-    std::shared_ptr<DynamicType> type_spec(
-            const std::shared_ptr<peg::Ast> ast,
+    DynamicType::Ptr type_spec(
+            const std::shared_ptr<peg::Ast> node, //ast,
             std::shared_ptr<SymbolScope> outer)
     {
         using namespace peg::udl;
-        for (const auto& node : ast->nodes)
-        {
+        //for (const auto& node : ast->nodes)
+        //{
             switch (node->tag)
             {
                 case "IDENTIFIER"_: // Scoped name
                 {
-                    std::shared_ptr<DynamicType> type = outer->get_type(node->token);
-                    if (nullptr == type)
+                    DynamicType::Ptr type = outer->get_type(node->token);
+                    if (type == nullptr)
                     {
                         throw exception("Member type " + node->token + " is unknown", node);
                     }
                     return type;
                 }
                 case "STRING_TYPE"_:
-                    return std::make_shared<StringType>();
+                    return StringType();
                 case "FLOAT_TYPE"_:
                 {
-                    return std::make_shared<PrimitiveType<float>>(primitive_type<float>());
+                    return primitive_type<float>();
                 }
                 default:
                     return type_spec(node, outer);
             }
-        }
+        //}
 
-        return std::shared_ptr<DynamicType>(nullptr);
+        return DynamicType::Ptr();
     }
 
     void members(
             const std::shared_ptr<peg::Ast> ast,
             std::shared_ptr<SymbolScope> outer,
-            const std::shared_ptr<DynamicType> type,
+            const DynamicType::Ptr type,
             std::map<std::string, Member>& result)
     {
         using namespace peg::udl;
-        for (const auto& node : ast->nodes)
+
+        if (ast->nodes.empty())
         {
-            switch (node->tag)
+            std::string name = identifier(ast, outer);
+            if (result.count(name) > 0)
             {
-                case "DECLARATOR"_:
+                throw exception("Member identifier " + ast->token + " already defined", ast);
+            }
+            result.emplace(name, Member(name, *type));
+        }
+        else
+        {
+            for (const auto& node : ast->nodes)
+            {
+                switch (node->tag)
                 {
-                    std::string name = identifier(node, outer);
-                    if (result.count(name) > 0)
+                    case "IDENTIFIER"_:
                     {
-                        throw exception("Member identifier " + node->token + " already defined", node);
+                        std::string name = identifier(node, outer);
+                        if (result.count(name) > 0)
+                        {
+                            throw exception("Member identifier " + node->token + " already defined", node);
+                        }
+                        result.emplace(name, Member(name, *type));
+                        break;
                     }
-                    result.emplace(name, Member(name, *type));
-                    break;
                 }
             }
         }
     }
 
     std::string identifier(
-            const std::shared_ptr<peg::Ast> ast,
+            const std::shared_ptr<peg::Ast> node,
             std::shared_ptr<SymbolScope> outer)
     {
         using namespace peg::udl;
-        for (const auto& node : ast->nodes)
+        switch (node->tag)
         {
-            switch (node->tag)
-            {
-                case "IDENTIFIER"_:
-                    if (outer->has_symbol(node->token))
-                    {
-                        throw exception("Identifier " + node->token + " already defined", node);
-                    }
-                    return node->token;
-                default:
-                    return identifier(node, outer);
-            }
+            case "IDENTIFIER"_:
+                if (outer->has_symbol(node->token))
+                {
+                    throw exception("Identifier " + node->token + " already defined", node);
+                }
+                return node->token;
+            default:
+                return identifier(node, outer);
         }
 
         return "";
@@ -340,10 +373,10 @@ private:
 
 };
 
-static std::map<std::string, std::shared_ptr<DynamicType>> parse(
+static std::map<std::string, DynamicType::Ptr> parse(
         const std::string& idl)
 {
-    std::map<std::string, std::shared_ptr<DynamicType>> result;
+    std::map<std::string, DynamicType::Ptr> result;
     static Parser parser;
     if (parser.parse(idl.c_str()))
     {
@@ -352,10 +385,10 @@ static std::map<std::string, std::shared_ptr<DynamicType>> parse(
     return result;
 }
 
-static std::map<std::string, std::shared_ptr<DynamicType>> parse_file(
+static std::map<std::string, DynamicType::Ptr> parse_file(
         const std::string& idl_file)
 {
-    std::map<std::string, std::shared_ptr<DynamicType>> result;
+    std::map<std::string, DynamicType::Ptr> result;
     static Parser parser;
     if (parser.parse_file(idl_file.c_str()))
     {

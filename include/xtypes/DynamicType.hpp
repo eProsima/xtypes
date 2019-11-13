@@ -132,6 +132,42 @@ public:
             ptr.type_ = nullptr;
         }
 
+        Ptr& operator = (
+                const Ptr& ptr)
+        {
+            if (type_ == ptr.type_)
+            {
+                return *this;
+            }
+
+            reset();
+            type_ = (ptr.type_ == nullptr || ptr.type_->is_primitive_type()) ? ptr.type_ : ptr.type_->clone();
+            return *this;
+        }
+
+        Ptr& operator = (
+                Ptr&& ptr)
+        {
+            if (type_ == ptr.type_)
+            {
+                return *this;
+            }
+
+            reset();
+            type_ = ptr.type_;
+            if (ptr.type_ != nullptr && !ptr.type_->is_primitive_type())
+            {
+                ptr.type_ = nullptr;
+            }
+            return *this;
+        }
+
+        bool operator == (
+                const DynamicType* ptr) const
+        {
+            return ptr == type_;
+        }
+
         virtual ~Ptr()
         {
             reset();
