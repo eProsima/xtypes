@@ -77,6 +77,7 @@ if(XTYPES_BUILD_TESTS)
     enable_testing()
 
     compile_test(${PROJECT_NAME}_test_unitary test/unitary/main.cpp)
+    compile_test(${PROJECT_NAME}_idl_parser_test_unitary test/unitary/parser_test.cpp)
     # ...
 endif()
 
