@@ -200,6 +200,13 @@ The following methods are available when:
     data["member_name"].value(dynamic_data_representing_a_value);
     WritableDynamicDataRef ref = data["member_name"];
     size_t size = data.size(); //number of members
+    for (ReadableDynamicDataRef::MemberPair&& elem : data.items()) // Iterate through its members.
+    {
+        if (elem.kind() == TypeKind::INT_32_TYPE)
+        {
+            std::cout << elem.type().name() << " " << elem.name() << ": " << elem.value<int32_t>() << std::endl;
+        }
+    }
     ```
 1. `DynamicData` represents a `CollectionType`
     ```c++
@@ -208,6 +215,32 @@ The following methods are available when:
     data[2] = dynamic_data_representing_a_value;
     WritableDynamicDataRef ref = data[2]; //references to a DynamicData that represents a collection
     size_t size = data.size(); //size of collection
+    for (WritableDynamicDataRef&& elem : data) // Iterate through its contents.
+    {
+        elem = 0;
+    }
+    ```
+1. `DynamicData` represents a `StringType`.
+    Same as `CollectionType` plus:
+    ```c++
+    data = "Hello again!"; // set string value
+    const std::string& s1 = data.value<std::string>(); //read the string value
+    const std::string& s2 = data.string(); // shortcut version for string
+    for (WritableDynamicDataRef&& elem : data) // Iterate through its contents.
+    {
+        elem = 'A';
+    }
+    ```
+1. `DynamicData` represents a `WStringType`.
+    Same as `CollectionType` plus:
+    ```c++
+    data = L"Hello again! \u263A"; // set string value
+    const std::wstring& s1 = data.value<std::wstring>(); //read the string value
+    const std::wstring& s2 = data.wstring(); // shortcut version for string
+    for (WritableDynamicDataRef&& elem : data) // Iterate through its contents.
+    {
+        elem = L'A';
+    }
     ```
 1. `DynamicData` represents a `SequenceType`.
     Same as `CollectionType` plus:
@@ -215,6 +248,10 @@ The following methods are available when:
     data.push(42); // push back new value to the sequence.
     data.push(dynamic_data_representing_a_value);
     data.resize(20); //resize the vector (same behaviour as std::vector::resize())
+    for (WritableDynamicDataRef&& elem : data) // Iterate through its contents.
+    {
+        elem = 0;
+    }
     ```
 
 #### References to `DynamicData`
@@ -224,7 +261,7 @@ There are two ways to obtain a reference to a `DynamicData`:
 
 A reference does not contain any value and only points to an already existing `DynamicData`, or to part of it.
 You can obtain a reference by accessing data with `[]` operator or by calling `ref()` and `cref()`.
-Depending on whether the reference comes from a `const DynamcData` or a `DynamicData`, a `ReadableDynamicDataRef`
+Depending on whether the reference comes from a `const DynamicData` or a `DynamicData`, a `ReadableDynamicDataRef`
 or a `WritableDynamicDataRef` is returned.
 
 #### `==` function of `DynamicData`
@@ -270,6 +307,34 @@ case TypeKind::FLOAT_128_TYPE: // The user app does not support 128 float values
 ```
 The boolean exception value will be returned by `for_each` function call.
 If the visitor callback implementation does not call an exception, `for_each` function returns `true` by default.
+
+#### Iterators of `DynamicData`
+
+There exists two kinds of iterators:
+- Collection iterators: Allows to iterate through collections in the same way of native C++11 types. They can be
+  accessed from `ReadableDynamicDataRef::Iterator` (for read-only operations) or `WritableDynamicDataRef::Iterator`
+  (for read-write operations).
+
+  ```cpp
+  ReadableDynamicDataRef::Iterator it = data.begin();
+  WritableDynamicDataRef::Iterator wit = data.begin();
+  for (ReadableDynamicDataRef&& elem : data) { [...] }
+  for (WritableDynamicDataRef&& elem : data) { [...] }
+  ```
+
+- Aggregation iterator: Allows to iterate through members of an aggregation.
+  They make use of an auxiliar class **MemberPair** to allow access both, data and member information such as name.
+  They can be accessed from `ReadableDynamicDataRef::MemberIterator` (read-only) or
+  `WritableDynamicDataRef::MemberIterator` (read-write), through the `items()` or `citems()` methods.
+
+  ```cpp
+  // Explicit request for ReadableDynamicDataRef using citems().
+  ReadableDynamicDataRef::MemberIterator it = my_data.citems().begin();
+  // Typically items() is enough
+  WritableDynamicDataRef::MemberIterator it = my_data.items().begin();
+  for (ReadableDynamicDataRef::MemberPair&& elem : my_data.items()) { [...] }
+  for (WritableDynamicDataRef::MemberPair&& elem : my_data.items()) { [...] }
+  ```
 
 ## Performance
 The `DynamicData` instance uses the minimal allocations needed to store any data.

@@ -217,6 +217,191 @@ public:
         catch(bool value) { return value; }
     }
 
+    /// \brief Class used for iterate ReadableDynamicDataRef
+    class Iterator
+    {
+    public:
+        Iterator(
+                const Iterator& it)
+            : type_(it.type_)
+            , instance_(it.instance_)
+            , index_(it.index_)
+        {}
+
+        Iterator& operator = (
+                const Iterator& other)
+        {
+            instance_ = other.instance_;
+            index_ = other.index_;
+            return *this;
+        }
+
+        bool operator == (
+                const Iterator& other) const
+        {
+            return other.instance_ == instance_ && other.index_ == index_;
+        }
+
+        bool operator != (
+                const Iterator& other) const
+        {
+            return !(*this == other);
+        }
+
+        ReadableDynamicDataRef operator * () const
+        {
+            const CollectionType& collection = static_cast<const CollectionType&>(type_);
+            return ReadableDynamicDataRef(collection.content_type(), collection.get_instance_at(instance_, index_));
+        }
+
+        Iterator& operator ++ ()
+        {
+            ++index_;
+            return *this;
+        }
+
+        Iterator operator ++ (
+                int)
+        {
+            Iterator prev = *this;
+            ++index_;
+            return prev;
+        }
+
+    protected:
+
+        friend class ReadableDynamicDataRef;
+
+        Iterator(
+                const ReadableDynamicDataRef& ref,
+                bool end)
+            : type_(ref.type_)
+            , instance_(ref.instance_)
+            , index_(end ? ref.size() : 0)
+        {
+        }
+
+        const DynamicType& type_;
+        uint8_t* instance_;
+        size_t index_;
+    };
+
+    /// \brief Returns the initial iterator of a collection dynamic data.
+    /// \pre The DynamicData must represent a CollectionType.
+    /// \returns The initial iterator.
+    Iterator begin() const
+    {
+        assert(type_.is_collection_type());
+        return Iterator(*this, false);
+    }
+
+    /// \brief Returns the final iterator of a collection dynamic data.
+    /// \pre The DynamicData must represent a CollectionType.
+    /// \returns The final iterator.
+    Iterator end() const
+    {
+        assert(type_.is_collection_type());
+        return Iterator(*this, true);
+    }
+
+    class MemberPair
+    {
+    public:
+        MemberPair(
+                const Member& member,
+                uint8_t* data)
+            : member_(member)
+            , instance_(data)
+        {}
+
+        const Member& member() const
+        {
+            return member_;
+        }
+
+        ReadableDynamicDataRef data() const
+        {
+            return ReadableDynamicDataRef(member_.type(), instance_);
+        }
+
+        //! Shortcut to member().type().kind() or data().type().kind()
+        TypeKind kind() const
+        {
+            return member_.type().kind();
+        }
+
+    protected:
+        const Member& member_;
+        uint8_t* instance_;
+    };
+
+    class MemberIterator : public Iterator
+    {
+    public:
+        MemberIterator(
+                const MemberIterator& it)
+            : Iterator (it)
+            , ref_(it.ref_)
+        {}
+
+        const MemberPair operator * () const
+        {
+            const AggregationType& aggregation = static_cast<const AggregationType&>(type_);
+            return MemberPair(
+                aggregation.member(index_),
+                instance_ + aggregation.member(index_).offset());
+        }
+
+        MemberIterator& operator ++ ()
+        {
+            ++index_;
+            return *this;
+        }
+
+        MemberIterator operator ++ (
+                int)
+        {
+            MemberIterator prev = *this;
+            ++index_;
+            return prev;
+        }
+
+        MemberIterator begin() const
+        {
+            assert(type_.is_aggregation_type());
+            return MemberIterator(ref_, false);
+        }
+
+        MemberIterator end() const
+        {
+            assert(type_.is_aggregation_type());
+            return MemberIterator(ref_, true);
+        }
+
+    protected:
+        friend class ReadableDynamicDataRef;
+        friend class WritableDynamicDataRef;
+
+        const ReadableDynamicDataRef& ref_;
+
+        MemberIterator(
+                const ReadableDynamicDataRef& ref,
+                bool end)
+            : Iterator(ref, end)
+            , ref_(ref)
+        {
+        }
+    };
+
+    /// \brief Returns an iterable representation of an aggregation dynamic data.
+    /// \pre The DynamicData must represent an AggregationType.
+    /// \returns An iterable representation of an aggregation dynamic data.
+    MemberIterator items() const
+    {
+        assert(type_.is_aggregation_type());
+        return MemberIterator(*this, false);
+    }
+
 protected:
     ReadableDynamicDataRef(
             const DynamicType& type,
@@ -232,6 +417,7 @@ protected:
     /// \param[in] other readable reference from who get the instance.
     /// \result The raw instance.
     uint8_t* p_instance(const ReadableDynamicDataRef& other) const { return other.instance_; }
+
 };
 
 
@@ -417,6 +603,148 @@ public:
         catch(bool value) { return value; }
     }
 
+    /// \brief Class used for iterate WritableDynamicDataRef
+    class Iterator : public ReadableDynamicDataRef::Iterator
+    {
+    public:
+        Iterator(
+                const ReadableDynamicDataRef::Iterator& rit)
+            : ReadableDynamicDataRef::Iterator (rit)
+        {}
+
+        WritableDynamicDataRef operator * ()
+        {
+            return ReadableDynamicDataRef::Iterator::operator*();
+        }
+
+    protected:
+
+        friend class WritableDynamicDataRef;
+
+        Iterator(
+                WritableDynamicDataRef& ref,
+                bool end)
+            : ReadableDynamicDataRef::Iterator(ref, end)
+        {
+        }
+
+    };
+
+    /// \brief Returns the initial iterator of a collection dynamic data.
+    /// \pre The DynamicData must represent a CollectionType.
+    /// \returns The initial iterator.
+    Iterator begin()
+    {
+        return static_cast<Iterator>(ReadableDynamicDataRef::begin());
+    }
+
+    /// \brief Returns the final iterator of a collection dynamic data.
+    /// \pre The DynamicData must represent a CollectionType.
+    /// \returns The final iterator.
+    Iterator end()
+    {
+        return static_cast<Iterator>(ReadableDynamicDataRef::end());
+    }
+
+    class MemberPair : public ReadableDynamicDataRef::MemberPair
+    {
+    public:
+        MemberPair(
+                const Member& member,
+                uint8_t* data)
+            : ReadableDynamicDataRef::MemberPair(member, data)
+        {}
+
+        WritableDynamicDataRef data()
+        {
+            return WritableDynamicDataRef(member_.type(), instance_);
+        }
+
+        ReadableDynamicDataRef data() const
+        {
+            return ReadableDynamicDataRef::MemberPair::data();
+        }
+
+    };
+
+    class MemberIterator : public Iterator
+    {
+    public:
+        MemberIterator(
+                const MemberIterator& it)
+            : Iterator(it)
+            , ref_(it.ref_)
+        {}
+
+        MemberPair operator * ()
+        {
+            const AggregationType& aggregation = static_cast<const AggregationType&>(type_);
+            return MemberPair(
+                aggregation.member(index_),
+                instance_ + aggregation.member(index_).offset());
+        }
+
+        MemberIterator& operator ++ ()
+        {
+            ++index_;
+            return *this;
+        }
+
+        MemberIterator operator ++ (
+                int)
+        {
+            MemberIterator prev = *this;
+            ++index_;
+            return prev;
+        }
+
+        MemberIterator begin()
+        {
+            return ReadableDynamicDataRef::MemberIterator(ref_, false);
+        }
+
+        MemberIterator end()
+        {
+            return ReadableDynamicDataRef::MemberIterator(ref_, true);
+        }
+
+    protected:
+        friend class WritableDynamicDataRef;
+
+        WritableDynamicDataRef& ref_;
+
+        MemberIterator(
+                WritableDynamicDataRef& ref,
+                bool end)
+            : Iterator(ref, end)
+            , ref_(ref)
+        {
+        }
+
+        MemberIterator(
+                const ReadableDynamicDataRef::MemberIterator& mit)
+            : Iterator (mit)
+            , ref_(static_cast<WritableDynamicDataRef&>(const_cast<ReadableDynamicDataRef&>(mit.ref_)))
+        {}
+    };
+
+    /// \brief Returns an iterable representation of an aggregation dynamic data.
+    /// \pre The DynamicData must represent an AggregationType.
+    /// \returns An iterable representation of an aggregation dynamic data.
+    MemberIterator items()
+    {
+        return MemberIterator(*this, false);
+    }
+
+    /// \brief Returns a read-only iterable representation of an aggregation dynamic data.
+    /// \pre The DynamicData must represent an AggregationType.
+    /// \returns An iterable representation of an aggregation dynamic data.
+    ReadableDynamicDataRef::MemberIterator citems()
+    {
+        assert(type_.is_aggregation_type());
+        return ReadableDynamicDataRef::MemberIterator(*this, false);
+    }
+
 protected:
     WritableDynamicDataRef(
             const DynamicType& type,
@@ -434,6 +762,7 @@ protected:
             ReadableDynamicDataRef&& other)
         : ReadableDynamicDataRef(std::move(other))
     {}
+
 };
 
 /// \brief Class that represents a DynamicType instantation in memory.
