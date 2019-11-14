@@ -15,8 +15,8 @@
  *
 */
 
-#ifndef EPROSIMA_XTYPES_IDL_HPP_
-#define EPROSIMA_XTYPES_IDL_HPP_
+#ifndef EPROSIMA_XTYPES_IDL_GENERATOR_HPP_
+#define EPROSIMA_XTYPES_IDL_GENERATOR_HPP_
 
 #include <xtypes/StructType.hpp>
 #include <xtypes/ArrayType.hpp>
@@ -28,14 +28,7 @@
 namespace eprosima {
 namespace xtypes {
 namespace idl {
-
-inline std::map<std::string, DynamicType::Ptr> parse(const std::string& /*idl*/)
-{
-    //TODO
-    return std::map<std::string, DynamicType::Ptr>();
-}
-
-namespace impl {
+namespace generator {
 
 inline std::string type_name(const DynamicType& type); //implementation below
 
@@ -115,33 +108,9 @@ inline std::string type_name(const DynamicType& type)
     }
 }
 
-}
-
-inline std::string from(const StructType& type)
-{
-    std::stringstream ss;
-    ss << "struct " << type.name() << std::endl;
-    ss << "{" << std::endl;
-
-    for(const Member& member: type.members())
-    {
-        ss << std::string(4, ' ');
-        if(member.type().kind() == TypeKind::ARRAY_TYPE)
-        {
-            ss << impl::array_member(member); //Spetial member syntax
-        }
-        else
-        {
-            ss << impl::type_name(member.type()) << " " << member.name() << ";";
-        }
-        ss << std::endl;
-    }
-    ss << "}" << std::endl;
-    return ss.str();
-}
-
+} //namespace generator
 } //namespace idl
 } //namespace xtypes
 } //namespace eprosima
 
-#endif //EPROSIMA_XTYPES_IDL_HPP_
+#endif //EPROSIMA_XTYPES_IDL_GENERATOR_HPP_
