@@ -20,7 +20,8 @@ int main()
     outer.add_member("om7", ArrayType(primitive_type<uint32_t>(), 4));
     outer.add_member("om8", ArrayType(inner, 4));
 
-    std::cout << idl::from(outer) << std::endl; //See idl::from() implementation as an example of type instrospection
+    std::cout << idl::from(inner) << std::endl;
+    std::cout << idl::from(outer) << std::endl;
 
     DynamicData data(outer);
     data["om1"] = 6.7;                                     //PrimitiveType<double>

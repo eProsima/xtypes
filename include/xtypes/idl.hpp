@@ -18,7 +18,7 @@
 #ifndef EPROSIMA_XTYPES_IDL_HPP_
 #define EPROSIMA_XTYPES_IDL_HPP_
 
-#include <xtypes/AggregationType.hpp>
+#include <xtypes/StructType.hpp>
 
 #include <sstream>
 
@@ -31,76 +31,76 @@ inline std::map<std::string, DynamicType::Ptr> parse(const std::string& /*idl*/)
     return std::map<std::string, DynamicType::Ptr>();
 }
 
-inline std::string from(const AggregationType& type)
+
+inline std::string from(const StructType& type)
 {
     std::stringstream ss;
-    size_t previous_deep = 0;
-    type.for_each([&](const DynamicType::TypeNode& node)
+    for(const Member& member: type.members())
     {
-        ss << std::string(node.deep() * 4, ' ');
-
-        switch(node.type().kind())
+        switch(member.type().kind())
         {
             case TypeKind::BOOLEAN_TYPE:
-                ss << "boolean " << node.from_member()->name() << ";";
+                ss << "boolean " << member.name() << ";";
                 break;
             case TypeKind::CHAR_8_TYPE:
-                ss << "char " << node.from_member()->name() << ";";
+                ss << "char " << member.name() << ";";
                 break;
             case TypeKind::CHAR_16_TYPE:
-                ss << "wchar " << node.from_member()->name() << ";";
+                ss << "wchar " << member.name() << ";";
                 break;
             case TypeKind::INT_8_TYPE:
-                ss << "int8 " << node.from_member()->name() << ";";
+                ss << "int8 " << member.name() << ";";
                 break;
             case TypeKind::UINT_8_TYPE:
-                ss << "uint8 " << node.from_member()->name() << ";";
+                ss << "uint8 " << member.name() << ";";
                 break;
             case TypeKind::INT_16_TYPE:
-                ss << "short " << node.from_member()->name() << ";";
+                ss << "short " << member.name() << ";";
                 break;
             case TypeKind::UINT_16_TYPE:
-                ss << "unsigned short " << node.from_member()->name() << ";";
+                ss << "unsigned short " << member.name() << ";";
                 break;
             case TypeKind::INT_32_TYPE:
-                ss << "long " << node.from_member()->name() << ";";
+                ss << "long " << member.name() << ";";
                 break;
             case TypeKind::UINT_32_TYPE:
-                ss << "unsigned long " << node.from_member()->name() << ";";
+                ss << "unsigned long " << member.name() << ";";
                 break;
             case TypeKind::INT_64_TYPE:
-                ss << "long long " << node.from_member()->name() << ";";
+                ss << "long long " << member.name() << ";";
                 break;
             case TypeKind::UINT_64_TYPE:
-                ss << "unsigned long long " << node.from_member()->name() << ";";
+                ss << "unsigned long long " << member.name() << ";";
                 break;
             case TypeKind::FLOAT_32_TYPE:
-                ss << "float " << node.from_member()->name() << ";";
+                ss << "float " << member.name() << ";";
                 break;
             case TypeKind::FLOAT_64_TYPE:
-                ss << "double " << node.from_member()->name() << ";";
+                ss << "double " << member.name() << ";";
                 break;
             case TypeKind::FLOAT_128_TYPE:
-                ss << "long double " << node.from_member()->name() << ";";
+                ss << "long double " << member.name() << ";";
                 break;
             case TypeKind::STRING_TYPE:
+                ss << "string " << member.name() << ";"; //TODO
                 break;
             case TypeKind::WSTRING_TYPE:
+                ss << "wstring " << member.name() << ";"; //TODO
                 break;
             case TypeKind::ARRAY_TYPE:
+                //TODO
                 break;
             case TypeKind::SEQUENCE_TYPE:
-                //ss << "sequence< " << node.from_member()->name() << ";";
+                ss << "sequence " << member.name() << ";"; //TODO
                 break;
             case TypeKind::STRUCTURE_TYPE:
-                //ss << "struct " << node.type().name() << " {";
+                ss << member.type().name() << " " << member.name() << ";";
                 break;
             default:
-                ss << "<<Unsupported type: " << type.name() << ">>";
+                ss << "<<Unsupported type: " << member.type().name() << ">>";
         }
         ss << std::endl;
-    });
-
+    }
     return ss.str();
 }
 
