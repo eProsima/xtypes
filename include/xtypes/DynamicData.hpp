@@ -153,7 +153,7 @@ public:
     /// If the DynamicData represents an Array, then bounds() == size()
     size_t bounds() const
     {
-        assert(type_.is_collection_type() || type_.is_aggregation_type());
+        assert(type_.is_collection_type());
         if (type_.is_collection_type())
         {
             if (type_.kind() == TypeKind::ARRAY_TYPE)

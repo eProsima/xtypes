@@ -22,7 +22,7 @@
 
 #include <xtypes/xtypes.hpp>
 //#include <xtypes/DynamicType.hpp>
-#include <xtypes/idl/IDLGrammar.hpp>
+#include <xtypes/idl/grammar.hpp>
 
 #include <map>
 #include <vector>
@@ -52,7 +52,7 @@ public:
             return false;
         }
         ast = peg::AstOptimizer(true).optimize(ast);
-        build_on_ast(ast);
+        build_on_ast(ast)->fill_all_types(types_map_);
         return true;
     }
 
@@ -66,7 +66,7 @@ public:
             return false;
         }
         ast = peg::AstOptimizer(true).optimize(ast);
-        build_on_ast(ast);
+        build_on_ast(ast)->fill_all_types(types_map_);
         return true;
     }
 
@@ -75,6 +75,28 @@ public:
     {
         types_map = types_map_;
     }
+
+    class exception// : public std::exception
+    {
+    private:
+        std::string message_;
+        std::shared_ptr<peg::Ast> ast_;
+    public:
+        exception(
+                const std::string& message,
+                const std::shared_ptr<peg::Ast> ast)
+            : message_(message)
+            , ast_(ast)
+        {}
+
+        const std::string what() const noexcept
+        {
+            std::string output;
+            output = "Parser exception (" + ast_->path + ":" + std::to_string(ast_->line)
+                     + ":" + std::to_string(ast_->column) + "): " + message_;
+            return output;
+        }
+    };
 
 private:
     peg::parser parser_;
@@ -100,28 +122,6 @@ private:
         return true;
     }
 
-    class exception : public std::exception
-    {
-    private:
-        std::string message_;
-        std::shared_ptr<peg::Ast> ast_;
-    public:
-        exception(
-                const std::string& message,
-                const std::shared_ptr<peg::Ast> ast)
-            : message_(message)
-            , ast_(ast)
-        {}
-
-        const char* what() const noexcept override
-        {
-            std::string output;
-            output = "Parser exception (" + ast_->path + ":" + std::to_string(ast_->line)
-                     + ":" + std::to_string(ast_->column) + "): " + message_;
-            return output.c_str();
-        }
-    };
-
     class SymbolScope
     {
     public:
@@ -130,12 +130,14 @@ private:
             : outer(outer)
         {}
 
-        /*
         std::string scope()
         {
-
+            if (outer != nullptr && !outer->scope().empty())
+            {
+                return outer->scope() + "::" + name;
+            }
+            return name;
         }
-        */
 
         bool has_symbol(
                 const std::string& ident,
@@ -156,6 +158,32 @@ private:
         DynamicType::Ptr get_type(
                 const std::string& name) const
         {
+            // Solve scope
+            if (name.find("::") != std::string::npos) // It is an scoped name
+            {
+                if (name.find("::") == 0) // Looking for root
+                {
+                    if (outer == nullptr) // We are the root, now go down.
+                    {
+                        return get_type(name.substr(2));
+                    }
+                    else // We are not the root, go up.
+                    {
+                        return outer->get_type(name);
+                    }
+                }
+                else // not looking for root
+                {
+                    std::string inner_scope = name.substr(0, name.find("::"));
+                    if (inner.count(inner_scope) > 0) // We have a inner scope that matches.
+                    {
+                        std::string inner_name = name.substr(name.find("::") + 2);
+                        const auto& it = inner.find(inner_scope);
+                        return it->second->get_type(inner_name);
+                    }
+                }
+            }
+            // No scope, or scope resolution failed: Try in upwards
             auto it = structs.find(name);
             if (it != structs.end())
             {
@@ -179,9 +207,9 @@ private:
                 std::map<std::string, DynamicType::Ptr>& map) const
         {
             map.insert(structs.begin(), structs.end());
-            for (const std::shared_ptr<SymbolScope>& scope : inner)
+            for (const auto& pair : inner)
             {
-                scope->fill_all_types(map);
+                pair.second->fill_all_types(map);
             }
         }
 
@@ -192,10 +220,11 @@ private:
         std::map<std::string, DynamicType::Ptr> structs;
         //std::map<std::string, std::shared_ptr<AnnotationType>> annotations;
         std::shared_ptr<SymbolScope> outer;
-        std::vector<std::shared_ptr<SymbolScope>> inner;
+        std::map<std::string, std::shared_ptr<SymbolScope>> inner;
+        std::string name;
     };
 
-    void build_on_ast(
+    std::shared_ptr<SymbolScope> build_on_ast(
             const std::shared_ptr<peg::Ast> ast,
             std::shared_ptr<SymbolScope> scope = nullptr)
     {
@@ -206,12 +235,12 @@ private:
             scope = std::make_shared<SymbolScope>(nullptr);
         }
         switch (ast->tag){
-            //case "MODULE_DCL"_:
-            //    module_dcl(ast, scope);
-            //    break;
-            //case "CONST_DCL"_:
-            //    const_dcl(ast, scope);
-            //    break;
+            case "MODULE_DCL"_:
+                module_dcl(ast, scope);
+                break;
+            case "CONST_DCL"_:
+                const_dcl(ast, scope);
+                break;
             case "STRUCT_DEF"_:
                 struct_def(ast, scope);
                 break;
@@ -225,7 +254,55 @@ private:
                 }
                 break;
         }
-        scope->fill_all_types(types_map_);
+        return scope;
+    }
+
+    void module_dcl(
+            const std::shared_ptr<peg::Ast> ast,
+            std::shared_ptr<SymbolScope> outer)
+    {
+        using namespace peg::udl;
+        std::shared_ptr<SymbolScope> scope;
+        for (auto& node : ast->nodes)
+        {
+            switch (node->tag){
+                case "IDENTIFIER"_:
+                {
+                    std::string name = node->token;
+                    if (outer->inner.count(name) == 0)
+                    {
+                        // New scope
+                        scope = std::make_shared<SymbolScope>(outer);
+                        scope->name = name;
+                        outer->inner.emplace(name, scope);
+                    }
+                    else
+                    {
+                        // Adding to an already defined scope
+                        scope = outer->inner[name];
+                    }
+                    break;
+                }
+                default:
+                    build_on_ast(node, scope);
+                    break;
+            }
+        }
+        std::cout << "DEBUG: Found module " << scope->scope() << std::endl;
+    }
+
+    void const_dcl(
+            const std::shared_ptr<peg::Ast> ast,
+            std::shared_ptr<SymbolScope> outer)
+    {
+        using namespace peg::udl;
+
+        DynamicType::Ptr type = type_spec(ast->nodes[0], outer);
+        std::string identifier = ast->nodes[1]->token;
+        //std::string expr = solve_expr(ast->nodes[2]->token);
+
+        std::cout << "Found \"const " << type->name() << " " << identifier /*<< " = " << expr*/ << "\" "
+                  << "but const aren't supported. Ignoring." << std::endl;
     }
 
     void struct_def(
@@ -233,8 +310,6 @@ private:
             std::shared_ptr<SymbolScope> outer)
     {
         using namespace peg::udl;
-        auto scope = std::make_shared<SymbolScope>(outer);
-        outer->inner.push_back(scope);
         std::string name;
         std::map<std::string, Member> member_list;
         for (const auto& node : ast->nodes)
@@ -243,8 +318,8 @@ private:
             {
                 case "IDENTIFIER"_:
                 {
-                    StructType result(name);
                     name = node->token;
+                    StructType result(name);
                     outer->structs.emplace(name, std::move(result));
                     break;
                 }
@@ -252,7 +327,7 @@ private:
                     // parent = outer.structs[node->token]; // TODO Check if it doesn't exists
                     break;
                 case "MEMBER"_:
-                    member_def(node, scope, member_list);
+                    member_def(node, outer, member_list);
                     break;
             }
         }
@@ -301,10 +376,14 @@ private:
         //{
             switch (node->tag)
             {
-                case "IDENTIFIER"_: // Scoped name
+                case "SCOPED_NAME"_: // Scoped name
+                //{
+                //    return type_spec(node->nodes[1], outer);
+                //}
+                case "IDENTIFIER"_:
                 {
                     DynamicType::Ptr type = outer->get_type(node->token);
-                    if (type == nullptr)
+                    if (type.get() == nullptr)
                     {
                         throw exception("Member type " + node->token + " is unknown", node);
                     }
@@ -365,7 +444,8 @@ private:
                     {
                         size = std::atoi(node->nodes[2]->token.c_str());
                     }
-                    std::cout << "Found map<" << key_type->name() << ", " << inner_type->name() << ", " << size << "> "
+                    std::cout << "Found \"map<" << key_type->name() << ", " << inner_type->name()
+                              << ", " << size << ">\" "
                               << "but maps aren't supported. Ignoring." << std::endl;
                     break;
                     // return MapType(*key_type, *inner_type, size); // TODO, uncomment when maps are implemented.

@@ -163,9 +163,9 @@ public:
         }
 
         bool operator == (
-                const DynamicType* ptr) const
+            const DynamicType::Ptr& ptr) const
         {
-            return ptr == type_;
+            return ptr.type_ == type_;
         }
 
         virtual ~Ptr()

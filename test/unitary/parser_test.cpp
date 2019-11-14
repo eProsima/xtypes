@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include <gtest/gtest.h>
-#include <xtypes/idl/IDLParser.hpp>
+#include <xtypes/idl/parser.hpp>
 #include <iostream>
 
 using namespace eprosima::xtypes;
@@ -210,14 +210,80 @@ TEST (IDLParser, inner_struct_test)
 }
 
 TEST (IDLParser, not_yet_supported)
+//TEST (IDLParser, DISABLED_not_yet_supported)
 {
     std::map<std::string, DynamicType::Ptr> result;
-    result = parse(R"(
-        struct FutureStruct
-        {
-            map<int32, string, 5> my_map;
-        };
-                   )");
+    try
+    {
+        result = parse(R"(
+            const uint32 MAX_SIZE = 32 / 2;
+
+            module A
+            {
+                struct MyStruct
+                {
+                    uint64 my_uint64;
+                };
+            };
+
+            struct ForwardStruct;
+
+            struct FutureStruct
+            {
+                map<int32, string, 5> my_map;
+                A::MyStruct scoped_struct;
+                ForwardStruct fwd_struct;
+            };
+
+            struct Forward
+            {
+                string<MAX_SIZE> my_string;
+            };
+
+            enum MyEnum
+            {
+                AAA,
+                BBB,
+                CCC
+            };
+
+            union ForwardUnion;
+
+            union MyUnion switch (MyEnum)
+            {
+                case AAA: string str_a;
+                case BBB: wstring wstr_b;
+                case CCC: ForwardUnion union_c;
+            };
+
+            union ForwardUnion switch (octet)
+            {
+                case 0: int32 my_int32;
+                case 1: uint64 my_uint64;
+                default: string my_string;
+            };
+
+            bitset MyBitset
+            {
+                bitfield<3> a;
+                bitfield<1> b;
+                bitfield<4>;
+                bitfield<10, long> c;
+            };
+
+            bitmask MyBitmask
+            {
+                flag0,
+                flag1,
+                @position(5) flag5,
+                flag6
+            };
+                       )");
+    }
+    catch(const Parser::exception& exc)
+    {
+        std::cout << exc.what() << std::endl;
+    }
     /*
     EXPECT_EQ(1, result.size());
 
