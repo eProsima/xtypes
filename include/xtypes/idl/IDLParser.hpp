@@ -283,7 +283,10 @@ private:
                     type = type_spec(node, outer);
                     break;
                 case "DECLARATORS"_:
-                    members(node, outer, type, result);
+                    if (type.get() != nullptr)
+                    {
+                        members(node, outer, type, result);
+                    }
                     break;
             }
         }
@@ -352,6 +355,20 @@ private:
                         size = std::atoi(node->nodes[1]->token.c_str());
                     }
                     return SequenceType(*inner_type, size);
+                }
+                case "MAP_TYPE"_:
+                {
+                    DynamicType::Ptr key_type = type_spec(node->nodes[0], outer);
+                    DynamicType::Ptr inner_type = type_spec(node->nodes[1], outer);
+                    size_t size = 0;
+                    if (node->nodes.size() > 2)
+                    {
+                        size = std::atoi(node->nodes[2]->token.c_str());
+                    }
+                    std::cout << "Found map<" << key_type->name() << ", " << inner_type->name() << ", " << size << "> "
+                              << "but maps aren't supported. Ignoring." << std::endl;
+                    break;
+                    // return MapType(*key_type, *inner_type, size); // TODO, uncomment when maps are implemented.
                 }
                 default:
                     return type_spec(node, outer);

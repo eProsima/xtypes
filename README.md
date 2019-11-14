@@ -114,6 +114,12 @@ SequenceType s3(SequenceType(structure), 20); //bounded sequence of unbounded se
 StringType str1; //unbounded string
 StringType str2(50); //bounded string
 WStringType wstr(); //unbounded wstring
+size_t a1_bounds = a1.bounds(); // As a1 is an ArrayType, its bounds are equal to its size.
+size_t s1_bounds = s1.bounds(); // As s1 is an unbounded sequence, its bounds are 0.
+size_t s2_bounds = s2.bounds(); // As s2 is a bounded sequence, its bounds are 30.
+size_t s3_bounds = s3.bounds(); // As s3 is a bounded sequence, its bounds are 20.
+size_t str1_bounds = str1.bounds(); // As str1 is an unbounded string, its bounds are 0.
+size_t str2_bounds = str2.bounds(); // As str2 is a bounded string, its bounds are 50.
 ```
 
 #### StructType
@@ -248,6 +254,7 @@ The following methods are available when:
     data.push(42); // push back new value to the sequence.
     data.push(dynamic_data_representing_a_value);
     data.resize(20); //resize the vector (same behaviour as std::vector::resize())
+    size_t max_size = data.bounds(); // Maximum size of the sequence
     for (WritableDynamicDataRef&& elem : data) // Iterate through its contents.
     {
         elem = 0;
