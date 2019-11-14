@@ -104,19 +104,20 @@ private:
     {
     private:
         std::string message_;
-        std::shared_ptr<peg::Ast> ast;
+        std::shared_ptr<peg::Ast> ast_;
     public:
         exception(
                 const std::string& message,
                 const std::shared_ptr<peg::Ast> ast)
             : message_(message)
+            , ast_(ast)
         {}
 
         const char* what() const noexcept override
         {
             std::string output;
-            output = "Parser exception (" + ast->path + ":" + std::to_string(ast->line)
-                     + ":" + std::to_string(ast->column) + "): " + message_;
+            output = "Parser exception (" + ast_->path + ":" + std::to_string(ast_->line)
+                     + ":" + std::to_string(ast_->column) + "): " + message_;
             return output.c_str();
         }
     };
@@ -201,6 +202,7 @@ private:
         using namespace peg::udl;
         if (scope == nullptr)
         {
+            types_map_.clear();
             scope = std::make_shared<SymbolScope>(nullptr);
         }
         switch (ast->tag){
@@ -223,7 +225,6 @@ private:
                 }
                 break;
         }
-        types_map_.clear();
         scope->fill_all_types(types_map_);
     }
 
@@ -241,8 +242,12 @@ private:
             switch (node->tag)
             {
                 case "IDENTIFIER"_:
+                {
+                    StructType result(name);
                     name = node->token;
+                    outer->structs.emplace(name, std::move(result));
                     break;
+                }
                 case "INHERITANCE"_:
                     // parent = outer.structs[node->token]; // TODO Check if it doesn't exists
                     break;
@@ -251,12 +256,15 @@ private:
                     break;
             }
         }
-        StructType result(name);
+
+        DynamicType::Ptr result = outer->get_type(name);
+        StructType* struct_type = static_cast<StructType*>(const_cast<DynamicType*>(result.get()));
         for (auto& member : member_list)
         {
-            result.add_member(std::move(member.second));
+            struct_type->add_member(std::move(member.second));
         }
-        scope->structs.emplace(name, std::move(result));
+        // Replace
+        outer->structs[name] = DynamicType::Ptr(*struct_type);
     }
 
     void member_def(
@@ -299,11 +307,51 @@ private:
                     }
                     return type;
                 }
+                case "BOOLEAN_TYPE"_:
+                    return primitive_type<bool>();
+                case "SIGNED_TINY_INT"_:
+                    return primitive_type<char>();
+                case "UNSIGNED_TINY_INT"_:
+                    return primitive_type<uint8_t>();
+                case "SIGNED_SHORT_INT"_:
+                    return primitive_type<int16_t>();
+                case "UNSIGNED_SHORT_INT"_:
+                    return primitive_type<uint16_t>();
+                case "SIGNED_LONG_INT"_:
+                    return primitive_type<int32_t>();
+                case "UNSIGNED_LONG_INT"_:
+                    return primitive_type<uint32_t>();
+                case "SIGNED_LONGLONG_INT"_:
+                    return primitive_type<int64_t>();
+                case "UNSIGNED_LONGLONG_INT"_:
+                    return primitive_type<uint64_t>();
+                case "FLOAT_TYPE"_:
+                    return primitive_type<float>();
+                case "DOUBLE_TYPE"_:
+                    return primitive_type<double>();
+                case "LONG_DOUBLE_TYPE"_:
+                    return primitive_type<long double>();
+                case "CHAR_TYPE"_:
+                    return primitive_type<char>();
+                case "WIDE_CHAR_TYPE"_:
+                    return primitive_type<wchar_t>();
                 case "STRING_TYPE"_:
                     return StringType();
-                case "FLOAT_TYPE"_:
+                case "STRING_SIZE"_:
+                    return StringType(std::atoi(node->token.c_str()));
+                case "WIDE_STRING_TYPE"_:
+                    return WStringType();
+                case "WSTRING_SIZE"_:
+                    return WStringType(std::atoi(node->token.c_str()));
+                case "SEQUENCE_TYPE"_:
                 {
-                    return primitive_type<float>();
+                    DynamicType::Ptr inner_type = type_spec(node->nodes[0], outer);
+                    size_t size = 0;
+                    if (node->nodes.size() > 1)
+                    {
+                        size = std::atoi(node->nodes[1]->token.c_str());
+                    }
+                    return SequenceType(*inner_type, size);
                 }
                 default:
                     return type_spec(node, outer);
@@ -313,6 +361,29 @@ private:
         return DynamicType::Ptr();
     }
 
+    void member_array(
+            const std::string& name,
+            const std::vector<size_t>& dimensions,
+            const DynamicType::Ptr type,
+            std::map<std::string, Member>& result)
+    {
+        size_t base_dim = dimensions.back();
+        ArrayType array(*type, base_dim);
+        ArrayType::Ptr next_array(array);
+
+        if (dimensions.size() > 1)
+        {
+            for (int32_t idx = dimensions.size() - 2; idx >= 0; --idx)
+            {
+                size_t dim = dimensions.at(idx);
+                ArrayType::Ptr next(ArrayType(*next_array, dim));
+                next_array = next;
+            }
+        }
+
+        result.emplace(name, Member(name, *next_array));
+    }
+
     void members(
             const std::shared_ptr<peg::Ast> ast,
             std::shared_ptr<SymbolScope> outer,
@@ -320,42 +391,32 @@ private:
             std::map<std::string, Member>& result)
     {
         using namespace peg::udl;
+        using id_pair = std::pair<std::string, std::vector<size_t>>;
 
-        if (ast->nodes.empty())
+        id_pair pair = identifier(ast, outer);
+        std::string name = pair.first;
+        std::vector<size_t> dimensions = pair.second;
+        if (result.count(name) > 0)
         {
-            std::string name = identifier(ast, outer);
-            if (result.count(name) > 0)
-            {
-                throw exception("Member identifier " + ast->token + " already defined", ast);
-            }
+            throw exception("Member identifier " + ast->token + " already defined", ast);
+        }
+        if (dimensions.empty())
+        {
             result.emplace(name, Member(name, *type));
         }
         else
         {
-            for (const auto& node : ast->nodes)
-            {
-                switch (node->tag)
-                {
-                    case "IDENTIFIER"_:
-                    {
-                        std::string name = identifier(node, outer);
-                        if (result.count(name) > 0)
-                        {
-                            throw exception("Member identifier " + node->token + " already defined", node);
-                        }
-                        result.emplace(name, Member(name, *type));
-                        break;
-                    }
-                }
-            }
+            member_array(name, dimensions, type, result);
         }
     }
 
-    std::string identifier(
+    std::pair<std::string, std::vector<size_t>> identifier(
             const std::shared_ptr<peg::Ast> node,
             std::shared_ptr<SymbolScope> outer)
     {
         using namespace peg::udl;
+        std::string name;
+        std::vector<size_t> dimensions;
         switch (node->tag)
         {
             case "IDENTIFIER"_:
@@ -363,12 +424,39 @@ private:
                 {
                     throw exception("Identifier " + node->token + " already defined", node);
                 }
-                return node->token;
+                name = node->token;
+                break;
+            case "ARRAY_DECLARATOR"_:
+            {
+                for (auto& subnode : node->nodes)
+                {
+                    switch (subnode->tag)
+                    {
+                        case "IDENTIFIER"_:
+                        {
+                            if (outer->has_symbol(subnode->token))
+                            {
+                                throw exception("Identifier " + subnode->token + " already defined", subnode);
+                            }
+                            name = subnode->token;
+                            break;
+                        }
+                        case "POSITIVE_INT_CONST"_:
+                        {
+                            dimensions.push_back(std::atoi(subnode->token.c_str()));
+                            break;
+                        }
+                    }
+                }
+                break;
+            }
             default:
                 return identifier(node, outer);
         }
-
-        return "";
+        std::pair<std::string, std::vector<size_t>> result;
+        result.first = name;
+        result.second = dimensions;
+        return result;
     }
 
 };

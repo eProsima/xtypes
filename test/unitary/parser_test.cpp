@@ -26,11 +26,120 @@ TEST (IDLParser, simple_struct_test)
     result = parse(R"(
         struct SimpleStruct
         {
-            string my_string;
+            boolean my_bool;
+            int8 my_int8;
+            uint8 my_uint8;
+            int16 my_int16;
+            uint16 my_uint16;
+            int32 my_int32;
+            uint32 my_uint32;
+            int64 my_int64;
+            uint64 my_uint64;
             float my_float;
+            double my_double;
+            long double my_long_double;
+            char my_char;
+            wchar my_wchar;
+            string my_string;
+            wstring my_wstring;
         };
                    )");
     EXPECT_EQ(1, result.size());
+
+    const DynamicType* my_struct = result["SimpleStruct"].get();
+    DynamicData data(*my_struct);
+
+    data["my_bool"] = true;
+    data["my_int8"] = 'c';
+    data["my_uint8"] = static_cast<uint8_t>(55);
+    data["my_int16"] = static_cast<int16_t>(-5);
+    data["my_uint16"] = static_cast<uint16_t>(6);
+    data["my_int32"] = static_cast<int32_t>(-5);
+    data["my_uint32"] = static_cast<uint32_t>(6);
+    data["my_int64"] = static_cast<int64_t>(-5);
+    data["my_uint64"] = static_cast<uint64_t>(6);
+    data["my_float"] = 5.55f;
+    data["my_double"] = 5.55;
+    data["my_long_double"] = 5.55l;
+    data["my_char"] = 'e';
+    data["my_wchar"] = L'e';
+    data["my_string"].string("It works!");
+    data["my_wstring"].wstring(L"It works!");
+    EXPECT_EQ(5.55f, data["my_float"].value<float>());
+    EXPECT_EQ("It works!", data["my_string"].value<std::string>());
+}
+
+TEST (IDLParser, array_sequence_struct_test)
+{
+    std::map<std::string, DynamicType::Ptr> result;
+    result = parse(R"(
+        struct SimpleStruct
+        {
+            boolean my_bool_5[5];
+            int8 my_int8_3_2[3][2];
+            string<16> my_string16;
+            wstring<32> my_wstring32;
+            sequence<int32> my_int_seq;
+            sequence<char, 66> my_char66_seq;
+        };
+                   )");
+    EXPECT_EQ(1, result.size());
+
+    const DynamicType* my_struct = result["SimpleStruct"].get();
+    DynamicData data(*my_struct);
+
+    data["my_bool_5"][0] = true;
+    data["my_bool_5"][1] = true;
+    data["my_bool_5"][2] = true;
+    data["my_bool_5"][3] = false;
+    data["my_bool_5"][4] = true;
+    EXPECT_TRUE(data["my_bool_5"][0].value<bool>());
+    EXPECT_TRUE(data["my_bool_5"][1].value<bool>());
+    EXPECT_TRUE(data["my_bool_5"][2].value<bool>());
+    EXPECT_FALSE(data["my_bool_5"][3].value<bool>());
+    EXPECT_TRUE(data["my_bool_5"][4].value<bool>());
+
+    data["my_int8_3_2"][0][0] = 'a';
+    data["my_int8_3_2"][0][1] = 'b';
+    data["my_int8_3_2"][1][0] = 'c';
+    data["my_int8_3_2"][1][1] = 'd';
+    data["my_int8_3_2"][2][0] = 'e';
+    data["my_int8_3_2"][2][1] = 'f';
+    EXPECT_EQ(data["my_int8_3_2"][0][0].value<char>(), 'a');
+    EXPECT_EQ(data["my_int8_3_2"][0][1].value<char>(), 'b');
+    EXPECT_EQ(data["my_int8_3_2"][1][0].value<char>(), 'c');
+    EXPECT_EQ(data["my_int8_3_2"][1][1].value<char>(), 'd');
+    EXPECT_EQ(data["my_int8_3_2"][2][0].value<char>(), 'e');
+    EXPECT_EQ(data["my_int8_3_2"][2][1].value<char>(), 'f');
+}
+
+TEST (IDLParser, inner_struct_test)
+{
+    std::map<std::string, DynamicType::Ptr> result;
+    result = parse(R"(
+        struct InnerStruct
+        {
+            string message;
+        };
+
+        struct SuperStruct
+        {
+            InnerStruct inner;
+        };
+
+        struct RecursiveStruct
+        {
+            RecursiveStruct rec;
+        };
+                   )");
+    EXPECT_EQ(3, result.size());
+
+    const DynamicType* my_struct = result["SuperStruct"].get();
+    DynamicData data(*my_struct);
+    DynamicData rec_data(*result["RecursiveStruct"].get());
+
+    data["inner"]["message"].string("It works!");
+    EXPECT_EQ("It works!", data["inner"]["message"].value<std::string>());
 }
 
 /*
