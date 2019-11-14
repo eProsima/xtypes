@@ -89,24 +89,6 @@ public:
         return *reinterpret_cast<T*>(instance_);
     }
 
-    /// \brief Returns a value as string.
-    /// \pre The DynamicData must represent StringType.
-    /// \returns the value stored in the DynamicData.
-    const std::string& string() const
-    {
-        assert(type_.kind() == TypeKind::STRING_TYPE);
-        return value<std::string>();
-    }
-
-    /// \brief Returns a value as string of wchars.
-    /// \pre The DynamicData must represent WStringType.
-    /// \returns the value stored in the DynamicData.
-    const std::wstring& wstring() const
-    {
-        assert(type_.kind() == TypeKind::WSTRING_TYPE);
-        return value<std::wstring>();
-    }
-
     /// \brief Member access operator by name.
     /// \param[in] member_name Name of the member to access.
     /// \pre The DynamicData must represent an AggregationType.
@@ -281,7 +263,7 @@ public:
     WritableDynamicDataRef& operator = (
             const std::string& other)
     {
-        string(other);
+        value<std::string>(other);
         return *this;
     }
 
@@ -289,7 +271,7 @@ public:
     WritableDynamicDataRef& operator = (
             const std::wstring& other)
     {
-        wstring(other);
+        value<std::wstring>(other);
         return *this;
     }
 
@@ -302,18 +284,6 @@ public:
     const T& value()
     {
         return ReadableDynamicDataRef::value<T>();
-    }
-
-    /// \brief See ReadableDynamicDataRef::string()
-    const std::string& string()
-    {
-        return ReadableDynamicDataRef::string();
-    }
-
-    /// \brief See ReadableDynamicDataRef::wstring()
-    const std::wstring& wstring()
-    {
-        return ReadableDynamicDataRef::wstring();
     }
 
     /// \brief See ReadableDynamicDataRef::operator[]()
@@ -531,6 +501,28 @@ public:
         type_.destroy_instance(instance_);
         type_.copy_instance(instance_, p_instance(other));
         return *this;
+    }
+
+    /// \brief See WritableDynamicDataRef::operator =()
+    template<typename T, class = PrimitiveOrString<T>>
+    WritableDynamicDataRef& operator = (
+            const T& other)
+    {
+        return WritableDynamicDataRef::operator=(other);
+    }
+
+    /// \brief See WritableDynamicDataRef::operator =()
+    WritableDynamicDataRef& operator = (
+            const std::string& other)
+    {
+        return WritableDynamicDataRef::operator=(other);
+    }
+
+    /// \brief See WritableDynamicDataRef::operator =()
+    WritableDynamicDataRef& operator = (
+            const std::wstring& other)
+    {
+        return WritableDynamicDataRef::operator=(other);
     }
 
     virtual ~DynamicData() override

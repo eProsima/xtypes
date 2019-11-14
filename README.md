@@ -182,12 +182,14 @@ This compatibility can be checked with `is_compatible` function.
 #### Internal data access
 Depending on the type, the `DynamicData` will behave in different ways.
 The following methods are available when:
-1. `DynamicData` represents a `PrimitiveType` (of `int32_t` as example):
+1. `DynamicData` represents a `PrimitiveType`, `StringType` or `WStringType` (of `int32_t` as example):
     ```c++
     data.value(42); //sets the value to 42
     data = 23; // Analogous to the one above, assignment from primitive, sets the value to 23
     int32_t value = data.value<int32_t>(); //read the value
     int32_t value = data; //By casting operator
+    data = "Hello again!"; // set string value
+    data = L"Hello again! \u263A"; // set string value
     ```
 1. `DynamicData` represents an `AggregationType`
     ```c++
@@ -206,20 +208,6 @@ The following methods are available when:
     data[2] = dynamic_data_representing_a_value;
     WritableDynamicDataRef ref = data[2]; //references to a DynamicData that represents a collection
     size_t size = data.size(); //size of collection
-    ```
-1. `DynamicData` represents a `StringType`.
-    Same as `CollectionType` plus:
-    ```c++
-    data = "Hello again!"; // set string value
-    const std::string& s1 = data.value<std::string>(); //read the string value
-    const std::string& s2 = data.string(); // shortcut version for string
-    ```
-1. `DynamicData` represents a `WStringType`.
-    Same as `CollectionType` plus:
-    ```c++
-    data = L"Hello again! \u263A"; // set string value
-    const std::wstring& s1 = data.value<std::wstring>(); //read the string value
-    const std::wstring& s2 = data.wstring(); // shortcut version for string
     ```
 1. `DynamicData` represents a `SequenceType`.
     Same as `CollectionType` plus:

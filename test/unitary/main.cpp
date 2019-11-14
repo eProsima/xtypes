@@ -422,7 +422,7 @@ DynamicData create_dynamic_data(long double pi, StructType& the_struct, StructTy
     for(int i = 0; i < STRUCTS_SIZE; ++i) // creating "sequence"
     {
         DynamicData tmp_data(inner_struct);
-        tmp_data["inner_string"].string(INNER_STRING_VALUE);
+        tmp_data["inner_string"] = INNER_STRING_VALUE;
         tmp_data["inner_float"].value<float>(FLOAT);
         for (int j = 0; j < STRUCTS_SIZE; ++j) // creating "sequence.inner_sequence_string"
         {
@@ -432,7 +432,7 @@ DynamicData create_dynamic_data(long double pi, StructType& the_struct, StructTy
         for (int j = 0; j < STRUCTS_SIZE; ++j) // creating "sequence.inner_sequence_struct"
         {
             DynamicData tmp_inner_data(second_inner_struct);
-            tmp_inner_data["second_inner_string"].string(SECOND_INNER_STRING);
+            tmp_inner_data["second_inner_string"] = SECOND_INNER_STRING;
             tmp_inner_data["second_inner_uint32_t"].value<uint32_t>(UINT32);
             for(int k = 0; k < STRUCTS_SIZE; ++k) //creating "sequence.inner_sequence_struct.second_inner_array"
             {
@@ -479,12 +479,12 @@ TEST (DynamicData, cascade_construction)
     for (int i = 0; i < CHECKS_NUMBER; ++i)
     {
         size_t idx_4 = lrand48()%int(STRUCTS_SIZE);
-        EXPECT_EQ(INNER_STRING_VALUE, the_data["sequence"][idx_4]["inner_string"].string());
+        EXPECT_EQ(INNER_STRING_VALUE, the_data["sequence"][idx_4]["inner_string"].value<std::string>());
         EXPECT_EQ(FLOAT, the_data["sequence"][idx_4]["inner_float"].value<float>());
         size_t idx_3 = lrand48()%int(STRUCTS_SIZE);
-        EXPECT_EQ(INNER_SEQUENCE_STRING, the_data["sequence"][idx_4]["inner_sequence_string"][idx_3].string());
+        EXPECT_EQ(INNER_SEQUENCE_STRING, the_data["sequence"][idx_4]["inner_sequence_string"][idx_3].value<std::string>());
         size_t idx_2 = lrand48()%int(STRUCTS_SIZE);
-        EXPECT_EQ(SECOND_INNER_STRING, the_data["sequence"][idx_4]["inner_sequence_struct"][idx_2]["second_inner_string"].string());
+        EXPECT_EQ(SECOND_INNER_STRING, the_data["sequence"][idx_4]["inner_sequence_struct"][idx_2]["second_inner_string"].value<string>());
         EXPECT_EQ(UINT32, the_data["sequence"][idx_4]["inner_sequence_struct"][idx_2]["second_inner_uint32_t"].value<uint32_t>());
 
         size_t arr_idx_3 = lrand48()%int(STRUCTS_SIZE);
@@ -507,10 +507,10 @@ TEST (DynamicData, curious_interactions)
 
     StringType str;
     DynamicData dstr(str);
-    dstr.string("all_this_stuff");
+    dstr = "all_this_stuff";
 
     the_data["seq"].push(dstr);
-    EXPECT_EQ("all_this_stuff", the_data["seq"][0].string());
+    EXPECT_EQ("all_this_stuff", the_data["seq"][0].value<std::string>());
 }
 
 TEST (DynamicType, testing_is_compatible_string_no_bound)
@@ -824,7 +824,7 @@ TEST (DynamicData, test_equality_complex_struct)
     st.add_member(Member("seqstring", seq));
     st.add_member(Member("string", str));
     DynamicData d1(st);
-    d1["string"].string("sono io che sono qui");
+    d1["string"] = "sono io che sono qui";
 
     for(int i=0; i < 15; ++i)
     {
@@ -847,8 +847,8 @@ TEST (DynamicType , wstring_and_wstring_struct)
     DynamicData d(wst);
     DynamicData dd(st);
 
-    d.wstring(L"sadfsfdasdf");
-    dd.string("sadfsfdasdf");
+    d = L"sadfsfdasdf";
+    dd = "sadfsfdasdf";
 
     EXPECT_EQ( TypeConsistency::NONE, wst.is_compatible(st) );
     EXPECT_EQ( TypeConsistency::NONE, st.is_compatible(wst) );
@@ -919,10 +919,10 @@ TEST (QoS, string)
     EXPECT_EQ(TypeConsistency::IGNORE_STRING_BOUNDS, t.is_compatible(s));
 
     DynamicData ds(s);
-    ds.string("12345678901234567890");
+    ds = "12345678901234567890";
 
     DynamicData dt(t);
-    dt.string("1234567890");
+    dt = "1234567890";
 
     DynamicData dt_as_ds(dt, s);
     EXPECT_EQ(10, dt_as_ds.size());
@@ -942,10 +942,10 @@ TEST (QoS, wstring)
     EXPECT_EQ(TypeConsistency::IGNORE_STRING_BOUNDS, t.is_compatible(s));
 
     DynamicData ds(s);
-    ds.wstring(L"12345678901234567890");
+    ds = L"12345678901234567890";
 
     DynamicData dt(t);
-    dt.wstring(L"1234567890");
+    dt = L"1234567890";
 
     DynamicData dt_as_ds(dt, s);
     EXPECT_EQ(10, dt_as_ds.size());
