@@ -65,8 +65,22 @@ TEST (IDLParser, simple_struct_test)
     data["my_wchar"] = L'e';
     data["my_string"].string("It works!");
     data["my_wstring"].wstring(L"It works!");
+    EXPECT_TRUE(data["my_bool"].value<bool>());
+    EXPECT_EQ('c', data["my_int8"].value<char>());
+    EXPECT_EQ(55, data["my_uint8"].value<uint8_t>());
+    EXPECT_EQ(-5, data["my_int16"].value<int16_t>());
+    EXPECT_EQ(6, data["my_uint16"].value<uint16_t>());
+    EXPECT_EQ(-5, data["my_int32"].value<int32_t>());
+    EXPECT_EQ(6, data["my_uint32"].value<uint32_t>());
+    EXPECT_EQ(-5, data["my_int64"].value<int64_t>());
+    EXPECT_EQ(6, data["my_uint64"].value<uint64_t>());
     EXPECT_EQ(5.55f, data["my_float"].value<float>());
+    EXPECT_EQ(5.55, data["my_double"].value<double>());
+    EXPECT_EQ(5.55l, data["my_long_double"].value<long double>());
+    EXPECT_EQ('e', data["my_char"].value<char>());
+    EXPECT_EQ(L'e', data["my_wchar"].value<wchar_t>());
     EXPECT_EQ("It works!", data["my_string"].value<std::string>());
+    EXPECT_EQ(L"It works!", data["my_wstring"].value<std::wstring>());
 }
 
 TEST (IDLParser, array_sequence_struct_test)
@@ -80,7 +94,7 @@ TEST (IDLParser, array_sequence_struct_test)
             string<16> my_string16;
             wstring<32> my_wstring32;
             sequence<int32> my_int_seq;
-            sequence<char, 66> my_char66_seq;
+            sequence<char, 6> my_char6_seq;
         };
                    )");
     EXPECT_EQ(1, result.size());
@@ -111,6 +125,49 @@ TEST (IDLParser, array_sequence_struct_test)
     EXPECT_EQ(data["my_int8_3_2"][1][1].value<char>(), 'd');
     EXPECT_EQ(data["my_int8_3_2"][2][0].value<char>(), 'e');
     EXPECT_EQ(data["my_int8_3_2"][2][1].value<char>(), 'f');
+
+    data["my_string16"] = "0123456789abcdefghijklmnopqrstuvwxyz" ;
+    EXPECT_EQ(data["my_string16"].size(), 16);
+    EXPECT_EQ(data["my_string16"].value<std::string>(), "0123456789abcdef");
+
+    data["my_wstring32"] = L"0123456789abcdefghijklmnñopqrstuvwxyz" ;
+    EXPECT_EQ(data["my_wstring32"].size(), 32);
+    EXPECT_EQ(data["my_wstring32"].value<std::wstring>(), L"0123456789abcdefghijklmnñopqrstu");
+
+    for (int32_t i = 0; i < 300; ++i)
+    {
+        data["my_int_seq"].push(i);
+    }
+    for (int32_t i = 0; i < 300; ++i)
+    {
+        EXPECT_EQ(data["my_int_seq"][i].value<int32_t>(), i);
+    }
+    EXPECT_EQ(data["my_int_seq"].size(), 300);
+
+    for (int32_t i = 0; i < 7; ++i)
+    {
+        if (i < 6)
+        {
+            data["my_char6_seq"].push(static_cast<char>(i));
+        }
+        else
+        {
+            ASSERT_DEATH(data["my_char6_seq"][i].push(static_cast<char>(i)), "Assertion");
+        }
+    }
+    for (int32_t i = 0; i < 7; ++i)
+    {
+        if (i < 6)
+        {
+            EXPECT_EQ(data["my_char6_seq"][i].value<char>(), static_cast<char>(i));
+        }
+        else
+        {
+            ASSERT_DEATH(data["my_char6_seq"][i], "Assertion");
+        }
+    }
+    EXPECT_EQ(data["my_char6_seq"].size(), 6);
+
 }
 
 TEST (IDLParser, inner_struct_test)
@@ -141,49 +198,6 @@ TEST (IDLParser, inner_struct_test)
     data["inner"]["message"].string("It works!");
     EXPECT_EQ("It works!", data["inner"]["message"].value<std::string>());
 }
-
-/*
-TEST (StructType, build_one_of_each_primitive_type)
-{
-    StructType st("struct_name");
-    EXPECT_EQ("struct_name", st.name());
-    EXPECT_EQ(TypeKind::STRUCTURE_TYPE, st.kind());
-    size_t mem_size = 0;
-    st.add_member(Member("bool", primitive_type<bool>()));
-    mem_size+=sizeof(bool);
-    EXPECT_EQ(mem_size, st.memory_size());
-    st.add_member(Member("uint8_t", primitive_type<uint8_t>()));
-    mem_size+=sizeof(uint8_t);
-    EXPECT_EQ(mem_size, st.memory_size());
-    st.add_member(Member("int16_t", primitive_type<int16_t>()));
-    mem_size+=sizeof(int16_t);
-    EXPECT_EQ(mem_size, st.memory_size());
-    st.add_member(Member("uint16_t", primitive_type<uint16_t>()));
-    mem_size+=sizeof(uint16_t);
-    EXPECT_EQ(mem_size, st.memory_size());
-    st.add_member(Member("int32_t", primitive_type<int32_t>()));
-    mem_size+=sizeof(int32_t);
-    EXPECT_EQ(mem_size, st.memory_size());
-    st.add_member(Member("uint32_t", primitive_type<uint32_t>()));
-    mem_size+=sizeof(uint32_t);
-    EXPECT_EQ(mem_size, st.memory_size());
-    st.add_member(Member("int64_t", primitive_type<int64_t>()));
-    mem_size+=sizeof(int64_t);
-    EXPECT_EQ(mem_size, st.memory_size());
-    st.add_member(Member("uint64_t", primitive_type<uint64_t>()));
-    mem_size+=sizeof(uint64_t);
-    EXPECT_EQ(mem_size, st.memory_size());
-    st.add_member(Member("float", primitive_type<float>()));
-    mem_size+=sizeof(float);
-    EXPECT_EQ(mem_size, st.memory_size());
-    st.add_member(Member("double", primitive_type<double>()));
-    mem_size+=sizeof(double);
-    EXPECT_EQ(mem_size, st.memory_size());
-    st.add_member(Member("long_double", primitive_type<long double>()));
-    mem_size+=sizeof(long double);
-    EXPECT_EQ(mem_size, st.memory_size());
-}
-*/
 
 int main(int argc, char** argv)
 {
