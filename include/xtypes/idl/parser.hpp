@@ -47,9 +47,11 @@ public:
     }
 
     bool parse(
-            const char* idl_string)
+            const char* idl_string,
+            bool ignore_case = false)
     {
         std::shared_ptr<peg::Ast> ast;
+        ignore_case_ = ignore_case;
         if (!parser_.parse(idl_string, ast))
         {
             return false;
@@ -60,10 +62,12 @@ public:
     }
 
     bool parse_file(
-            const char* idl_file)
+            const char* idl_file,
+            bool ignore_case = false)
     {
         std::vector<char> source;
         std::shared_ptr<peg::Ast> ast;
+        ignore_case_ = ignore_case;
         if (!(read_file(idl_file, source) && parser_.parse_n(source.data(), source.size(), ast, idl_file)))
         {
             return false;
@@ -104,6 +108,7 @@ public:
 private:
     peg::parser parser_;
     std::map<std::string, DynamicType::Ptr> types_map_;
+    bool ignore_case_ = false;
 
     bool read_file(
             const char* path,
@@ -247,9 +252,32 @@ private:
             case "STRUCT_DEF"_:
                 struct_def(ast, scope);
                 break;
-            //case "ANNOTATION_DCL"_:
+            case "STRUCT_FORWARD_DCL"_:
+                struct_fw_dcl(ast, scope);
+                break;
+            case "UNION_DEF"_:
+                union_def(ast, scope);
+                break;
+            case "UNION_FORWARD_DCL"_:
+                union_fw_dcl(ast, scope);
+                break;
+            case "ENUM_DCL"_:
+                enum_dcl(ast, scope);
+                break;
+            case "ANNOTATION_DCL"_:
             //    annotation_dcl(ast, scope);
-            //    break;
+                break;
+            case "BITSET_DCL"_:
+                // TODO bitset_dcl(ast, scope);
+                std::cout << "Bitset unsupported" << std::endl;
+                break;
+            case "BITMASK_DCL"_:
+                // TODO bitmask_dcl(ast, scope);
+                std::cout << "Bitmask unsupported" << std::endl;
+                break;
+            case "TYPE_DECLARATOR"_:
+                alias_dcl(ast, scope);
+                break;
             default:
                 for (auto node : ast->nodes)
                 {
@@ -258,6 +286,63 @@ private:
                 break;
         }
         return scope;
+    }
+
+    std::string resolve_identifier(
+            const std::shared_ptr<peg::Ast> ast,
+            const std::string& identifier,
+            std::shared_ptr<SymbolScope> scope,
+            bool ignore_already_used = false)
+    {
+        if (identifier.find("_") == 0)
+        {
+            return identifier.substr(1); // If the identifier starts with "_", remove the underscode and return.
+        }
+
+        if (is_token(identifier))
+        {
+            throw exception("The identifier \"" + identifier + "\" is a reserved word.", ast);
+        }
+
+        if (!ignore_already_used && scope->has_symbol(identifier))
+        {
+            throw exception("The identifier \"" + identifier + "\" is already used.", ast);
+        }
+
+        return identifier;
+    }
+
+    void to_lower(
+            std::string& str)
+    {
+        std::transform(str.begin(), str.end(), str.begin(),
+                       [](unsigned char c)
+                       {
+                           return std::tolower(c);
+                       });
+    }
+
+    bool is_token(
+        const std::string& identifier)
+    {
+        std::string aux_id = identifier;
+
+        if (!ignore_case_)
+        {
+            to_lower(aux_id);
+        }
+
+        for (const std::string& name : parser_.get_rule_names())
+        {
+            if (name.find("KW_") == 0) // If it starts with "KW_", is a reserved word. You are welcome.
+            {
+                if (parser_[name.c_str()].parse(aux_id.c_str()).ret)
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     void module_dcl(
@@ -271,7 +356,7 @@ private:
             switch (node->tag){
                 case "IDENTIFIER"_:
                 {
-                    std::string name = node->token;
+                    std::string name = resolve_identifier(node, node->token, outer, true);
                     if (outer->inner.count(name) == 0)
                     {
                         // New scope
@@ -291,7 +376,37 @@ private:
                     break;
             }
         }
-        std::cout << "DEBUG: Found module " << scope->scope() << std::endl;
+    }
+
+    void alias_dcl(
+            const std::shared_ptr<peg::Ast> ast,
+            std::shared_ptr<SymbolScope> outer)
+    {
+        using namespace peg::udl;
+
+        DynamicType::Ptr type = type_spec(ast->nodes[0], outer);
+        std::string name;
+        std::vector<size_t> dimensions;
+
+        if (ast->nodes[1]->tag == "IDENTIFIER"_)
+        {
+            name = resolve_identifier(ast, ast->nodes[1]->token, outer);
+            //name = ast->nodes[1]->token;
+        }
+        else if (ast->nodes[1]->tag == "ARRAY_DECLARATOR"_)
+        {
+            auto& node = ast->nodes[1];
+            name = resolve_identifier(ast, ast->nodes[0]->token, outer);
+            //name = node->nodes[0]->token;
+            for (size_t idx = 1; idx < node->nodes.size(); ++idx)
+            {
+                dimensions.push_back(std::atoi(node->nodes[idx]->token.c_str()));
+            }
+            type = get_array_type(dimensions, type);
+        }
+
+        std::cout << "Found typedef " << name << " for type " << type->name()
+                  << " but typedefs aren't supported. Ignoring." << std::endl;
     }
 
     void const_dcl(
@@ -308,6 +423,49 @@ private:
                   << "but const aren't supported. Ignoring." << std::endl;
     }
 
+    void enum_dcl(
+            const std::shared_ptr<peg::Ast> ast,
+            std::shared_ptr<SymbolScope> outer)
+    {
+        using namespace peg::udl;
+
+        std::string name = ast->nodes[0]->token;
+        // std::vector<std::string> value[i] = ast->nodes[i]->token;
+
+        std::cout << "Found \"enum " << name << "\" but enumerations aren't supported. Ignoring." << std::endl;
+    }
+
+    void struct_fw_dcl(
+            const std::shared_ptr<peg::Ast> ast,
+            std::shared_ptr<SymbolScope> outer)
+    {
+        using namespace peg::udl;
+        DynamicType::Ptr exists = outer->get_type(resolve_identifier(ast, ast->token, outer));
+        if (exists.get() != nullptr)
+        {
+            throw exception("Struct " + ast->token + " was already declared.", ast);
+        }
+
+        StructType result(ast->token);
+        outer->structs.emplace(ast->token, std::move(result));
+    }
+
+    void union_fw_dcl(
+            const std::shared_ptr<peg::Ast> ast,
+            std::shared_ptr<SymbolScope> outer)
+    {
+        using namespace peg::udl;
+        DynamicType::Ptr exists = outer->get_type(resolve_identifier(ast, ast->token, outer));
+        if (exists.get() != nullptr)
+        {
+            throw exception("Union " + ast->token + " was already declared.", ast);
+        }
+
+        // TODO Replace by Unions. Kept as Struct to allow name solving.
+        StructType result(ast->token);
+        outer->structs.emplace(ast->token, std::move(result));
+    }
+
     void struct_def(
             const std::shared_ptr<peg::Ast> ast,
             std::shared_ptr<SymbolScope> outer)
@@ -321,7 +479,8 @@ private:
             {
                 case "IDENTIFIER"_:
                 {
-                    name = node->token;
+                    name = resolve_identifier(ast, node->token, outer, true);
+                    //name = node->token;
                     StructType result(name);
                     outer->structs.emplace(name, std::move(result));
                     break;
@@ -337,12 +496,83 @@ private:
 
         DynamicType::Ptr result = outer->get_type(name);
         StructType* struct_type = static_cast<StructType*>(const_cast<DynamicType*>(result.get()));
+        if (!struct_type->members().empty())
+        {
+            throw exception("Struct " + name + " redefinition.", ast);
+        }
         for (auto& member : member_list)
         {
             struct_type->add_member(std::move(member.second));
         }
         // Replace
         outer->structs[name] = DynamicType::Ptr(*struct_type);
+    }
+
+    void union_def(
+            const std::shared_ptr<peg::Ast> ast,
+            std::shared_ptr<SymbolScope> outer)
+    {
+        using namespace peg::udl;
+        std::string name;
+        //std::map<std::string, Member> member_list;
+        DynamicType::Ptr type;
+        for (const auto& node : ast->nodes)
+        {
+            switch (node->original_tag)
+            {
+                case "IDENTIFIER"_:
+                {
+                    name = resolve_identifier(ast, node->token, outer, true);
+                    //name = node->token;
+                    break;
+                }
+                case "SWITCH_TYPE_SPEC"_:
+                case "SCOPED_NAME"_:
+                {
+                    type = type_spec(node, outer);
+                    //UnionType result(name, type);
+                    //outer->unions.emplace(name, std::move(result));
+                    break;
+                }
+                case "SWITCH_BODY"_:
+                    //switch_body(node, outer, member_list, type);
+                    // TODO:
+                    //     + SWITCH_BODY
+                    //          + CASE
+                    //              - CASE_LABEL/0 (0)
+                    //              + ELEMENT_SPEC
+                    //                  + TYPE_SPEC/0[SIGNED_LONG_INT]
+                    //                  - DECLARATOR/1[IDENTIFIER] (my_int32)
+                    //          + CASE
+                    //              - CASE_LABEL/0 (1)
+                    //              + ELEMENT_SPEC
+                    //                  + TYPE_SPEC/0[UNSIGNED_LONGLONG_INT]
+                    //                  - DECLARATOR/1[IDENTIFIER] (my_uint64)
+                    //          + CASE
+                    //              + CASE_LABEL/1 (default)
+                    //              + ELEMENT_SPEC
+                    //                  + TYPE_SPEC/0[STRING_TYPE]
+                    //                  - DECLARATOR/1[IDENTIFIER] (my_string)
+                    break;
+            }
+        }
+
+        std::cout << "Found \"union " << name << "\" with discriminator of type " << type->name()
+                  << " but unions aren't supported. Ignoring." << std::endl;
+        /* TODO
+        DynamicType::Ptr result = outer->get_type(name);
+        UnionType* union_type = static_cast<UnionType*>(const_cast<DynamicType*>(result.get()));
+        if (!union_type->members().empty())
+        {
+            throw exception("Union " + name + " redefinition.", ast);
+        }
+        for (auto& member : member_list)
+        {
+            union_type->add_member(std::move(member.second));
+        }
+        // Replace
+        outer->unions[name] = DynamicType::Ptr(*struct_type);
+        */
     }
 
     void member_def(
@@ -380,9 +610,6 @@ private:
             switch (node->tag)
             {
                 case "SCOPED_NAME"_: // Scoped name
-                //{
-                //    return type_spec(node->nodes[1], outer);
-                //}
                 case "IDENTIFIER"_:
                 {
                     DynamicType::Ptr type = outer->get_type(node->token);
@@ -397,6 +624,7 @@ private:
                 case "SIGNED_TINY_INT"_:
                     return primitive_type<char>();
                 case "UNSIGNED_TINY_INT"_:
+                case "OCTET_TYPE"_:
                     return primitive_type<uint8_t>();
                 case "SIGNED_SHORT_INT"_:
                     return primitive_type<int16_t>();
@@ -461,11 +689,9 @@ private:
         return DynamicType::Ptr();
     }
 
-    void member_array(
-            const std::string& name,
+    ArrayType::Ptr get_array_type(
             const std::vector<size_t>& dimensions,
-            const DynamicType::Ptr type,
-            std::map<std::string, Member>& result)
+            const DynamicType::Ptr type)
     {
         size_t base_dim = dimensions.back();
         ArrayType array(*type, base_dim);
@@ -481,7 +707,16 @@ private:
             }
         }
 
-        result.emplace(name, Member(name, *next_array));
+        return next_array;
+    }
+
+    void member_array(
+            const std::string& name,
+            const std::vector<size_t>& dimensions,
+            const DynamicType::Ptr type,
+            std::map<std::string, Member>& result)
+    {
+        result.emplace(name, Member(name, *get_array_type(dimensions, type)));
     }
 
     void members(
@@ -492,27 +727,55 @@ private:
     {
         using namespace peg::udl;
         using id_pair = std::pair<std::string, std::vector<size_t>>;
+        using id_pair_vector = std::vector<id_pair>;
 
-        id_pair pair = identifier(ast, outer);
-        std::string name = pair.first;
-        std::vector<size_t> dimensions = pair.second;
-        if (result.count(name) > 0)
+        id_pair_vector pairs = identifier_list(ast, outer);
+        for (id_pair& pair : pairs)
         {
-            throw exception("Member identifier " + ast->token + " already defined", ast);
-        }
-        if (dimensions.empty())
-        {
-            result.emplace(name, Member(name, *type));
-        }
-        else
-        {
-            member_array(name, dimensions, type, result);
+            std::string name = pair.first;
+            std::vector<size_t> dimensions = pair.second;
+            if (result.count(name) > 0)
+            {
+                throw exception("Member identifier " + ast->token + " already defined", ast);
+            }
+            if (dimensions.empty())
+            {
+                result.emplace(name, Member(name, *type));
+            }
+            else
+            {
+                member_array(name, dimensions, type, result);
+            }
         }
     }
 
-    std::pair<std::string, std::vector<size_t>> identifier(
+    std::vector<std::pair<std::string, std::vector<size_t>>> identifier_list(
             const std::shared_ptr<peg::Ast> node,
             std::shared_ptr<SymbolScope> outer)
+    {
+        using namespace peg::udl;
+        std::vector<std::pair<std::string, std::vector<size_t>>> result;
+
+        if (node->tag == node->original_tag)
+        {
+            // Multiple declaration
+            for (auto& subnode : node->nodes)
+            {
+                identifier(subnode, outer, result);
+            }
+        }
+        else
+        {
+            // Only one declaration
+            identifier(node, outer, result);
+        }
+        return result;
+    }
+
+    void identifier(
+            const std::shared_ptr<peg::Ast> node,
+            std::shared_ptr<SymbolScope> outer,
+            std::vector<std::pair<std::string, std::vector<size_t>>>& list)
     {
         using namespace peg::udl;
         std::string name;
@@ -520,11 +783,7 @@ private:
         switch (node->tag)
         {
             case "IDENTIFIER"_:
-                if (outer->has_symbol(node->token))
-                {
-                    throw exception("Identifier " + node->token + " already defined", node);
-                }
-                name = node->token;
+                name = resolve_identifier(node, node->token, outer);
                 break;
             case "ARRAY_DECLARATOR"_:
             {
@@ -534,11 +793,7 @@ private:
                     {
                         case "IDENTIFIER"_:
                         {
-                            if (outer->has_symbol(subnode->token))
-                            {
-                                throw exception("Identifier " + subnode->token + " already defined", subnode);
-                            }
-                            name = subnode->token;
+                            name = resolve_identifier(subnode, subnode->token, outer);
                             break;
                         }
                         case "POSITIVE_INT_CONST"_:
@@ -550,13 +805,8 @@ private:
                 }
                 break;
             }
-            default:
-                return identifier(node, outer);
         }
-        std::pair<std::string, std::vector<size_t>> result;
-        result.first = name;
-        result.second = dimensions;
-        return result;
+        list.emplace_back(name, std::move(dimensions));
     }
 };
 

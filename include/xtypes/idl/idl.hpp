@@ -32,11 +32,12 @@ namespace idl {
 /// \param[in] idl A IDL specification to parse into DynamicType.
 /// \return A map with the DynamicTypes parsed from the idl.
 inline std::map<std::string, DynamicType::Ptr> parse(
-        const std::string& idl)
+        const std::string& idl,
+        bool ignore_case = false)
 {
     std::map<std::string, DynamicType::Ptr> result;
     static Parser parser;
-    if (parser.parse(idl.c_str()))
+    if (parser.parse(idl.c_str(), ignore_case))
     {
         parser.get_all_types(result);
     }
@@ -45,11 +46,12 @@ inline std::map<std::string, DynamicType::Ptr> parse(
 
 /// \brief Same as parse() but it receives a path file where the IDL is located.
 inline std::map<std::string, DynamicType::Ptr> parse_file(
-        const std::string& idl_file)
+        const std::string& idl_file,
+        bool ignore_case = false)
 {
     std::map<std::string, DynamicType::Ptr> result;
     static Parser parser;
-    if (parser.parse_file(idl_file.c_str()))
+    if (parser.parse_file(idl_file.c_str(), ignore_case))
     {
         parser.get_all_types(result);
     }

@@ -210,6 +210,209 @@ TEST (IDLParser, inner_struct_test)
     EXPECT_EQ("It works!", data["inner"]["message"].value<std::string>());
 }
 
+TEST (IDLParser, multiple_declarator_members_test)
+{
+    std::map<std::string, DynamicType::Ptr> result;
+    result = parse(R"(
+        struct SimpleStruct
+        {
+            boolean my_bool_5[5], other[55], another, multi_array[2][3];
+        };
+                   )");
+    EXPECT_EQ(1, result.size());
+}
+
+TEST (IDLParser, name_collision)
+{
+    std::map<std::string, DynamicType::Ptr> result;
+
+    {
+        // Test that the parser throws an exception when using a keyword (ignoring case) as identifier.
+        try
+        {
+            result = parse(R"(
+                struct MyStruct
+                {
+                    string STRUCT;
+                };
+                           )"
+                );
+            FAIL() << " Exception wasn't thrown!" << std::endl;
+        }
+        catch (const Parser::exception& e)
+        {
+            if (e.what().find("reserved word") == std::string::npos)
+            {
+                FAIL() << " Another Parser::exception was thrown." << std::endl;
+            }
+        }
+        catch (...)
+        {
+            FAIL() << " Unexpected exception catch" << std::endl;
+        }
+    }
+
+    {
+        // Test that the parser accepts an uppercase keyword when case isn't ignored.
+        result = parse(R"(
+            struct MyStruct
+            {
+                string STRUCT;
+            };
+                       )",
+                       true
+            );
+        EXPECT_EQ(1, result.size());
+    }
+
+    {
+        // Test that the parser accepts a keyword prefixed by an underscore even ignoring case, and
+        // the resulting identifier doesn't have the prefixed underscore.
+        result = parse(R"(
+            struct MyStruct
+            {
+                string _struct;
+            };
+                       )"
+            );
+        EXPECT_EQ(1, result.size());
+
+        const DynamicType* my_struct = result["MyStruct"].get();
+        DynamicData data(*my_struct);
+        data["struct"].string("It works!");
+        EXPECT_EQ("It works!", data["struct"].value<std::string>());
+    }
+
+    {
+        // Test that the parser throws an exception when using an already defined symbol as identifier.
+        try
+        {
+            result = parse(R"(
+                struct MyStruct
+                {
+                    uint32 MyStruct;
+                };
+                           )"
+                );
+            FAIL() << " Exception wasn't thrown!" << std::endl;
+        }
+        catch (const Parser::exception& e)
+        {
+            if (e.what().find("already") == std::string::npos)
+            {
+                FAIL() << " Another Parser::exception was thrown." << std::endl;
+            }
+        }
+        catch (...)
+        {
+            FAIL() << " Unexpected exception catch" << std::endl;
+        }
+    }
+
+    {
+        // Test that the parser throws an exception when using an already defined symbol as identifier (II).
+        try
+        {
+            result = parse(R"(
+                struct MyStruct
+                {
+                    uint32 a;
+                    string a;
+                };
+                           )"
+                );
+            FAIL() << " Exception wasn't thrown!" << std::endl;
+        }
+        catch (const Parser::exception& e)
+        {
+            if (e.what().find("already") == std::string::npos)
+            {
+                FAIL() << " Another Parser::exception was thrown." << std::endl;
+            }
+        }
+        catch (...)
+        {
+            FAIL() << " Unexpected exception catch" << std::endl;
+        }
+    }
+
+    {
+        // Test that the parser throws an exception when using an already defined symbol as identifier (III).
+        try
+        {
+            result = parse(R"(
+                struct MyStruct
+                {
+                    uint32 a, a;
+                };
+                           )"
+                );
+            FAIL() << " Exception wasn't thrown!" << std::endl;
+        }
+        catch (const Parser::exception& e)
+        {
+            if (e.what().find("already") == std::string::npos)
+            {
+                FAIL() << " Another Parser::exception was thrown." << std::endl;
+            }
+        }
+        catch (...)
+        {
+            FAIL() << " Unexpected exception catch" << std::endl;
+        }
+    }
+}
+
+TEST (IDLParser, module_scope_test)
+{
+    std::map<std::string, DynamicType::Ptr> result;
+    result = parse(R"(
+        module A
+        {
+            struct StA;
+        };
+
+        module B
+        {
+            module C
+            {
+                struct StBC
+                {
+                    A::StA st_a;
+                };
+            };
+
+            struct StB
+            {
+                C::StBC st_bc;
+            };
+        };
+
+        module A
+        {
+            struct StA
+            {
+                string my_string;
+            };
+
+            struct StD
+            {
+                ::B::C::StBC st_bc;
+            };
+        };
+
+        struct CompleteStruct
+        {
+            A::StA a;
+            B::StB b;
+            B::C::StBC bc;
+            ::A::StD d;
+        };
+                   )");
+
+    EXPECT_EQ(5, result.size());
+}
+
 TEST (IDLParser, not_yet_supported)
 //TEST (IDLParser, DISABLED_not_yet_supported)
 {
@@ -236,7 +439,7 @@ TEST (IDLParser, not_yet_supported)
                 ForwardStruct fwd_struct;
             };
 
-            struct Forward
+            struct ForwardStruct
             {
                 string<MAX_SIZE> my_string;
             };
@@ -250,7 +453,7 @@ TEST (IDLParser, not_yet_supported)
 
             union ForwardUnion;
 
-            union MyUnion switch (MyEnum)
+            union MyUnion switch (int32)
             {
                 case AAA: string str_a;
                 case BBB: wstring wstr_b;
@@ -279,6 +482,10 @@ TEST (IDLParser, not_yet_supported)
                 @position(5) flag5,
                 flag6
             };
+
+            typedef uint8 MyArray[8];
+            typedef string MyString[2][3][4];
+            typedef FutureStruct future_is_now;
                        )");
     }
     catch(const Parser::exception& exc)
