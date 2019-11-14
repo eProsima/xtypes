@@ -19,7 +19,9 @@ add_library(${PROJECT_NAME} INTERFACE)
 target_include_directories(${PROJECT_NAME}
     INTERFACE
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/thirdparty/cpp-peglib/include>
         $<INSTALL_INTERFACE:include>
+        $<INSTALL_INTERFACE:thirdparty/cpp-peglib/include>
     )
 
 target_compile_features(${PROJECT_NAME}
@@ -74,6 +76,7 @@ if(XTYPES_BUILD_TESTS)
     enable_testing()
 
     compile_test(${PROJECT_NAME}_test_unitary test/unitary/main.cpp)
+    compile_test(${PROJECT_NAME}_idl_parser_test_unitary test/unitary/parser_test.cpp)
     # ...
 endif()
 
@@ -128,6 +131,13 @@ install(
         ${INCLUDE_INSTALL_DIR}/xtypes
     FILES_MATCHING
         PATTERN "*.hpp"
+    )
+
+install(
+    FILES
+        ${PROJECT_SOURCE_DIR}/thirdparty/cpp-peglib/peglib.h
+    DESTINATION
+        ${INCLUDE_INSTALL_DIR}/thirdparty/cpp-peglib
     )
 
 install(

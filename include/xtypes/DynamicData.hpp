@@ -147,6 +147,25 @@ public:
         return 1;
     }
 
+    /// \brief Shortcut for ((MutableCollectionType)type()).bounds()
+    /// \pre The DynamicData must represent a CollectionType.
+    /// \returns Bound (max size) of the type. If zero, means the collecition is unbound.
+    /// If the DynamicData represents an Array, then bounds() == size()
+    size_t bounds() const
+    {
+        assert(type_.is_collection_type());
+        if (type_.is_collection_type())
+        {
+            if (type_.kind() == TypeKind::ARRAY_TYPE)
+            {
+                return size();
+            }
+            const MutableCollectionType& collection = static_cast<const MutableCollectionType&>(type_);
+            return collection.bounds();
+        }
+        return 0;
+    }
+
     /// \brief Returns a std::vector representing the underlying collection of types.
     /// \pre The collection must have primitive or string values.
     /// \returns a std::vector representing the internal collection.
