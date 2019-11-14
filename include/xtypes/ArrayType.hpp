@@ -210,6 +210,15 @@ public:
         }
     }
 
+    virtual void for_each_type(
+            const TypeNode& node,
+            TypeVisitor visitor) const override
+    {
+        visitor(node);
+        TypeNode child(node, content_type(), 0, nullptr);
+        content_type().for_each_type(child, visitor);
+    }
+
     virtual uint8_t* get_instance_at(
             uint8_t* instance,
             size_t index) const override

@@ -232,6 +232,19 @@ public:
         }
     }
 
+    virtual void for_each_type(
+            const TypeNode& node,
+            TypeVisitor visitor) const override
+    {
+        visitor(node);
+        for(size_t i = 0; i < members().size(); i++)
+        {
+            const Member& member = members()[i];
+            TypeNode child(node, member.type(), i, &member);
+            member.type().for_each_type(child, visitor);
+        }
+    }
+
 protected:
     virtual DynamicType* clone() const override
     {

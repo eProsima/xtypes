@@ -1267,6 +1267,68 @@ TEST (Iterators, iterators_tests)
     }
 }
 
+TEST (Utilities, for_each_types)
+{
+    StructType l2 = StructType("Level2")
+        .add_member("l2m1", primitive_type<uint32_t>())
+        .add_member("l2m2", primitive_type<float>())
+        .add_member("l2m3", StringType())
+        .add_member("l2m4", WStringType());
+
+    StructType l1 = StructType("Level1")
+        .add_member("l1m1", SequenceType(primitive_type<uint32_t>()))
+        .add_member("l1m2", SequenceType(l2))
+        .add_member("l1m3", ArrayType(primitive_type<uint32_t>(), 2))
+        .add_member("l1m4", ArrayType(l2, 4))
+        .add_member("l1m5", l2);
+
+    StructType l0 = StructType("Level0")
+        .add_member("l0m1", l1)
+        .add_member("l0m2", l2);
+
+    std::vector<std::string> expected_output =
+    {
+        "Level0",
+        "Level1",
+        "sequence_uint32_t",
+        "uint32_t",
+        "sequence_Level2",
+        "Level2",
+        "uint32_t",
+        "float",
+        "std::string",
+        "std::wstring",
+        "array_2_uint32_t",
+        "uint32_t",
+        "array_4_Level2",
+        "Level2",
+        "uint32_t",
+        "float",
+        "std::string",
+        "std::wstring",
+        "Level2",
+        "uint32_t",
+        "float",
+        "std::string",
+        "std::wstring",
+        "Level2",
+        "uint32_t",
+        "float",
+        "std::string",
+        "std::wstring",
+    };
+
+    size_t i = 0;
+
+    l0.for_each([&](const DynamicType::TypeNode& node)
+    {
+        EXPECT_EQ(expected_output[i], node.type().name());
+        i++;
+    });
+
+    EXPECT_EQ(i, expected_output.size());
+}
+
 int main(int argc, char** argv)
 {
     testing::InitGoogleTest(&argc, argv);

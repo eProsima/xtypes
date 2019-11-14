@@ -120,6 +120,13 @@ public:
         visitor(node);
     }
 
+    virtual void for_each_type(
+            const TypeNode& node,
+            TypeVisitor visitor) const override
+    {
+        visitor(node);
+    }
+
     virtual uint8_t* get_instance_at(
             uint8_t* instance,
             size_t index) const override

@@ -191,6 +191,13 @@ private:
         visitor(node);
     }
 
+    virtual void for_each_type(
+            const TypeNode& node,
+            TypeVisitor visitor) const override
+    {
+        visitor(node);
+    }
+
 protected:
     virtual DynamicType* clone() const override
     {
