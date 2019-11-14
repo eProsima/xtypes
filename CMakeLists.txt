@@ -16,13 +16,12 @@ option(XTYPES_BUILD_EXAMPLES "Build examples." OFF)
 #####################################################################################
 add_library(${PROJECT_NAME} INTERFACE)
 
-add_subdirectory(thirdparty/cpp-peglib)
-
 target_include_directories(${PROJECT_NAME}
     INTERFACE
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/thirdparty/cpp-peglib>
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/thirdparty/cpp-peglib/include>
         $<INSTALL_INTERFACE:include>
+        $<INSTALL_INTERFACE:thirdparty/cpp-peglib/include>
     )
 
 target_compile_features(${PROJECT_NAME}
@@ -138,7 +137,7 @@ install(
     FILES
         ${PROJECT_SOURCE_DIR}/thirdparty/cpp-peglib/peglib.h
     DESTINATION
-        ${INCLUDE_INSTALL_DIR}
+        ${INCLUDE_INSTALL_DIR}/thirdparty/cpp-peglib
     )
 
 install(
