@@ -312,7 +312,7 @@ If the visitor callback implementation does not call an exception, `for_each` fu
 
 There exists two kinds of iterators:
 - Collection iterators: Allows to iterate through collections in the same way of native C++11 types. They can be
-  accesses from `ReadableDynamicDataRef::Iterator` (for read-only operations) or `WritableDynamicDataRef::Iterator`
+  accessed from `ReadableDynamicDataRef::Iterator` (for read-only operations) or `WritableDynamicDataRef::Iterator`
   (for read-write operations).
 
   ```cpp
@@ -324,7 +324,7 @@ There exists two kinds of iterators:
 
 - Aggregation iterator: Allows to iterate through members of an aggregation.
   They make use of an auxiliar class **MemberPair** to allow access both, data and member information such as name.
-  They can be accesses from `ReadableDynamicDataRef::MemberIterator` (read-only) or
+  They can be accessed from `ReadableDynamicDataRef::MemberIterator` (read-only) or
   `WritableDynamicDataRef::MemberIterator` (read-write), through the `items()` or `citems()` methods.
 
   ```cpp

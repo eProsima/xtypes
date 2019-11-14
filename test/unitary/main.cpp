@@ -1088,25 +1088,21 @@ TEST (Iterators, iterators_tests)
         DynamicData str1(string);
 
         str1.value<std::string>("Hola!");
-
-        std::cout << "ORIGINAL STRING: ";
+        size_t idx = 0;
         for (ReadableDynamicDataRef&& elem : str1)
         {
-            std::cout << elem.value<char>();
+            EXPECT_EQ(elem.value<char>(), str1[idx++].value<char>());
         }
-        std::cout << std::endl;
 
         for (WritableDynamicDataRef&& elem : str1)
         {
             elem = 'X';
         }
 
-        std::cout << "CHANGED STRING: ";
         for (ReadableDynamicDataRef&& elem : str1)
         {
-            std::cout << elem.value<char>();
+            EXPECT_EQ(elem.value<char>(), 'X');
         }
-        std::cout << std::endl;
     }
 
     //SECTION("WStringType")
@@ -1116,24 +1112,21 @@ TEST (Iterators, iterators_tests)
 
         str1.value<std::wstring>(L"Hola!");
 
-        std::cout << "ORIGINAL WSTRING: ";
+        size_t idx = 0;
         for (ReadableDynamicDataRef&& elem : str1)
         {
-            std::wcout << elem.value<wchar_t>();
+            EXPECT_EQ(elem.value<wchar_t>(), str1[idx++].value<wchar_t>());
         }
-        std::cout << std::endl;
 
         for (WritableDynamicDataRef&& elem : str1)
         {
             elem = L'a';
         }
 
-        std::cout << "CHANGED WSTRING: ";
         for (ReadableDynamicDataRef&& elem : str1)
         {
-            std::wcout << elem.value<wchar_t>();
+            EXPECT_EQ(elem.value<wchar_t>(), L'a');
         }
-        std::cout << std::endl;
     }
 
     //SECTION("ArrayType")
@@ -1146,24 +1139,25 @@ TEST (Iterators, iterators_tests)
             array[i] = 5 * i;
         }
 
-        std::cout << "ORIGINAL ARRAY: ";
+        size_t idx = 0;
+        int32_t check_sum = 0;
         for (ReadableDynamicDataRef&& elem : array)
         {
-            std::cout << elem.value<int32_t>() << " ";
+            EXPECT_EQ(elem.value<int32_t>(), array[idx++].value<int32_t>());
+            check_sum += elem.value<int32_t>();
         }
-        std::cout << std::endl;
 
         for (WritableDynamicDataRef&& elem : array)
         {
             elem = elem.value<int32_t>() * 2;
         }
 
-        std::cout << "CHANGED ARRAY: ";
+        int32_t double_check_sum = 0;
         for (ReadableDynamicDataRef&& elem : array)
         {
-            std::cout << elem.value<int32_t>() << " ";
+            double_check_sum += elem.value<int32_t>();
         }
-        std::cout << std::endl;
+        ASSERT_EQ(check_sum * 2, double_check_sum);
     }
 
     //SECTION("SequenceType")
@@ -1176,30 +1170,32 @@ TEST (Iterators, iterators_tests)
             seq.push(5 * i);
         }
 
-        std::cout << "MANUAL ITERATOR: ";
         ReadableDynamicDataRef::Iterator it = seq.begin();
         WritableDynamicDataRef::Iterator wit = seq.begin();
-        std::cout << (*it).value<int32_t>() << std::endl;
-        std::cout << (*wit).value<int32_t>() << std::endl;
+        ASSERT_EQ((*it++).value<int32_t>(), 0);
+        ASSERT_EQ((*wit++).value<int32_t>(), 0);
+        ASSERT_EQ((*it).value<int32_t>(), 5);
+        ASSERT_EQ((*wit).value<int32_t>(), 5);
 
-        std::cout << "ORIGINAL SEQUENCE: ";
+        size_t idx = 0;
+        int32_t check_sum = 0;
         for (ReadableDynamicDataRef&& elem : seq)
         {
-            std::cout << elem.value<int32_t>() << " ";
+            EXPECT_EQ(elem.value<int32_t>(), seq[idx++].value<int32_t>());
+            check_sum += elem.value<int32_t>();
         }
-        std::cout << std::endl;
 
         for (WritableDynamicDataRef&& elem : seq)
         {
             elem = elem.value<int32_t>() * 2;
         }
 
-        std::cout << "CHANGED SEQUENCE: ";
+        int32_t double_check_sum = 0;
         for (ReadableDynamicDataRef&& elem : seq)
         {
-            std::cout << elem.value<int32_t>() << " ";
+            double_check_sum += elem.value<int32_t>();
         }
-        std::cout << std::endl;
+        ASSERT_EQ(check_sum * 2, double_check_sum);
     }
 
     //SECTION("StructType")
@@ -1213,28 +1209,29 @@ TEST (Iterators, iterators_tests)
         my_data["my_double"] = -23.44;
 
         //ReadableDynamicDataRef::MemberIterator it = my_data.citems().begin();
-        std::cout << "MANUAL ITERATOR: ";
         auto it = my_data.citems().begin();
         auto wit = my_data.items().begin();
-        std::cout << (*it).member().name() << std::endl;
-        std::cout << (*wit).member().name() << std::endl;
+        ASSERT_EQ((*it++).member().name(), "my_int");
+        ASSERT_EQ((*wit++).member().name(), "my_int");
+        ASSERT_EQ((*it).member().name(), "my_double");
+        ASSERT_EQ((*wit).member().name(), "my_double");
 
-        std::cout << "ORIGINAL STRUCT: ";
         for (ReadableDynamicDataRef::MemberPair&& elem : my_data.items())
         {
             switch(elem.kind())
             {
             case TypeKind::INT_32_TYPE:
-                std::cout << elem.member().name() << ":" << elem.data().value<int32_t>() << " ";
+                ASSERT_EQ(elem.member().name(), "my_int");
+                ASSERT_EQ(elem.data().value<int32_t>(), 55);
                 break;
             case TypeKind::FLOAT_64_TYPE:
-                std::cout << elem.member().name() << ":" << elem.data().value<double>() << " ";
+                ASSERT_EQ(elem.member().name(), "my_double");
+                ASSERT_EQ(elem.data().value<double>(), -23.44);
                 break;
             default:
                 break;
             }
         }
-        std::cout << std::endl;
 
         for (WritableDynamicDataRef::MemberPair&& elem : my_data.items())
         {
@@ -1251,22 +1248,22 @@ TEST (Iterators, iterators_tests)
             }
         }
 
-        std::cout << "CHANGED STRUCT: ";
         for (ReadableDynamicDataRef::MemberPair&& elem : my_data.items())
         {
             switch(elem.kind())
             {
             case TypeKind::INT_32_TYPE:
-                std::cout << elem.member().name() << ":" << elem.data().value<int32_t>() << " ";
+                ASSERT_EQ(elem.member().name(), "my_int");
+                ASSERT_EQ(elem.data().value<int32_t>(), 110);
                 break;
             case TypeKind::FLOAT_64_TYPE:
-                std::cout << elem.member().name() << ":" << elem.data().value<double>() << " ";
+                ASSERT_EQ(elem.member().name(), "my_double");
+                ASSERT_EQ(elem.data().value<double>(), -46.88);
                 break;
             default:
                 break;
             }
         }
-        std::cout << std::endl;
     }
 }
 

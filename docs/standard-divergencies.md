@@ -17,7 +17,7 @@ Annotation concepts has been embebed into the places where they are necessary in
 ### Added some methods out of standard to ease the user live
 * [] operator to access members and indexes.
 * `for_each`
-* `is_subset`
+* `is_compatible`
 * Iterators:
     - Collection iterators: DynamicData representing a CollectionType (StringType, WStringType, ArrayType and
       SequenceType) gives the user the expected behaviour of a C++11 iterable object.

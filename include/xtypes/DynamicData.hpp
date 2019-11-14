@@ -335,7 +335,7 @@ public:
         uint8_t* instance_;
     };
 
-    class MemberIterator : Iterator
+    class MemberIterator : public Iterator
     {
     public:
         MemberIterator(
@@ -350,6 +350,20 @@ public:
             return MemberPair(
                 aggregation.member(index_),
                 instance_ + aggregation.member(index_).offset());
+        }
+
+        MemberIterator& operator ++ ()
+        {
+            ++index_;
+            return *this;
+        }
+
+        MemberIterator operator ++ (
+                int)
+        {
+            MemberIterator prev = *this;
+            ++index_;
+            return prev;
         }
 
         MemberIterator begin() const
@@ -668,6 +682,20 @@ public:
             return MemberPair(
                 aggregation.member(index_),
                 instance_ + aggregation.member(index_).offset());
+        }
+
+        MemberIterator& operator ++ ()
+        {
+            ++index_;
+            return *this;
+        }
+
+        MemberIterator operator ++ (
+                int)
+        {
+            MemberIterator prev = *this;
+            ++index_;
+            return prev;
         }
 
         MemberIterator begin()
