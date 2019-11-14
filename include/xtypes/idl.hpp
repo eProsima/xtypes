@@ -19,6 +19,9 @@
 #define EPROSIMA_XTYPES_IDL_HPP_
 
 #include <xtypes/StructType.hpp>
+#include <xtypes/ArrayType.hpp>
+#include <xtypes/MutableCollectionType.hpp>
+#include <xtypes/SequenceType.hpp>
 
 #include <sstream>
 
@@ -28,79 +31,112 @@ namespace idl {
 
 inline std::map<std::string, DynamicType::Ptr> parse(const std::string& /*idl*/)
 {
+    //TODO
     return std::map<std::string, DynamicType::Ptr>();
 }
 
+namespace impl {
+
+inline std::string type_name(const DynamicType& type); //implementation below
+
+inline std::string sequence_type_name(const DynamicType& type)
+{
+    assert(type.kind() == TypeKind::SEQUENCE_TYPE);
+    const SequenceType& sequence_type = static_cast<const SequenceType&>(type);
+    std::stringstream ss;
+    ss << "sequence<";
+    ss << type_name(sequence_type.content_type());
+    size_t bounds = sequence_type.bounds();
+    ss << (bounds ? ", " + std::to_string(bounds) : "");
+    ss << ">";
+    return ss.str();
+}
+
+inline std::string array_member(const Member& member)
+{
+    assert(member.type().kind() == TypeKind::ARRAY_TYPE);
+    const DynamicType* type = &member.type();
+    std::stringstream dimensions;
+    do
+    {
+        const ArrayType& array_type = static_cast<const ArrayType&>(*type);
+        dimensions << "[" << array_type.dimension() << "]";
+        type = &array_type.content_type();
+    }
+    while(type->kind() == TypeKind::ARRAY_TYPE);
+
+    std::stringstream ss;
+    ss << type_name(*type) << " " << member.name() << dimensions.str() << ";";
+    return ss.str();
+}
+
+inline std::string type_name(const DynamicType& type)
+{
+    static const std::map<TypeKind, std::string> mapping =
+    {
+        { TypeKind::BOOLEAN_TYPE, "boolean" },
+        { TypeKind::CHAR_8_TYPE, "char" },
+        { TypeKind::CHAR_16_TYPE, "wchar" },
+        { TypeKind::INT_8_TYPE, "int8" },
+        { TypeKind::UINT_8_TYPE, "uint8" },
+        { TypeKind::INT_16_TYPE, "short" },
+        { TypeKind::UINT_16_TYPE, "unsigned short" },
+        { TypeKind::INT_32_TYPE, "long" },
+        { TypeKind::UINT_32_TYPE, "unsigned long" },
+        { TypeKind::INT_64_TYPE, "long long" },
+        { TypeKind::UINT_64_TYPE, "unsigned long long" },
+        { TypeKind::FLOAT_32_TYPE, "float" },
+        { TypeKind::FLOAT_64_TYPE, "double" },
+        { TypeKind::FLOAT_128_TYPE, "long double" },
+    };
+
+    if(type.is_primitive_type())
+    {
+        return mapping.at(type.kind());
+    }
+    else if(type.is_aggregation_type())
+    {
+        return type.name();
+    }
+    else if(type.kind() == TypeKind::SEQUENCE_TYPE)
+    {
+        return sequence_type_name(type);
+    }
+    else if(type.kind() == TypeKind::STRING_TYPE || type.kind() == TypeKind::WSTRING_TYPE)
+    {
+        const MutableCollectionType& collection_type = static_cast<const MutableCollectionType&>(type);
+        std::string type_name = type.kind() == TypeKind::STRING_TYPE ? "string" : "wstring";
+        size_t bounds = collection_type.bounds();
+        return type_name + (bounds > 0 ? "<" + std::to_string(bounds) + ">" : "");
+    }
+    else
+    {
+        return "[[unsupported]]";
+    }
+}
+
+}
 
 inline std::string from(const StructType& type)
 {
     std::stringstream ss;
+    ss << "struct " << type.name() << std::endl;
+    ss << "{" << std::endl;
+
     for(const Member& member: type.members())
     {
-        switch(member.type().kind())
+        ss << std::string(4, ' ');
+        if(member.type().kind() == TypeKind::ARRAY_TYPE)
         {
-            case TypeKind::BOOLEAN_TYPE:
-                ss << "boolean " << member.name() << ";";
-                break;
-            case TypeKind::CHAR_8_TYPE:
-                ss << "char " << member.name() << ";";
-                break;
-            case TypeKind::CHAR_16_TYPE:
-                ss << "wchar " << member.name() << ";";
-                break;
-            case TypeKind::INT_8_TYPE:
-                ss << "int8 " << member.name() << ";";
-                break;
-            case TypeKind::UINT_8_TYPE:
-                ss << "uint8 " << member.name() << ";";
-                break;
-            case TypeKind::INT_16_TYPE:
-                ss << "short " << member.name() << ";";
-                break;
-            case TypeKind::UINT_16_TYPE:
-                ss << "unsigned short " << member.name() << ";";
-                break;
-            case TypeKind::INT_32_TYPE:
-                ss << "long " << member.name() << ";";
-                break;
-            case TypeKind::UINT_32_TYPE:
-                ss << "unsigned long " << member.name() << ";";
-                break;
-            case TypeKind::INT_64_TYPE:
-                ss << "long long " << member.name() << ";";
-                break;
-            case TypeKind::UINT_64_TYPE:
-                ss << "unsigned long long " << member.name() << ";";
-                break;
-            case TypeKind::FLOAT_32_TYPE:
-                ss << "float " << member.name() << ";";
-                break;
-            case TypeKind::FLOAT_64_TYPE:
-                ss << "double " << member.name() << ";";
-                break;
-            case TypeKind::FLOAT_128_TYPE:
-                ss << "long double " << member.name() << ";";
-                break;
-            case TypeKind::STRING_TYPE:
-                ss << "string " << member.name() << ";"; //TODO
-                break;
-            case TypeKind::WSTRING_TYPE:
-                ss << "wstring " << member.name() << ";"; //TODO
-                break;
-            case TypeKind::ARRAY_TYPE:
-                //TODO
-                break;
-            case TypeKind::SEQUENCE_TYPE:
-                ss << "sequence " << member.name() << ";"; //TODO
-                break;
-            case TypeKind::STRUCTURE_TYPE:
-                ss << member.type().name() << " " << member.name() << ";";
-                break;
-            default:
-                ss << "<<Unsupported type: " << member.type().name() << ">>";
+            ss << impl::array_member(member); //Spetial member syntax
+        }
+        else
+        {
+            ss << impl::type_name(member.type()) << " " << member.name() << ";";
         }
         ss << std::endl;
     }
+    ss << "}" << std::endl;
     return ss.str();
 }
 

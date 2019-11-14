@@ -14,11 +14,13 @@ int main()
     outer.add_member("om1", primitive_type<double>());
     outer.add_member("om2", inner);
     outer.add_member("om3", StringType());
-    outer.add_member("om4", WStringType());
+    outer.add_member("om4", WStringType(100));
     outer.add_member("om5", SequenceType(primitive_type<uint32_t>(), 5));
     outer.add_member("om6", SequenceType(inner));
     outer.add_member("om7", ArrayType(primitive_type<uint32_t>(), 4));
     outer.add_member("om8", ArrayType(inner, 4));
+    outer.add_member("om9", SequenceType(SequenceType(primitive_type<uint32_t>(), 5), 3));
+    outer.add_member("om10", ArrayType(ArrayType(primitive_type<uint32_t>(), 2), 3));
 
     std::cout << idl::from(inner) << std::endl;
     std::cout << idl::from(outer) << std::endl;
