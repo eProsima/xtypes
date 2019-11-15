@@ -35,7 +35,7 @@ public:
     /// \brief Construct a SequenceType.
     /// \param[in] content Content type of the array.
     /// \param[in] bounds Size limit of the sequence, 0 means that no limits.
-    SequenceType(
+    explicit SequenceType(
             const DynamicType& content,
             uint32_t bounds = 0)
         : MutableCollectionType(

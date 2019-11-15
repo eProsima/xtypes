@@ -23,5 +23,6 @@
 #include <xtypes/ArrayType.hpp>
 #include <xtypes/StringType.hpp>
 #include <xtypes/DynamicData.hpp>
+#include <xtypes/idl/idl.hpp>
 
 #endif //EPROSIMA_XTYPES_XTYPES_HPP_

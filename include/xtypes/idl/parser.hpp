@@ -15,13 +15,16 @@
  *
 */
 
-#ifndef EPROSIMA_XTYPES_IDLPARSER_HPP_
-#define EPROSIMA_XTYPES_IDLPARSER_HPP_
+#ifndef EPROSIMA_XTYPES_IDL_PARSER_HPP_
+#define EPROSIMA_XTYPES_IDL_PARSER_HPP_
 
 #include <peglib.h>
 
-#include <xtypes/xtypes.hpp>
-//#include <xtypes/DynamicType.hpp>
+#include <xtypes/ArrayType.hpp>
+#include <xtypes/StringType.hpp>
+#include <xtypes/StructType.hpp>
+#include <xtypes/SequenceType.hpp>
+
 #include <xtypes/idl/grammar.hpp>
 
 #include <map>
@@ -555,35 +558,10 @@ private:
         result.second = dimensions;
         return result;
     }
-
 };
-
-static std::map<std::string, DynamicType::Ptr> parse(
-        const std::string& idl)
-{
-    std::map<std::string, DynamicType::Ptr> result;
-    static Parser parser;
-    if (parser.parse(idl.c_str()))
-    {
-        parser.get_all_types(result);
-    }
-    return result;
-}
-
-static std::map<std::string, DynamicType::Ptr> parse_file(
-        const std::string& idl_file)
-{
-    std::map<std::string, DynamicType::Ptr> result;
-    static Parser parser;
-    if (parser.parse_file(idl_file.c_str()))
-    {
-        parser.get_all_types(result);
-    }
-    return result;
-}
 
 } // namespace idl
 } // namespace xtypes
 } // namespace eprosima
 
-#endif // EPROSIMA_XTYPES_IDLPARSER_HPP_
+#endif // EPROSIMA_XTYPES_IDL_PARSER_HPP_

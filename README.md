@@ -15,15 +15,22 @@ struct Outer {
 };
 ```
 
-you can create the representative C++ code defining this IDL's types using *xtypes*:
+you can create the representative C++ code defining this IDL's types using *xtypes API*:
 
 ```c++
 StructType inner("Inner");
-outer.add_member("a", primitive_type<int32_t>());
+inner.add_member("a", primitive_type<int32_t>());
 
 StructType outer("Outer");
-outer.add_member("b", inner);
-outer.add_member("c", primitive_type<int32_t>());
+outer.add_member("b", primitive_type<int32_t>());
+outer.add_member("c", inner);
+```
+
+or by parsing the IDL:
+```c++
+std::map<std::string, DynamicType::Ptr> from_idl = idl::parse(my_idl);
+const StructType& inner = static_cast<const StructType&>(*from_idl.at("Inner"));
+const StructType& outer = static_cast<const StructType&>(*from_idl.at("Outer"));
 ```
 
 Once these types have been defined, you can instatiate them and access their data:
@@ -32,15 +39,15 @@ Once these types have been defined, you can instatiate them and access their dat
 DynamicData data(outer);
 
 //write value
-data["b"]["a"] = 42;
+data["c"]["a"] = 42;
 
 // read value
-int32_t my_value = data["b"]["a"];
+int32_t my_value = data["c"]["a"];
 ```
 
 ## Why should you use *eProsima xtypes*?
 - **OMG standard**: *eProsima xtypes* is based on the
-  [dds-xtypes standard](https://www.omg.org/spec/DDS-XTypes/About-DDS-XTypes/) from the *OMG*.
+  [DDS-XTYPES standard](https://www.omg.org/spec/DDS-XTypes/About-DDS-XTypes/) from the *OMG*.
 - **C++11 API**: *eProsima xtypes* uses C++11 latest features, providing  an easy-to-use API.
 - **Memory lightweight**: data instances use the same memory as types builts by the compiler.
   No memory penalty is introduced by using *eProsima xtypes* in relation to compiled types.

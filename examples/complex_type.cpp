@@ -6,19 +6,31 @@ using namespace eprosima::xtypes;
 
 int main()
 {
-    StructType inner("InnerType");
-    inner.add_member(Member("im1", primitive_type<uint32_t>()));
-    inner.add_member(Member("im2", primitive_type<float>()).id(2));
+    std::string idl_spec = R"(
+        struct InnerType
+        {
+            uint32 im1;
+            float im2;
+        };
+    )";
+
+    std::map<std::string, DynamicType::Ptr> from_idl = idl::parse(idl_spec);
+    const StructType& inner = static_cast<const StructType&>(*from_idl.at("InnerType"));
 
     StructType outer("OuterType");
-    outer.add_member("om1", primitive_type<double>());
+    outer.add_member(Member("om1", primitive_type<double>()).id(2));
     outer.add_member("om2", inner);
     outer.add_member("om3", StringType());
-    outer.add_member("om4", WStringType());
+    outer.add_member("om4", WStringType(100));
     outer.add_member("om5", SequenceType(primitive_type<uint32_t>(), 5));
     outer.add_member("om6", SequenceType(inner));
     outer.add_member("om7", ArrayType(primitive_type<uint32_t>(), 4));
     outer.add_member("om8", ArrayType(inner, 4));
+    outer.add_member("om9", SequenceType(SequenceType(primitive_type<uint32_t>(), 5), 3));
+    outer.add_member("om10", ArrayType(ArrayType(primitive_type<uint32_t>(), 2), 3));
+
+    std::cout << idl::generate(inner) << std::endl;
+    std::cout << idl::generate(outer) << std::endl;
 
     DynamicData data(outer);
     data["om1"] = 6.7;                                     //PrimitiveType<double>

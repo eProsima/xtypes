@@ -11,6 +11,9 @@ project(xtypes
 option(XTYPES_BUILD_TESTS "Build tests." OFF)
 option(XTYPES_BUILD_EXAMPLES "Build examples." OFF)
 
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
 #####################################################################################
 #                                    Library
 #####################################################################################
@@ -36,6 +39,8 @@ macro(compile_example EXAMPLE_NAME EXAMPLE_SOURCE)
     add_executable(${EXAMPLE_NAME} ${EXAMPLE_SOURCE})
 
     target_link_libraries(${EXAMPLE_NAME}
+        PUBLIC
+            Threads::Threads
         PRIVATE
             ${PROJECT_NAME}
         )

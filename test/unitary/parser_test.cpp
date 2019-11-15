@@ -13,7 +13,8 @@
 // limitations under the License.
 
 #include <gtest/gtest.h>
-#include <xtypes/idl/parser.hpp>
+#include <xtypes/idl/idl.hpp>
+#include <xtypes/DynamicData.hpp>
 #include <iostream>
 
 using namespace eprosima::xtypes;
