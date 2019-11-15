@@ -64,8 +64,8 @@ TEST (IDLParser, simple_struct_test)
     data["my_long_double"] = 5.55l;
     data["my_char"] = 'e';
     data["my_wchar"] = L'e';
-    data["my_string"].string("It works!");
-    data["my_wstring"].wstring(L"It works!");
+    data["my_string"] = "It works!";
+    data["my_wstring"] = L"It works!";
     EXPECT_TRUE(data["my_bool"].value<bool>());
     EXPECT_EQ('c', data["my_int8"].value<char>());
     EXPECT_EQ(55, data["my_uint8"].value<uint8_t>());
@@ -206,7 +206,7 @@ TEST (IDLParser, inner_struct_test)
     DynamicData data(*my_struct);
     DynamicData rec_data(*result["RecursiveStruct"].get());
 
-    data["inner"]["message"].string("It works!");
+    data["inner"]["message"] = "It works!";
     EXPECT_EQ("It works!", data["inner"]["message"].value<std::string>());
 }
 
