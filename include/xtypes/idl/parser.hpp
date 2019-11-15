@@ -46,7 +46,6 @@ public:
         : parser_(idl_grammar())
     {
         parser_.enable_ast();
-        //setup_actions();
     }
 
     bool parse(
@@ -122,65 +121,6 @@ private:
     peg::parser parser_;
     std::map<std::string, DynamicType::Ptr> types_map_;
     bool ignore_case_ = false;
-
-    /*
-    void setup_actions()
-    {
-        // Actions (for const_expr calculation)
-        parser_["CONST_EXPR"] = [](const SemanticValues& sv)
-        {
-            // OR_EXPR == CONST_EXPR
-
-        };
-
-        //parser_["OR_EXPR"] = [](const SemanticValues& sv)
-        //{
-        //};
-
-        parser_["XOR_EXPR"] = [](const SemanticValues& sv)
-        {
-
-        };
-
-        parser_["AND_EXPR"] = [](const SemanticValues& sv)
-        {
-
-        };
-
-        parser_["SHIFT_EXPR"] = [](const SemanticValues& sv)
-        {
-
-        };
-
-        parser_["ADD_EXPR"] = [](const SemanticValues& sv)
-        {
-            switch(sv.choice())
-            {
-                case 0: // MULT * ADD
-                    return sv[0].get<int>() * sv[1].get<int>();
-                case 1: // MULT
-                    return sv[0].get<int>();
-            }
-        };
-
-        parser_["MULT_EXPR"] = [](const SemanticValues& sv)
-        {
-            switch(sv.choice())
-            {
-                case 0: // UNARY * MULT
-                    return sv[0].get<int>() * sv[1].get<int>();
-                case 1: // UNARY
-                    return sv[0].get<int>();
-            }
-        };
-
-        parser_["UNARY_EXPR"] = [](const SemanticValues& sv)
-        {
-            // TODO Check LITERAL kind and solve. Floats, HEX, OCT, SCOPED_NAMES...
-            return std::atoi(sv.token());
-        };
-    }
-    */
 
     bool read_file(
             const char* path,
@@ -293,7 +233,7 @@ private:
             }
         }
 
-        DynamicData get_constant(
+        const DynamicData& get_constant(
                 const std::string& name) const
         {
             auto it = constants.find(name);
@@ -302,12 +242,21 @@ private:
 
         bool set_constant(
                 const std::string& name,
+                const DynamicType::Ptr type,
                 const DynamicData& value)
         {
-            auto result = constants.emplace(name, value);
-            return result.second;
+            auto inserted = constants_types.emplace(name, *type);
+            if (inserted.second)
+            {
+                DynamicData temp(*(inserted.first->second));
+                temp = value;
+                auto result = constants.emplace(name, temp);
+                return result.second;
+            }
+            return false;
         }
 
+        std::map<std::string, DynamicType::Ptr> constants_types;
         std::map<std::string, DynamicData> constants;
         //std::map<std::string, std::shared_ptr<Module>> modules;
         //std::map<std::string, DynamicType::Ptr> types;
@@ -504,13 +453,16 @@ private:
 
         std::cout << "Found const " << type->name() << " " << identifier << " = " << expr.to_string();
 
-        outer->set_constant(identifier, expr);
+        outer->set_constant(identifier, type, expr);
     }
 
     bool get_literal_value(
             DynamicData& data,
-            const std::string& literal) const
+            const std::shared_ptr<peg::Ast> ast) const
     {
+        using namespace peg::udl;
+        const unsigned int tag = ast->tag;
+        const std::string& literal = ast->token;
         int base = 10;
         if (literal.find("0x") == 0 || literal.find("0X") == 0)
         {
@@ -525,60 +477,100 @@ private:
         {
             case TypeKind::INT_8_TYPE:
             {
+                if (tag != "INTEGER_LITERAL"_)
+                {
+                    std::cout << "WARNING: Expected an INTEGER_LITERAL, found " << literal << std::endl;
+                }
                 int8_t value = static_cast<int8_t>(std::strtoll(literal.c_str(), nullptr, base));
                 data = value;
                 break;
             }
             case TypeKind::UINT_8_TYPE:
             {
+                if (tag != "INTEGER_LITERAL"_)
+                {
+                    std::cout << "WARNING: Expected an INTEGER_LITERAL, found " << literal << std::endl;
+                }
                 uint8_t value = static_cast<uint8_t>(std::strtoull(literal.c_str(), nullptr, base));
                 data = value;
                 break;
             }
             case TypeKind::INT_16_TYPE:
             {
+                if (tag != "INTEGER_LITERAL"_)
+                {
+                    std::cout << "WARNING: Expected an INTEGER_LITERAL, found " << literal << std::endl;
+                }
                 int16_t value = static_cast<int16_t>(std::strtoll(literal.c_str(), nullptr, base));
                 data = value;
                 break;
             }
             case TypeKind::UINT_16_TYPE:
             {
+                if (tag != "INTEGER_LITERAL"_)
+                {
+                    std::cout << "WARNING: Expected an INTEGER_LITERAL, found " << literal << std::endl;
+                }
                 uint16_t value = static_cast<uint16_t>(std::strtoull(literal.c_str(), nullptr, base));
                 data = value;
                 break;
             }
             case TypeKind::INT_32_TYPE:
             {
+                if (tag != "INTEGER_LITERAL"_)
+                {
+                    std::cout << "WARNING: Expected an INTEGER_LITERAL, found " << literal << std::endl;
+                }
                 int32_t value = static_cast<int32_t>(std::strtoll(literal.c_str(), nullptr, base));
                 data = value;
                 break;
             }
             case TypeKind::UINT_32_TYPE:
             {
+                if (tag != "INTEGER_LITERAL"_)
+                {
+                    std::cout << "WARNING: Expected an INTEGER_LITERAL, found " << literal << std::endl;
+                }
                 uint32_t value = static_cast<uint32_t>(std::strtoull(literal.c_str(), nullptr, base));
                 data = value;
                 break;
             }
             case TypeKind::INT_64_TYPE:
             {
+                if (tag != "INTEGER_LITERAL"_)
+                {
+                    std::cout << "WARNING: Expected an INTEGER_LITERAL, found " << literal << std::endl;
+                }
                 int64_t value = static_cast<int64_t>(std::strtoll(literal.c_str(), nullptr, base));
                 data = value;
                 break;
             }
             case TypeKind::UINT_64_TYPE:
             {
+                if (tag != "INTEGER_LITERAL"_)
+                {
+                    std::cout << "WARNING: Expected an INTEGER_LITERAL, found " << literal << std::endl;
+                }
                 uint64_t value = static_cast<uint64_t>(std::strtoull(literal.c_str(), nullptr, base));
                 data = value;
                 break;
             }
             case TypeKind::CHAR_8_TYPE:
             {
+                if (tag != "CHAR_LITERAL"_)
+                {
+                    std::cout << "WARNING: Expected a CHAR_LITERAL, found " << literal << std::endl;
+                }
                 char value = literal.c_str()[0];
                 data = value;
                 break;
             }
             case TypeKind::CHAR_16_TYPE:
             {
+                if (tag != "WIDE_CHAR_LITERAL"_)
+                {
+                    std::cout << "WARNING: Expected a WIDE_CHAR_LITERAL, found " << literal << std::endl;
+                }
                 using convert_type = std::codecvt_utf8<wchar_t>;
                 std::wstring_convert<convert_type, wchar_t> converter;
                 std::wstring temp = converter.from_bytes(literal);
@@ -588,19 +580,44 @@ private:
             }
             case TypeKind::STRING_TYPE:
             {
-                data = literal;
+                std::string aux = literal.substr(literal.find("\"") + 1, literal.rfind("\"") - 1);
+                for (auto& node : ast->nodes) // SUBSTRING_LITERAL
+                {
+                    aux += node->token.substr(node->token.find("\"") + 1, node->token.rfind("\"") - 1);
+                }
+
+                if (tag != "STRING_LITERAL"_ && tag != "SUBSTRING_LITERAL"_)
+                {
+                    std::cout << "WARNING: Expected a STRING_LITERAL, found " << aux << std::endl;
+                }
+
+                data = aux;
                 break;
             }
             case TypeKind::WSTRING_TYPE:
             {
+                std::string aux = literal.substr(literal.find("\"") + 1, literal.rfind("\"") - 1);
+                for (auto& node : ast->nodes) // SUBSTRING_LITERAL
+                {
+                    aux += node->token.substr(node->token.find("\"") + 1, node->token.rfind("\"") - 1);
+                }
+
+                if (tag != "WIDE_STRING_LITERAL"_ && tag != "WIDE_SUBSTRING_LITERAL"_)
+                {
+                    std::cout << "WARNING: Expected a WIDE_STRING_LITERAL, found " << aux << std::endl;
+                }
                 using convert_type = std::codecvt_utf8<wchar_t>;
                 std::wstring_convert<convert_type, wchar_t> converter;
-                std::wstring value = converter.from_bytes(literal);
+                std::wstring value = converter.from_bytes(aux);
                 data = value;
                 break;
             }
             case TypeKind::BOOLEAN_TYPE:
             {
+                if (tag != "BOOLEAN_LITERAL"_)
+                {
+                    std::cout << "WARNING: Expected a BOOLEAN_LITERAL, found " << literal << std::endl;
+                }
                 if (literal == "TRUE")
                 {
                     data = true;
@@ -619,18 +636,30 @@ private:
             }
             case TypeKind::FLOAT_32_TYPE:
             {
+                if (tag != "FLOAT_LITERAL"_)
+                {
+                    std::cout << "WARNING: Expected a FLOAT_LITERAL, found " << literal << std::endl;
+                }
                 float value = std::stof(literal, nullptr);
                 data = value;
                 break;
             }
             case TypeKind::FLOAT_64_TYPE:
             {
+                if (tag != "FLOAT_LITERAL"_)
+                {
+                    std::cout << "WARNING: Expected a FLOAT_LITERAL, found " << literal << std::endl;
+                }
                 double value = std::stod(literal, nullptr);
                 data = value;
                 break;
             }
             case TypeKind::FLOAT_128_TYPE:
             {
+                if (tag != "FLOAT_LITERAL"_)
+                {
+                    std::cout << "WARNING: Expected a FLOAT_LITERAL, found " << literal << std::endl;
+                }
                 long double value = std::stold(literal, nullptr);
                 data = value;
                 break;
@@ -656,9 +685,21 @@ private:
         DynamicData result(type);
         switch(ast->tag)
         {
-            case "LITERAL"_:
-                get_literal_value(result, ast->token);
+            //case "LITERAL"_:
+            case "INTEGER_LITERAL"_:
+            case "FLOAT_LITERAL"_:
+            case "FIXED_PT_LITERAL"_:
+            case "CHAR_LITERAL"_:
+            case "WIDE_CHAR_LITERAL"_:
+            case "BOOLEAN_LITERAL"_:
+            case "STRING_LITERAL"_:
+            case "SUBSTRING_LITERAL"_:
+            case "WIDE_STRING_LITERAL"_:
+            case "WIDE_SUBSTRING_LITERAL"_:
+            {
+                get_literal_value(result, ast);
                 break;
+            }
             case "SCOPED_NAME"_:
                 result = outer->get_constant(ast->token);
                 break;
@@ -1259,6 +1300,7 @@ private:
                         }
                         case "POSITIVE_INT_CONST"_:
                         {
+                            // TODO, allow to use constants
                             dimensions.push_back(std::atoi(subnode->token.c_str()));
                             break;
                         }

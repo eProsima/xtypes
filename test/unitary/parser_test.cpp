@@ -281,7 +281,7 @@ TEST (IDLParser, name_collision)
 
         const DynamicType* my_struct = result["MyStruct"].get();
         DynamicData data(*my_struct);
-        data["struct"].string("It works!");
+        data["struct"] = "It works!";
         EXPECT_EQ("It works!", data["struct"].value<std::string>());
     }
 
@@ -418,7 +418,6 @@ TEST (IDLParser, module_scope_test)
 TEST (IDLParser, constants)
 {
     std::map<std::string, DynamicType::Ptr> result;
-    /*
     try
     {
         result = parse(R"(
@@ -430,19 +429,68 @@ TEST (IDLParser, constants)
     {
         std::cout << exc.what() << std::endl;
     }
-*/
+
     try
     {
         result = parse(R"(
             const string C_STRING = "Hola";
                        )");
-        /*
+    }
+    catch(const Parser::exception& exc)
+    {
+        std::cout << exc.what() << std::endl;
+    }
+
+    try
+    {
         result = parse(R"(
-            const uint32 MAX_SIZE = 32 / 2;
-            const string C_STRING = "Hola";
-            const uint32 SUPER_MAX = MAX_SIZE * 1000 << 5;
+            const string C_STRING = "Hola" + 55;
                        )");
-        */
+    }
+    catch(const Parser::exception& exc)
+    {
+        std::cout << exc.what() << std::endl;
+    }
+
+    try
+    {
+        result = parse(R"(
+            const string C_STRING = "Hola";
+            const string C_STRING_2 = C_STRING;
+            const string C_STRING_3 = "Hey, " "Adios!!"
+                " Esto debe estar conca"   "tenado";
+                       )");
+    }
+    catch(const Parser::exception& exc)
+    {
+        std::cout << exc.what() << std::endl;
+    }
+
+    try
+    {
+        result = parse(R"(
+            const float BAD_TYPE = "Hola";
+                       )");
+        FAIL() << "Exception not thown.";
+    }
+    catch(const Parser::exception& exc)
+    {
+        std::cout << exc.what() << std::endl;
+    }
+    catch(const std::exception& exc)
+    {
+        std::string msg = exc.what();
+        if (msg.find("stof") == std::string::npos)
+        {
+            FAIL() << "Unexpected exception";
+        }
+    }
+
+    try
+    {
+        result = parse(R"(
+            const uint64 BAD_TYPE = 55.8;
+                       )");
     }
     catch(const Parser::exception& exc)
     {
