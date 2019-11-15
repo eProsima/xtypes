@@ -51,7 +51,8 @@ TEST (IDLParser, simple_struct_test)
     DynamicData data(*my_struct);
 
     data["my_bool"] = true;
-    data["my_int8"] = 'c';
+    //data["my_int8"] = 'c';
+    data["my_int8"] = static_cast<int8_t>(-55);
     data["my_uint8"] = static_cast<uint8_t>(55);
     data["my_int16"] = static_cast<int16_t>(-5);
     data["my_uint16"] = static_cast<uint16_t>(6);
@@ -67,7 +68,8 @@ TEST (IDLParser, simple_struct_test)
     data["my_string"] = "It works!";
     data["my_wstring"] = L"It works!";
     EXPECT_TRUE(data["my_bool"].value<bool>());
-    EXPECT_EQ('c', data["my_int8"].value<char>());
+    //EXPECT_EQ('c', data["my_int8"].value<char>());
+    EXPECT_EQ(-55, data["my_int8"].value<int8_t>());
     EXPECT_EQ(55, data["my_uint8"].value<uint8_t>());
     EXPECT_EQ(-5, data["my_int16"].value<int16_t>());
     EXPECT_EQ(6, data["my_uint16"].value<uint16_t>());
@@ -114,18 +116,18 @@ TEST (IDLParser, array_sequence_struct_test)
     EXPECT_FALSE(data["my_bool_5"][3].value<bool>());
     EXPECT_TRUE(data["my_bool_5"][4].value<bool>());
 
-    data["my_int8_3_2"][0][0] = 'a';
-    data["my_int8_3_2"][0][1] = 'b';
-    data["my_int8_3_2"][1][0] = 'c';
-    data["my_int8_3_2"][1][1] = 'd';
-    data["my_int8_3_2"][2][0] = 'e';
-    data["my_int8_3_2"][2][1] = 'f';
-    EXPECT_EQ(data["my_int8_3_2"][0][0].value<char>(), 'a');
-    EXPECT_EQ(data["my_int8_3_2"][0][1].value<char>(), 'b');
-    EXPECT_EQ(data["my_int8_3_2"][1][0].value<char>(), 'c');
-    EXPECT_EQ(data["my_int8_3_2"][1][1].value<char>(), 'd');
-    EXPECT_EQ(data["my_int8_3_2"][2][0].value<char>(), 'e');
-    EXPECT_EQ(data["my_int8_3_2"][2][1].value<char>(), 'f');
+    data["my_int8_3_2"][0][0] = static_cast<int8_t>('a');
+    data["my_int8_3_2"][0][1] = static_cast<int8_t>('b');
+    data["my_int8_3_2"][1][0] = static_cast<int8_t>('c');
+    data["my_int8_3_2"][1][1] = static_cast<int8_t>('d');
+    data["my_int8_3_2"][2][0] = static_cast<int8_t>('e');
+    data["my_int8_3_2"][2][1] = static_cast<int8_t>('f');
+    EXPECT_EQ(data["my_int8_3_2"][0][0].value<int8_t>(), 'a');
+    EXPECT_EQ(data["my_int8_3_2"][0][1].value<int8_t>(), 'b');
+    EXPECT_EQ(data["my_int8_3_2"][1][0].value<int8_t>(), 'c');
+    EXPECT_EQ(data["my_int8_3_2"][1][1].value<int8_t>(), 'd');
+    EXPECT_EQ(data["my_int8_3_2"][2][0].value<int8_t>(), 'e');
+    EXPECT_EQ(data["my_int8_3_2"][2][1].value<int8_t>(), 'f');
 
     EXPECT_EQ(data["my_string16"].bounds(), 16);
     // data["my_string16"] = "0123456789abcdefghijklmnopqrstuvwxyz" ;
@@ -413,6 +415,41 @@ TEST (IDLParser, module_scope_test)
     EXPECT_EQ(5, result.size());
 }
 
+TEST (IDLParser, constants)
+{
+    std::map<std::string, DynamicType::Ptr> result;
+    /*
+    try
+    {
+        result = parse(R"(
+            const uint32 MAX_SIZE = 32 / 2;
+            const uint32 SUPER_MAX = MAX_SIZE * 1000 << 5;
+                       )");
+    }
+    catch(const Parser::exception& exc)
+    {
+        std::cout << exc.what() << std::endl;
+    }
+*/
+    try
+    {
+        result = parse(R"(
+            const string C_STRING = "Hola";
+                       )");
+        /*
+        result = parse(R"(
+            const uint32 MAX_SIZE = 32 / 2;
+            const string C_STRING = "Hola";
+            const uint32 SUPER_MAX = MAX_SIZE * 1000 << 5;
+                       )");
+        */
+    }
+    catch(const Parser::exception& exc)
+    {
+        std::cout << exc.what() << std::endl;
+    }
+}
+
 TEST (IDLParser, not_yet_supported)
 //TEST (IDLParser, DISABLED_not_yet_supported)
 {
@@ -498,6 +535,16 @@ TEST (IDLParser, not_yet_supported)
     const DynamicType* my_struct = result["FutureStruct"].get();
     DynamicData data(*my_struct);
     */
+}
+
+TEST (IDLParser, const_value_parser)
+{
+    std::map<std::string, DynamicType::Ptr> result;
+    {
+        result = parse(R"(
+            const uint32 MAX_SIZE = (998 + 8) * 8;
+                       )");
+    }
 }
 
 int main(int argc, char** argv)

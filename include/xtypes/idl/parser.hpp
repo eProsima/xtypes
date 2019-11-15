@@ -24,6 +24,7 @@
 #include <xtypes/StringType.hpp>
 #include <xtypes/StructType.hpp>
 #include <xtypes/SequenceType.hpp>
+#include <xtypes/DynamicData.hpp>
 
 #include <xtypes/idl/grammar.hpp>
 
@@ -32,6 +33,7 @@
 #include <fstream>
 #include <memory>
 #include <exception>
+#include <locale>
 
 namespace eprosima {
 namespace xtypes {
@@ -44,6 +46,7 @@ public:
         : parser_(idl_grammar())
     {
         parser_.enable_ast();
+        //setup_actions();
     }
 
     bool parse(
@@ -103,12 +106,81 @@ public:
                      + ":" + std::to_string(ast_->column) + "): " + message_;
             return output;
         }
+
+        const std::string& message() const
+        {
+            return message_;
+        }
+
+        const peg::Ast& ast() const
+        {
+            return *ast_;
+        }
     };
 
 private:
     peg::parser parser_;
     std::map<std::string, DynamicType::Ptr> types_map_;
     bool ignore_case_ = false;
+
+    /*
+    void setup_actions()
+    {
+        // Actions (for const_expr calculation)
+        parser_["CONST_EXPR"] = [](const SemanticValues& sv)
+        {
+            // OR_EXPR == CONST_EXPR
+
+        };
+
+        //parser_["OR_EXPR"] = [](const SemanticValues& sv)
+        //{
+        //};
+
+        parser_["XOR_EXPR"] = [](const SemanticValues& sv)
+        {
+
+        };
+
+        parser_["AND_EXPR"] = [](const SemanticValues& sv)
+        {
+
+        };
+
+        parser_["SHIFT_EXPR"] = [](const SemanticValues& sv)
+        {
+
+        };
+
+        parser_["ADD_EXPR"] = [](const SemanticValues& sv)
+        {
+            switch(sv.choice())
+            {
+                case 0: // MULT * ADD
+                    return sv[0].get<int>() * sv[1].get<int>();
+                case 1: // MULT
+                    return sv[0].get<int>();
+            }
+        };
+
+        parser_["MULT_EXPR"] = [](const SemanticValues& sv)
+        {
+            switch(sv.choice())
+            {
+                case 0: // UNARY * MULT
+                    return sv[0].get<int>() * sv[1].get<int>();
+                case 1: // UNARY
+                    return sv[0].get<int>();
+            }
+        };
+
+        parser_["UNARY_EXPR"] = [](const SemanticValues& sv)
+        {
+            // TODO Check LITERAL kind and solve. Floats, HEX, OCT, SCOPED_NAMES...
+            return std::atoi(sv.token());
+        };
+    }
+    */
 
     bool read_file(
             const char* path,
@@ -221,7 +293,22 @@ private:
             }
         }
 
-        //std::map<std::string, std::shared_ptr<Constants>> constants;
+        DynamicData get_constant(
+                const std::string& name) const
+        {
+            auto it = constants.find(name);
+            return it->second;
+        }
+
+        bool set_constant(
+                const std::string& name,
+                const DynamicData& value)
+        {
+            auto result = constants.emplace(name, value);
+            return result.second;
+        }
+
+        std::map<std::string, DynamicData> constants;
         //std::map<std::string, std::shared_ptr<Module>> modules;
         //std::map<std::string, DynamicType::Ptr> types;
         //std::map<std::string, std::shared_ptr<StructType>> structs;
@@ -265,15 +352,13 @@ private:
                 enum_dcl(ast, scope);
                 break;
             case "ANNOTATION_DCL"_:
-            //    annotation_dcl(ast, scope);
+                annotation_dcl(ast, scope);
                 break;
             case "BITSET_DCL"_:
-                // TODO bitset_dcl(ast, scope);
-                std::cout << "Bitset unsupported" << std::endl;
+                bitset_dcl(ast, scope);
                 break;
             case "BITMASK_DCL"_:
-                // TODO bitmask_dcl(ast, scope);
-                std::cout << "Bitmask unsupported" << std::endl;
+                bitmask_dcl(ast, scope);
                 break;
             case "TYPE_DECLARATOR"_:
                 alias_dcl(ast, scope);
@@ -323,7 +408,7 @@ private:
     }
 
     bool is_token(
-        const std::string& identifier)
+            const std::string& identifier)
     {
         std::string aux_id = identifier;
 
@@ -391,22 +476,19 @@ private:
         if (ast->nodes[1]->tag == "IDENTIFIER"_)
         {
             name = resolve_identifier(ast, ast->nodes[1]->token, outer);
-            //name = ast->nodes[1]->token;
         }
         else if (ast->nodes[1]->tag == "ARRAY_DECLARATOR"_)
         {
             auto& node = ast->nodes[1];
-            name = resolve_identifier(ast, ast->nodes[0]->token, outer);
-            //name = node->nodes[0]->token;
+            name = resolve_identifier(node, node->nodes[0]->token, outer);
             for (size_t idx = 1; idx < node->nodes.size(); ++idx)
             {
                 dimensions.push_back(std::atoi(node->nodes[idx]->token.c_str()));
-            }
-            type = get_array_type(dimensions, type);
+            } type = get_array_type(dimensions, type);
         }
 
-        std::cout << "Found typedef " << name << " for type " << type->name()
-                  << " but typedefs aren't supported. Ignoring." << std::endl;
+        std::cout << "Found \"typedef " << name << " for type " << type->name()
+                  << "\" but typedefs aren't supported. Ignoring." << std::endl;
     }
 
     void const_dcl(
@@ -417,10 +499,262 @@ private:
 
         DynamicType::Ptr type = type_spec(ast->nodes[0], outer);
         std::string identifier = ast->nodes[1]->token;
-        //std::string expr = solve_expr(ast->nodes[2]->token);
+        DynamicData expr(*type);
+        expr = solve_expr(*type, ast->nodes[2], outer);
 
-        std::cout << "Found \"const " << type->name() << " " << identifier /*<< " = " << expr*/ << "\" "
-                  << "but const aren't supported. Ignoring." << std::endl;
+        std::cout << "Found const " << type->name() << " " << identifier << " = " << expr.to_string();
+
+        outer->set_constant(identifier, expr);
+    }
+
+    bool get_literal_value(
+            DynamicData& data,
+            const std::string& literal) const
+    {
+        int base = 10;
+        if (literal.find("0x") == 0 || literal.find("0X") == 0)
+        {
+            base = 16;
+        }
+        else if (literal.find("0") == 0)
+        {
+            base = 8;
+        }
+
+        switch (data.type().kind())
+        {
+            case TypeKind::INT_8_TYPE:
+            {
+                int8_t value = static_cast<int8_t>(std::strtoll(literal.c_str(), nullptr, base));
+                data = value;
+                break;
+            }
+            case TypeKind::UINT_8_TYPE:
+            {
+                uint8_t value = static_cast<uint8_t>(std::strtoull(literal.c_str(), nullptr, base));
+                data = value;
+                break;
+            }
+            case TypeKind::INT_16_TYPE:
+            {
+                int16_t value = static_cast<int16_t>(std::strtoll(literal.c_str(), nullptr, base));
+                data = value;
+                break;
+            }
+            case TypeKind::UINT_16_TYPE:
+            {
+                uint16_t value = static_cast<uint16_t>(std::strtoull(literal.c_str(), nullptr, base));
+                data = value;
+                break;
+            }
+            case TypeKind::INT_32_TYPE:
+            {
+                int32_t value = static_cast<int32_t>(std::strtoll(literal.c_str(), nullptr, base));
+                data = value;
+                break;
+            }
+            case TypeKind::UINT_32_TYPE:
+            {
+                uint32_t value = static_cast<uint32_t>(std::strtoull(literal.c_str(), nullptr, base));
+                data = value;
+                break;
+            }
+            case TypeKind::INT_64_TYPE:
+            {
+                int64_t value = static_cast<int64_t>(std::strtoll(literal.c_str(), nullptr, base));
+                data = value;
+                break;
+            }
+            case TypeKind::UINT_64_TYPE:
+            {
+                uint64_t value = static_cast<uint64_t>(std::strtoull(literal.c_str(), nullptr, base));
+                data = value;
+                break;
+            }
+            case TypeKind::CHAR_8_TYPE:
+            {
+                char value = literal.c_str()[0];
+                data = value;
+                break;
+            }
+            case TypeKind::CHAR_16_TYPE:
+            {
+                using convert_type = std::codecvt_utf8<wchar_t>;
+                std::wstring_convert<convert_type, wchar_t> converter;
+                std::wstring temp = converter.from_bytes(literal);
+                wchar_t value = temp[0];
+                data = value;
+                break;
+            }
+            case TypeKind::STRING_TYPE:
+            {
+                data = literal;
+                break;
+            }
+            case TypeKind::WSTRING_TYPE:
+            {
+                using convert_type = std::codecvt_utf8<wchar_t>;
+                std::wstring_convert<convert_type, wchar_t> converter;
+                std::wstring value = converter.from_bytes(literal);
+                data = value;
+                break;
+            }
+            case TypeKind::BOOLEAN_TYPE:
+            {
+                if (literal == "TRUE")
+                {
+                    data = true;
+                }
+                else if (literal == "FALSE")
+                {
+                    data = false;
+                }
+                else
+                {
+                    std::cout << "Expected bool value (TRUE or FALSE) but found '" << literal
+                              << "'. It will be take the value 'FALSE'." << std::endl;
+                    data = false;
+                }
+                break;
+            }
+            case TypeKind::FLOAT_32_TYPE:
+            {
+                float value = std::stof(literal, nullptr);
+                data = value;
+                break;
+            }
+            case TypeKind::FLOAT_64_TYPE:
+            {
+                double value = std::stod(literal, nullptr);
+                data = value;
+                break;
+            }
+            case TypeKind::FLOAT_128_TYPE:
+            {
+                long double value = std::stold(literal, nullptr);
+                data = value;
+                break;
+            }
+            /*
+            case TypeKind::ALIAS_TYPE:
+            {
+                break;
+            }
+            */
+            default:
+                return false;
+        }
+        return true;
+    }
+
+    DynamicData solve_expr(
+            const DynamicType& type,
+            const std::shared_ptr<peg::Ast> ast,
+            std::shared_ptr<SymbolScope> outer) const
+    {
+        using namespace peg::udl;
+        DynamicData result(type);
+        switch(ast->tag)
+        {
+            case "LITERAL"_:
+                get_literal_value(result, ast->token);
+                break;
+            case "SCOPED_NAME"_:
+                result = outer->get_constant(ast->token);
+                break;
+            case "UNARY_EXPR"_:
+                {
+                    result = solve_expr(type, ast->nodes[1], outer);
+                    if (ast->nodes[0]->tag == "SUB_OP"_)
+                    {
+                        DynamicData temp(-result);
+                        result = temp;
+                    }
+                }
+                break;
+            case "MULT_EXPR"_:
+                {
+                    DynamicData lho = solve_expr(type, ast->nodes[0], outer);
+                    DynamicData rho = solve_expr(type, ast->nodes[2], outer);
+
+                    if (ast->nodes[1]->tag == "MULT_OP"_)
+                    {
+                        DynamicData temp(lho * rho);
+                        result = temp;
+                    }
+                    else if (ast->nodes[1]->tag == "DIV_OP"_)
+                    {
+                        DynamicData temp(lho / rho);
+                        result = temp;
+                        //return lho / rho;
+                    }
+                    else if (ast->nodes[1]->tag == "MOD_OP"_)
+                    {
+                        DynamicData temp(lho % rho);
+                        result = temp;
+                    }
+                }
+                break;
+            case "ADD_EXPR"_:
+                {
+                    DynamicData lho = solve_expr(type, ast->nodes[0], outer);
+                    DynamicData rho = solve_expr(type, ast->nodes[2], outer);
+
+                    DynamicData temp(type);
+                    if (ast->nodes[1]->tag == "ADD_OP"_)
+                    {
+                        temp = DynamicData(lho + rho);
+                    }
+                    else if (ast->nodes[1]->tag == "SUB_OP"_)
+                    {
+                        temp = DynamicData(lho - rho);
+                    }
+                    result = temp;
+                }
+                break;
+            case "SHIFT_EXPR"_:
+                {
+                    DynamicData lho = solve_expr(type, ast->nodes[0], outer);
+                    DynamicData rho = solve_expr(type, ast->nodes[2], outer);
+
+                    DynamicData temp(type);
+                    if (ast->nodes[1]->tag == "LSHIFT_OP"_)
+                    {
+                        temp = DynamicData(lho << rho);
+                    }
+                    else if (ast->nodes[1]->tag == "RSHIFT_OP"_)
+                    {
+                        temp = DynamicData(lho >> rho);
+                    }
+                    result = temp;
+                }
+                break;
+            case "AND_EXPR"_:
+                {
+                    DynamicData lho = solve_expr(type, ast->nodes[0], outer);
+                    DynamicData rho = solve_expr(type, ast->nodes[2], outer);
+
+                    result = DynamicData(lho & rho);
+                }
+                break;
+            case "XOR_EXPR"_:
+                {
+                    DynamicData lho = solve_expr(type, ast->nodes[0], outer);
+                    DynamicData rho = solve_expr(type, ast->nodes[2], outer);
+
+                    result = DynamicData(lho ^ rho);
+                }
+                break;
+            case "CONST_EXPR"_: // OR_EXPR
+                {
+                    DynamicData lho = solve_expr(type, ast->nodes[0], outer);
+                    DynamicData rho = solve_expr(type, ast->nodes[2], outer);
+
+                    result = DynamicData(lho | rho);
+                }
+                break;
+        }
+        return result;
     }
 
     void enum_dcl(
@@ -480,7 +814,6 @@ private:
                 case "IDENTIFIER"_:
                 {
                     name = resolve_identifier(ast, node->token, outer, true);
-                    //name = node->token;
                     StructType result(name);
                     outer->structs.emplace(name, std::move(result));
                     break;
@@ -523,7 +856,6 @@ private:
                 case "IDENTIFIER"_:
                 {
                     name = resolve_identifier(ast, node->token, outer, true);
-                    //name = node->token;
                     break;
                 }
                 case "SWITCH_TYPE_SPEC"_:
@@ -571,7 +903,139 @@ private:
             union_type->add_member(std::move(member.second));
         }
         // Replace
-        outer->unions[name] = DynamicType::Ptr(*struct_type);
+        outer->unions[name] = DynamicType::Ptr(*union_type);
+        */
+    }
+
+    void annotation_dcl(
+            const std::shared_ptr<peg::Ast> ast,
+            std::shared_ptr<SymbolScope> outer)
+    {
+        using namespace peg::udl;
+        std::string name;
+        //std::map<std::string, Member> member_list;
+        for (const auto& node : ast->nodes)
+        {
+            switch (node->original_tag)
+            {
+                case "IDENTIFIER"_:
+                {
+                    name = resolve_identifier(ast, node->token, outer, true);
+                    break;
+                }
+                case "ANNOTATION_BODY"_:
+                    //annotation_body(node, outer, member_list, type);
+                    // TODO:
+                    //     + ANNOTATION_BODY
+                    //         + ANNOTATION_MEMBER
+                    //             + ANNOTATION_MEMBER_TYPE/0[SIGNED_TINY_INT]
+                    //             - SIMPLE_DECLARATOR/0[IDENTIFIER] (my_int8)
+                    //         + ANNOTATION_MEMBER
+                    //             + ANNOTATION_MEMBER_TYPE/0[STRING_TYPE]
+                    //             - SIMPLE_DECLARATOR/0[IDENTIFIER] (my_string)
+                    break;
+            }
+        }
+
+        std::cout << "Found \"@annotation " << name << "\" but unions aren't supported. Ignoring." << std::endl;
+        /* TODO
+        AnnotationType annotation_type(name);
+        for (auto& member : member_list)
+        {
+            annotation_type.add_member(std::move(member.second));
+        }
+        // Replace
+        outer->annotations.emplace(name, annotation_type));
+        */
+    }
+
+    void bitset_dcl(
+            const std::shared_ptr<peg::Ast> ast,
+            std::shared_ptr<SymbolScope> outer)
+    {
+        using namespace peg::udl;
+        std::string name;
+        //std::map<std::string, Member> member_list;
+        for (const auto& node : ast->nodes)
+        {
+            switch (node->original_tag)
+            {
+                case "IDENTIFIER"_:
+                {
+                    name = resolve_identifier(ast, node->token, outer, true);
+                    break;
+                }
+                case "BITFIELD"_:
+                    //bitfield(node, outer, member_list, type);
+                    // TODO:
+                    // + BITFIELD
+                    //     - BITFIELD_SPEC/0[POSITIVE_INT_CONST] (3)
+                    //     - IDENTIFIER (a)
+                    // + BITFIELD
+                    //     - BITFIELD_SPEC/0[POSITIVE_INT_CONST] (1)
+                    //     - IDENTIFIER (b)
+                    // - BITFIELD/0[POSITIVE_INT_CONST] (4)
+                    // + BITFIELD
+                    //     + BITFIELD_SPEC
+                    //         - POSITIVE_INT_CONST (10)
+                    //         + DESTINATION_TYPE/2[SIGNED_LONG_INT]
+                    //     - IDENTIFIER (c)
+                    break;
+            }
+        }
+
+        std::cout << "Found \"bitset " << name << "\" but bitsets aren't supported. Ignoring." << std::endl;
+        /* TODO
+        BitsetType bitset_type(name);
+        for (auto& member : member_list)
+        {
+            bitset_type.add_member(std::move(member.second));
+        }
+        // Replace
+        outer->bitsets[name] = DynamicType::Ptr(bitset_type);
+        */
+    }
+
+    void bitmask_dcl(
+            const std::shared_ptr<peg::Ast> ast,
+            std::shared_ptr<SymbolScope> outer)
+    {
+        using namespace peg::udl;
+        std::string name;
+        //std::map<std::string, Member> member_list;
+        for (const auto& node : ast->nodes)
+        {
+            switch (node->original_tag)
+            {
+                case "IDENTIFIER"_:
+                {
+                    name = resolve_identifier(ast, node->token, outer, true);
+                    break;
+                }
+                case "BIT_VALUE"_:
+                    //switch_body(node, outer, member_list, type);
+                    // TODO:
+                    //  - BIT_VALUE/0[IDENTIFIER] (flag0)
+                    //  - BIT_VALUE/0[IDENTIFIER] (flag1)
+                    //  + BIT_VALUE
+                    //      + ANNOTATION_APPL
+                    //          - SCOPED_NAME (position)
+                    //          - ANNOTATION_APPL_PARAMS/1[LITERAL] (5)
+                    //      - IDENTIFIER (flag5)
+                    //  - BIT_VALUE/0[IDENTIFIER] (flag6)
+                    break;
+            }
+        }
+
+        std::cout << "Found \"bitmask " << name << "\" but bitmasks aren't supported. Ignoring." << std::endl;
+        /* TODO
+        BitmaskType bitmask_type(name);
+        for (auto& member : member_list)
+        {
+            bitmask_type.add_member(std::move(member.second));
+        }
+        // Replace
+        outer->bitmasks[name] = DynamicType::Ptr(bitmask_type);
         */
     }
 
@@ -605,86 +1069,83 @@ private:
             std::shared_ptr<SymbolScope> outer)
     {
         using namespace peg::udl;
-        //for (const auto& node : ast->nodes)
-        //{
-            switch (node->tag)
+        switch (node->tag)
+        {
+            case "SCOPED_NAME"_: // Scoped name
+            case "IDENTIFIER"_:
             {
-                case "SCOPED_NAME"_: // Scoped name
-                case "IDENTIFIER"_:
+                DynamicType::Ptr type = outer->get_type(node->token);
+                if (type.get() == nullptr)
                 {
-                    DynamicType::Ptr type = outer->get_type(node->token);
-                    if (type.get() == nullptr)
-                    {
-                        throw exception("Member type " + node->token + " is unknown", node);
-                    }
-                    return type;
+                    throw exception("Member type " + node->token + " is unknown", node);
                 }
-                case "BOOLEAN_TYPE"_:
-                    return primitive_type<bool>();
-                case "SIGNED_TINY_INT"_:
-                    return primitive_type<char>();
-                case "UNSIGNED_TINY_INT"_:
-                case "OCTET_TYPE"_:
-                    return primitive_type<uint8_t>();
-                case "SIGNED_SHORT_INT"_:
-                    return primitive_type<int16_t>();
-                case "UNSIGNED_SHORT_INT"_:
-                    return primitive_type<uint16_t>();
-                case "SIGNED_LONG_INT"_:
-                    return primitive_type<int32_t>();
-                case "UNSIGNED_LONG_INT"_:
-                    return primitive_type<uint32_t>();
-                case "SIGNED_LONGLONG_INT"_:
-                    return primitive_type<int64_t>();
-                case "UNSIGNED_LONGLONG_INT"_:
-                    return primitive_type<uint64_t>();
-                case "FLOAT_TYPE"_:
-                    return primitive_type<float>();
-                case "DOUBLE_TYPE"_:
-                    return primitive_type<double>();
-                case "LONG_DOUBLE_TYPE"_:
-                    return primitive_type<long double>();
-                case "CHAR_TYPE"_:
-                    return primitive_type<char>();
-                case "WIDE_CHAR_TYPE"_:
-                    return primitive_type<wchar_t>();
-                case "STRING_TYPE"_:
-                    return StringType();
-                case "STRING_SIZE"_:
-                    return StringType(std::atoi(node->token.c_str()));
-                case "WIDE_STRING_TYPE"_:
-                    return WStringType();
-                case "WSTRING_SIZE"_:
-                    return WStringType(std::atoi(node->token.c_str()));
-                case "SEQUENCE_TYPE"_:
-                {
-                    DynamicType::Ptr inner_type = type_spec(node->nodes[0], outer);
-                    size_t size = 0;
-                    if (node->nodes.size() > 1)
-                    {
-                        size = std::atoi(node->nodes[1]->token.c_str());
-                    }
-                    return SequenceType(*inner_type, size);
-                }
-                case "MAP_TYPE"_:
-                {
-                    DynamicType::Ptr key_type = type_spec(node->nodes[0], outer);
-                    DynamicType::Ptr inner_type = type_spec(node->nodes[1], outer);
-                    size_t size = 0;
-                    if (node->nodes.size() > 2)
-                    {
-                        size = std::atoi(node->nodes[2]->token.c_str());
-                    }
-                    std::cout << "Found \"map<" << key_type->name() << ", " << inner_type->name()
-                              << ", " << size << ">\" "
-                              << "but maps aren't supported. Ignoring." << std::endl;
-                    break;
-                    // return MapType(*key_type, *inner_type, size); // TODO, uncomment when maps are implemented.
-                }
-                default:
-                    return type_spec(node, outer);
+                return type;
             }
-        //}
+            case "BOOLEAN_TYPE"_:
+                return primitive_type<bool>();
+            case "SIGNED_TINY_INT"_:
+                return primitive_type<int8_t>();
+            case "UNSIGNED_TINY_INT"_:
+            case "OCTET_TYPE"_:
+                return primitive_type<uint8_t>();
+            case "SIGNED_SHORT_INT"_:
+                return primitive_type<int16_t>();
+            case "UNSIGNED_SHORT_INT"_:
+                return primitive_type<uint16_t>();
+            case "SIGNED_LONG_INT"_:
+                return primitive_type<int32_t>();
+            case "UNSIGNED_LONG_INT"_:
+                return primitive_type<uint32_t>();
+            case "SIGNED_LONGLONG_INT"_:
+                return primitive_type<int64_t>();
+            case "UNSIGNED_LONGLONG_INT"_:
+                return primitive_type<uint64_t>();
+            case "FLOAT_TYPE"_:
+                return primitive_type<float>();
+            case "DOUBLE_TYPE"_:
+                return primitive_type<double>();
+            case "LONG_DOUBLE_TYPE"_:
+                return primitive_type<long double>();
+            case "CHAR_TYPE"_:
+                return primitive_type<char>();
+            case "WIDE_CHAR_TYPE"_:
+                return primitive_type<wchar_t>();
+            case "STRING_TYPE"_:
+                return StringType();
+            case "STRING_SIZE"_:
+                return StringType(std::atoi(node->token.c_str()));
+            case "WIDE_STRING_TYPE"_:
+                return WStringType();
+            case "WSTRING_SIZE"_:
+                return WStringType(std::atoi(node->token.c_str()));
+            case "SEQUENCE_TYPE"_:
+            {
+                DynamicType::Ptr inner_type = type_spec(node->nodes[0], outer);
+                size_t size = 0;
+                if (node->nodes.size() > 1)
+                {
+                    size = std::atoi(node->nodes[1]->token.c_str());
+                }
+                return SequenceType(*inner_type, size);
+            }
+            case "MAP_TYPE"_:
+            {
+                DynamicType::Ptr key_type = type_spec(node->nodes[0], outer);
+                DynamicType::Ptr inner_type = type_spec(node->nodes[1], outer);
+                size_t size = 0;
+                if (node->nodes.size() > 2)
+                {
+                    size = std::atoi(node->nodes[2]->token.c_str());
+                }
+                std::cout << "Found \"map<" << key_type->name() << ", " << inner_type->name()
+                          << ", " << size << ">\" "
+                          << "but maps aren't supported. Ignoring." << std::endl;
+                break;
+                // return MapType(*key_type, *inner_type, size); // TODO, uncomment when maps are implemented.
+            }
+            default:
+                return type_spec(node, outer);
+        }
 
         return DynamicType::Ptr();
     }
