@@ -60,7 +60,9 @@ public:
             uint8_t* target,
             const uint8_t* source) const override
     {
-        new (target) std::basic_string<CHAR_T>(*reinterpret_cast<const std::basic_string<CHAR_T>*>(source));
+        const std::basic_string<CHAR_T>& source_string = *reinterpret_cast<const std::basic_string<CHAR_T>*>(source);
+        size_t max_size = bounds() > 0 ? size_t(bounds()) : std::basic_string<CHAR_T>::npos;
+        new (target) std::basic_string<CHAR_T>(source_string, 0, std::min(max_size, source_string.size()));
     }
 
     virtual void copy_instance_from_type(
@@ -69,8 +71,9 @@ public:
             const DynamicType& other) const override
     {
         assert(other.kind() == KIND); (void) other;
-        const std::basic_string<CHAR_T>& from = *reinterpret_cast<const std::basic_string<CHAR_T>*>(source);
-        new (target) std::basic_string<CHAR_T>(from, 0, std::min(size_t(bounds()), from.size()));
+        const std::basic_string<CHAR_T>& source_string = *reinterpret_cast<const std::basic_string<CHAR_T>*>(source);
+        size_t max_size = bounds() > 0 ? size_t(bounds()) : std::basic_string<CHAR_T>::npos;
+        new (target) std::basic_string<CHAR_T>(source_string, 0, std::min(max_size, source_string.size()));
     }
 
     virtual void move_instance(

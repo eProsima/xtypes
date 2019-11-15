@@ -521,24 +521,6 @@ public:
         type_.copy_instance(instance_, reinterpret_cast<const uint8_t*>(&t));
     }
 
-    /// \brief Set a string value into the DynamicData
-    /// \input[in] s The string value.
-    /// \pre The DynamicData must represent a StringType value.
-    void string(const std::string& s)
-    {
-        assert(type_.kind() == TypeKind::STRING_TYPE);
-        value(s);
-    }
-
-    /// \brief Set a wstring value into the DynamicData
-    /// \input[in] s The wstring value.
-    /// \pre The DynamicData must represent a WStringType value.
-    void wstring(const std::wstring& s)
-    {
-        assert(type_.kind() == TypeKind::WSTRING_TYPE);
-        value(s);
-    }
-
     /// \brief Push a primitive or string value into the DynamicData that represents a SequenceType
     /// \input[in] t The primitive or string value.
     /// \pre The DynamicData must represent a SequenceType.
