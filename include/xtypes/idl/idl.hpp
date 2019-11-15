@@ -27,6 +27,10 @@ namespace eprosima {
 namespace xtypes {
 namespace idl {
 
+/// \brief Generates the DynamicTypes related to an idl specification.
+/// It supports IDL4.2
+/// \param[in] idl A IDL specification to parse into DynamicType.
+/// \return A map with the DynamicTypes parsed from the idl.
 inline std::map<std::string, DynamicType::Ptr> parse(
         const std::string& idl)
 {
@@ -39,6 +43,7 @@ inline std::map<std::string, DynamicType::Ptr> parse(
     return result;
 }
 
+/// \brief Same as parse() but it receives a path file where the IDL is located.
 inline std::map<std::string, DynamicType::Ptr> parse_file(
         const std::string& idl_file)
 {
@@ -51,7 +56,9 @@ inline std::map<std::string, DynamicType::Ptr> parse_file(
     return result;
 }
 
-
+/// \brief Generates the IDL that represents an StructType
+/// \param[in] type Type to represent into IDL
+/// \return An IDL that represents the StructType given.
 inline std::string generate(const StructType& type)
 {
     std::stringstream ss;

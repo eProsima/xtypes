@@ -6,16 +6,15 @@ using namespace eprosima::xtypes;
 
 int main()
 {
-    std::string idl_type = R"(
+    std::string idl_spec = R"(
         struct InnerType
         {
-            int32 im1;
+            uint32 im1;
             float im2;
         };
-
     )";
 
-    std::map<std::string, DynamicType::Ptr> from_idl = idl::parse(idl_type);
+    std::map<std::string, DynamicType::Ptr> from_idl = idl::parse(idl_spec);
     const StructType& inner = static_cast<const StructType&>(*from_idl.at("InnerType"));
 
     StructType outer("OuterType");
