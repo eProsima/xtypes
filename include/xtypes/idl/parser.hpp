@@ -41,7 +41,7 @@ class Parser
 {
 public:
     Parser()
-        : parser_(IDL_GRAMMAR)
+        : parser_(idl_grammar())
     {
         parser_.enable_ast();
     }

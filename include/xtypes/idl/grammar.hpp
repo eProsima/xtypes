@@ -22,7 +22,11 @@ namespace eprosima {
 namespace xtypes {
 namespace idl {
 
-auto IDL_GRAMMAR = R"(
+/// \brief Gives a peg grammar for IDL 4.2
+/// \return The idl peg grammar.
+inline const char* idl_grammar()
+{
+    static const char* IDL_GRAMMAR = R"(
 # Tested at: https://yhirose.github.io/cpp-peglib/
 
 # Building Block Core Data Types:
@@ -299,6 +303,8 @@ DECIMAL_DIGIT <- [0-9]
 OCTAL_DIGIT <- [0-7]
 HEX_DIGIT <- [0-9a-fA-F]
 )";
+    return IDL_GRAMMAR;
+}
 
 }
 }
