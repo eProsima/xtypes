@@ -139,10 +139,12 @@ install(
     )
 
 install(
-    FILES
-        ${PROJECT_SOURCE_DIR}/thirdparty/cpp-peglib/peglib.h
+    DIRECTORY
+        ${PROJECT_SOURCE_DIR}/thirdparty/cpp-peglib/include/
     DESTINATION
-        ${INCLUDE_INSTALL_DIR}/thirdparty/cpp-peglib
+        thirdparty/cpp-peglib/include
+    FILES_MATCHING
+        PATTERN "*.h"
     )
 
 install(
