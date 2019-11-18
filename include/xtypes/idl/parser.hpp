@@ -233,11 +233,38 @@ private:
             }
         }
 
-        const DynamicData& get_constant(
+        DynamicData get_constant(
                 const std::string& name) const
         {
             auto it = constants.find(name);
-            return it->second;
+            if (it != constants.end())
+            {
+                return it->second;
+            }
+
+            if (outer != nullptr)
+            {
+                return outer->get_constant(name);
+            }
+
+            return DynamicData(primitive_type<bool>());
+        }
+
+        bool has_constant(
+                const std::string& name) const
+        {
+            auto it = constants.find(name);
+            if (it != constants.end())
+            {
+                return true;
+            }
+
+            if (outer != nullptr)
+            {
+                return outer->has_constant(name);
+            }
+
+            return false;
         }
 
         bool set_constant(
@@ -1154,8 +1181,16 @@ private:
             case "STRING_TYPE"_:
                 return StringType();
             case "STRING_SIZE"_:
+                if (outer->has_constant(node->token))
+                {
+                    return StringType(get_dimension(node->token, outer, node));
+                }
                 return StringType(std::atoi(node->token.c_str()));
             case "WIDE_STRING_TYPE"_:
+                if (outer->has_constant(node->token))
+                {
+                    return WStringType(get_dimension(node->token, outer, node));
+                }
                 return WStringType();
             case "WSTRING_SIZE"_:
                 return WStringType(std::atoi(node->token.c_str()));
@@ -1165,7 +1200,8 @@ private:
                 size_t size = 0;
                 if (node->nodes.size() > 1)
                 {
-                    size = std::atoi(node->nodes[1]->token.c_str());
+                    //size = std::atoi(node->nodes[1]->token.c_str());
+                    size = get_dimension(outer, node->nodes[1]);
                 }
                 return SequenceType(*inner_type, size);
             }
@@ -1176,7 +1212,8 @@ private:
                 size_t size = 0;
                 if (node->nodes.size() > 2)
                 {
-                    size = std::atoi(node->nodes[2]->token.c_str());
+                    //size = std::atoi(node->nodes[2]->token.c_str());
+                    size = get_dimension(outer, node->nodes[1]);
                 }
                 std::cout << "Found \"map<" << key_type->name() << ", " << inner_type->name()
                           << ", " << size << ">\" "
@@ -1189,6 +1226,61 @@ private:
         }
 
         return DynamicType::Ptr();
+    }
+
+    size_t get_dimension(
+            const std::string& value,
+            std::shared_ptr<SymbolScope> outer,
+            const std::shared_ptr<peg::Ast> node)
+    {
+        DynamicData c_data = outer->get_constant(value);
+        size_t dim = 0;
+        switch (c_data.type().kind())
+        {
+            case TypeKind::INT_8_TYPE:
+                dim = c_data.value<int8_t>();
+                break;
+            case TypeKind::UINT_8_TYPE:
+                dim = c_data.value<uint8_t>();
+                break;
+            case TypeKind::INT_16_TYPE:
+                dim = c_data.value<int16_t>();
+                break;
+            case TypeKind::UINT_16_TYPE:
+                dim = c_data.value<uint16_t>();
+                break;
+            case TypeKind::INT_32_TYPE:
+                dim = c_data.value<int32_t>();
+                break;
+            case TypeKind::UINT_32_TYPE:
+                dim = c_data.value<uint32_t>();
+                break;
+            case TypeKind::INT_64_TYPE:
+                dim = c_data.value<int64_t>();
+                break;
+            case TypeKind::UINT_64_TYPE:
+                dim = c_data.value<uint64_t>();
+                break;
+            default:
+                throw exception("Only a positive intenger number can be used as dimension.", node);
+        }
+        return dim;
+    }
+
+    size_t get_dimension(
+            std::shared_ptr<SymbolScope> outer,
+            const std::shared_ptr<peg::Ast> node)
+    {
+        using namespace peg::udl;
+
+        if (node->tag == "SCOPED_NAME"_)
+        {
+            return get_dimension(node->token, outer, node);
+        }
+        else
+        {
+            return std::stoul(node->token);
+        }
     }
 
     ArrayType::Ptr get_array_type(
@@ -1298,10 +1390,45 @@ private:
                             name = resolve_identifier(subnode, subnode->token, outer);
                             break;
                         }
-                        case "POSITIVE_INT_CONST"_:
+                        case "INTEGER_LITERAL"_:
                         {
-                            // TODO, allow to use constants
-                            dimensions.push_back(std::atoi(subnode->token.c_str()));
+                            dimensions.push_back(std::stoul(subnode->token.c_str()));
+                            break;
+                        }
+                        case "SCOPED_NAME"_:
+                        {
+                            DynamicData c_data = outer->get_constant(subnode->token);
+                            size_t dim = 0;
+                            switch (c_data.type().kind())
+                            {
+                                case TypeKind::INT_8_TYPE:
+                                    dim = c_data.value<int8_t>();
+                                    break;
+                                case TypeKind::UINT_8_TYPE:
+                                    dim = c_data.value<uint8_t>();
+                                    break;
+                                case TypeKind::INT_16_TYPE:
+                                    dim = c_data.value<int16_t>();
+                                    break;
+                                case TypeKind::UINT_16_TYPE:
+                                    dim = c_data.value<uint16_t>();
+                                    break;
+                                case TypeKind::INT_32_TYPE:
+                                    dim = c_data.value<int32_t>();
+                                    break;
+                                case TypeKind::UINT_32_TYPE:
+                                    dim = c_data.value<uint32_t>();
+                                    break;
+                                case TypeKind::INT_64_TYPE:
+                                    dim = c_data.value<int64_t>();
+                                    break;
+                                case TypeKind::UINT_64_TYPE:
+                                    dim = c_data.value<uint64_t>();
+                                    break;
+                                default:
+                                    throw exception("Only a positive intenger number can be used as dimension.", node);
+                            }
+                            dimensions.push_back(dim);
                             break;
                         }
                     }

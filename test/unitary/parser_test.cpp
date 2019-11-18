@@ -496,6 +496,32 @@ TEST (IDLParser, constants)
     {
         std::cout << exc.what() << std::endl;
     }
+
+    {
+        try
+        {
+            result = parse(R"(
+                const uint32 SIZE = 50;
+
+                struct MyStruct
+                {
+                    string my_str_array[SIZE];
+                    sequence<long, SIZE> my_seq;
+                };
+                           )");
+        }
+        catch(const Parser::exception& exc)
+        {
+            std::cout << exc.what() << std::endl;
+        }
+
+        EXPECT_EQ(1, result.size());
+
+        const DynamicType* my_struct = result["MyStruct"].get();
+        DynamicData data(*my_struct);
+        ASSERT_EQ(data["my_str_array"].bounds(), 50);
+        ASSERT_EQ(data["my_seq"].bounds(), 50);
+    }
 }
 
 TEST (IDLParser, not_yet_supported)
