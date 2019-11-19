@@ -507,6 +507,18 @@ public:
         return ReadableDynamicDataRef::operator[](index);
     }
 
+    ReadableDynamicDataRef operator [] (
+            const std::string& member_name) const
+    {
+        return ReadableDynamicDataRef::operator[](member_name);
+    }
+
+    ReadableDynamicDataRef operator [] (
+            size_t index) const
+    {
+        return ReadableDynamicDataRef::operator[](index);
+    }
+
     /// \brief Set a primitive or string value into the DynamicData
     /// \input[in] t The primitive or string value.
     /// \pre The DynamicData must represent a PrimitiveType or W/StringType value.
@@ -864,6 +876,196 @@ public:
     /// \brief Request a writable reference from this DynamicData.
     /// \returns a WritableDynamicDataRef identifying th DynamicData.
     WritableDynamicDataRef ref() const { return WritableDynamicDataRef(*this); }
+
+    template<typename T, class = std::is_arithmetic<T>>
+    T cast() const
+    {
+        switch (type_.kind())
+        {
+            case TypeKind::BOOLEAN_TYPE:
+            {
+                bool temp = *this;
+                return static_cast<T>(temp);
+            }
+            case TypeKind::INT_8_TYPE:
+            {
+                int8_t temp = *this;
+                return static_cast<T>(temp);
+            }
+            case TypeKind::UINT_8_TYPE:
+            {
+                uint8_t temp = *this;
+                return static_cast<T>(temp);
+            }
+            case TypeKind::INT_16_TYPE:
+            {
+                int16_t temp = *this;
+                return static_cast<T>(temp);
+            }
+            case TypeKind::UINT_16_TYPE:
+            {
+                uint16_t temp = *this;
+                return static_cast<T>(temp);
+            }
+            case TypeKind::INT_32_TYPE:
+            {
+                int32_t temp = *this;
+                return static_cast<T>(temp);
+            }
+            case TypeKind::UINT_32_TYPE:
+            {
+                uint32_t temp = *this;
+                return static_cast<T>(temp);
+            }
+            case TypeKind::INT_64_TYPE:
+            {
+                int64_t temp = *this;
+                return static_cast<T>(temp);
+            }
+            case TypeKind::UINT_64_TYPE:
+            {
+                uint64_t temp = *this;
+                return static_cast<T>(temp);
+            }
+            case TypeKind::FLOAT_32_TYPE:
+            {
+                float temp = *this;
+                return static_cast<T>(temp);
+            }
+            case TypeKind::FLOAT_64_TYPE:
+            {
+                double temp = *this;
+                return static_cast<T>(temp);
+            }
+            case TypeKind::FLOAT_128_TYPE:
+            {
+                long double temp = *this;
+                return static_cast<T>(temp);
+            }
+            case TypeKind::CHAR_8_TYPE:
+            {
+                char temp = *this;
+                return static_cast<T>(temp);
+            }
+            case TypeKind::CHAR_16_TYPE:
+            {
+                wchar_t temp = *this;
+                return static_cast<T>(temp);
+            }
+            //case TypeKind::ENUMERATION_TYPE:
+            /*
+            case TypeKind::STRING_TYPE:
+            {
+                std::string temp = *this;
+                return reinterpret_cast<T>(temp);
+            }
+            case TypeKind::WSTRING_TYPE:
+            {
+                std::wstring temp = *this;
+                return reinterpret_cast<T>(temp);
+            }
+            */
+        }
+        return T();
+    }
+
+    template<typename T = std::string>
+    T cast() const
+    {
+        switch (type_.kind())
+        {
+            case TypeKind::BOOLEAN_TYPE:
+            {
+                bool temp = *this;
+                return std::to_string(temp);
+            }
+            case TypeKind::INT_8_TYPE:
+            {
+                int8_t temp = *this;
+                return std::to_string(temp);
+            }
+            case TypeKind::UINT_8_TYPE:
+            {
+                uint8_t temp = *this;
+                return std::to_string(temp);
+            }
+            case TypeKind::INT_16_TYPE:
+            {
+                int16_t temp = *this;
+                return std::to_string(temp);
+            }
+            case TypeKind::UINT_16_TYPE:
+            {
+                uint16_t temp = *this;
+                return std::to_string(temp);
+            }
+            case TypeKind::INT_32_TYPE:
+            {
+                int32_t temp = *this;
+                return std::to_string(temp);
+            }
+            case TypeKind::UINT_32_TYPE:
+            {
+                uint32_t temp = *this;
+                return std::to_string(temp);
+            }
+            case TypeKind::INT_64_TYPE:
+            {
+                int64_t temp = *this;
+                return std::to_string(temp);
+            }
+            case TypeKind::UINT_64_TYPE:
+            {
+                uint64_t temp = *this;
+                return std::to_string(temp);
+            }
+            case TypeKind::FLOAT_32_TYPE:
+            {
+                float temp = *this;
+                return std::to_string(temp);
+            }
+            case TypeKind::FLOAT_64_TYPE:
+            {
+                double temp = *this;
+                return std::to_string(temp);
+            }
+            case TypeKind::FLOAT_128_TYPE:
+            {
+                long double temp = *this;
+                return std::to_string(temp);
+            }
+            case TypeKind::CHAR_8_TYPE:
+            {
+                char temp = *this;
+                return std::to_string(temp);
+            }
+            case TypeKind::CHAR_16_TYPE:
+            {
+                wchar_t temp = *this;
+                return std::to_string(temp);
+            }
+            //case TypeKind::ENUMERATION_TYPE:
+            case TypeKind::STRING_TYPE:
+            {
+                std::string temp = *this;
+                return temp;
+            }
+            /*
+            case TypeKind::WSTRING_TYPE:
+            {
+                std::wstring temp = *this;
+                return reinterpret_cast<T>(temp);
+            }
+            */
+        }
+        return T();
+    }
+
+    template<typename T, class = std::is_arithmetic<T>>
+    T& cast()
+    {
+        return *reinterpret_cast<T*>(instance_);
+    }
 };
 
 } //namespace xtypes
