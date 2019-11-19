@@ -284,6 +284,925 @@ inline T DynamicData::cast() const
     return T();
 }
 
+inline DynamicData DynamicData::operator - () const
+{
+    assert(type_.kind() == TypeKind::INT_8_TYPE || type_.kind() == TypeKind::UINT_8_TYPE ||
+           type_.kind() == TypeKind::INT_16_TYPE || type_.kind() == TypeKind::UINT_16_TYPE ||
+           type_.kind() == TypeKind::INT_32_TYPE || type_.kind() == TypeKind::UINT_32_TYPE ||
+           type_.kind() == TypeKind::INT_64_TYPE || type_.kind() == TypeKind::UINT_64_TYPE ||
+           type_.kind() == TypeKind::FLOAT_32_TYPE || type_.kind() == TypeKind::FLOAT_64_TYPE ||
+           type_.kind() == TypeKind::FLOAT_128_TYPE);
+
+    switch(type_.kind())
+    {
+        case TypeKind::INT_8_TYPE:
+            {
+                DynamicData result(primitive_type<int8_t>());
+                result = -(*this);
+                return result;
+            }
+        case TypeKind::UINT_8_TYPE:
+            {
+                DynamicData result(primitive_type<uint8_t>());
+                result = -(*this);
+                return result;
+            }
+        case TypeKind::INT_16_TYPE:
+            {
+                DynamicData result(primitive_type<int16_t>());
+                result = -(*this);
+                return result;
+            }
+        case TypeKind::UINT_16_TYPE:
+            {
+                DynamicData result(primitive_type<uint16_t>());
+                result = -(*this);
+                return result;
+            }
+        case TypeKind::INT_32_TYPE:
+            {
+                DynamicData result(primitive_type<int32_t>());
+                result = -(*this);
+                return result;
+            }
+        case TypeKind::UINT_32_TYPE:
+            {
+                DynamicData result(primitive_type<uint32_t>());
+                result = -(*this);
+                return result;
+            }
+        case TypeKind::INT_64_TYPE:
+            {
+                DynamicData result(primitive_type<int64_t>());
+                result = -(*this);
+                return result;
+            }
+        case TypeKind::UINT_64_TYPE:
+            {
+                DynamicData result(primitive_type<uint64_t>());
+                result = -(*this);
+                return result;
+            }
+        case TypeKind::FLOAT_32_TYPE:
+            {
+                DynamicData result(primitive_type<float>());
+                result = -(*this);
+                return result;
+            }
+        case TypeKind::FLOAT_64_TYPE:
+            {
+                DynamicData result(primitive_type<double>());
+                result = -(*this);
+                return result;
+            }
+        case TypeKind::FLOAT_128_TYPE:
+            {
+                DynamicData result(primitive_type<long double>());
+                result = -(*this);
+                return result;
+            }
+        default:
+            break;
+    }
+
+    return *this;
+}
+
+inline DynamicData DynamicData::operator * (const ReadableDynamicDataRef& other) const
+{
+    switch(type_.kind())
+    {
+        case TypeKind::INT_8_TYPE:
+            {
+                int8_t lho = *this;
+                int8_t rho = other;
+                DynamicData result(primitive_type<int8_t>());
+                result = lho * rho;
+                return result;
+            }
+        case TypeKind::UINT_8_TYPE:
+            {
+                uint8_t lho = *this;
+                uint8_t rho = other;
+                DynamicData result(primitive_type<uint8_t>());
+                result = lho * rho;
+                return result;
+            }
+        case TypeKind::INT_16_TYPE:
+            {
+                int16_t lho = *this;
+                int16_t rho = other;
+                DynamicData result(primitive_type<int16_t>());
+                result = lho * rho;
+                return result;
+            }
+        case TypeKind::UINT_16_TYPE:
+            {
+                uint16_t lho = *this;
+                uint16_t rho = other;
+                DynamicData result(primitive_type<uint16_t>());
+                result = lho * rho;
+                return result;
+            }
+        case TypeKind::INT_32_TYPE:
+            {
+                int32_t lho = *this;
+                int32_t rho = other;
+                DynamicData result(primitive_type<int32_t>());
+                result = lho * rho;
+                return result;
+            }
+        case TypeKind::UINT_32_TYPE:
+            {
+                uint32_t lho = *this;
+                uint32_t rho = other;
+                DynamicData result(primitive_type<uint32_t>());
+                result = lho * rho;
+                return result;
+            }
+        case TypeKind::INT_64_TYPE:
+            {
+                int64_t lho = *this;
+                int64_t rho = other;
+                DynamicData result(primitive_type<int64_t>());
+                result = lho * rho;
+                return result;
+            }
+        case TypeKind::UINT_64_TYPE:
+            {
+                uint64_t lho = *this;
+                uint64_t rho = other;
+                DynamicData result(primitive_type<uint64_t>());
+                result = lho * rho;
+                return result;
+            }
+        case TypeKind::FLOAT_32_TYPE:
+            {
+                float lho = *this;
+                float rho = other;
+                DynamicData result(primitive_type<float>());
+                result = lho * rho;
+                return result;
+            }
+        case TypeKind::FLOAT_64_TYPE:
+            {
+                double lho = *this;
+                double rho = other;
+                DynamicData result(primitive_type<double>());
+                result = lho * rho;
+                return result;
+            }
+        case TypeKind::FLOAT_128_TYPE:
+            {
+                long double lho = *this;
+                long double rho = other;
+                DynamicData result(primitive_type<long double>());
+                result = lho * rho;
+                return result;
+            }
+        default:
+            return *this;
+    }
+}
+
+inline DynamicData DynamicData::operator / (const ReadableDynamicDataRef& other) const
+{
+    switch(type_.kind())
+    {
+        case TypeKind::INT_8_TYPE:
+            {
+                int8_t lho = *this;
+                int8_t rho = other;
+                DynamicData result(primitive_type<int8_t>());
+                result = lho / rho;
+                return result;
+            }
+        case TypeKind::UINT_8_TYPE:
+            {
+                uint8_t lho = *this;
+                uint8_t rho = other;
+                DynamicData result(primitive_type<uint8_t>());
+                result = lho / rho;
+                return result;
+            }
+        case TypeKind::INT_16_TYPE:
+            {
+                int16_t lho = *this;
+                int16_t rho = other;
+                DynamicData result(primitive_type<int16_t>());
+                result = lho / rho;
+                return result;
+            }
+        case TypeKind::UINT_16_TYPE:
+            {
+                uint16_t lho = *this;
+                uint16_t rho = other;
+                DynamicData result(primitive_type<uint16_t>());
+                result = lho / rho;
+                return result;
+            }
+        case TypeKind::INT_32_TYPE:
+            {
+                int32_t lho = *this;
+                int32_t rho = other;
+                DynamicData result(primitive_type<int32_t>());
+                result = lho / rho;
+                return result;
+            }
+        case TypeKind::UINT_32_TYPE:
+            {
+                uint32_t lho = *this;
+                uint32_t rho = other;
+                DynamicData result(primitive_type<uint32_t>());
+                result = lho / rho;
+                return result;
+            }
+        case TypeKind::INT_64_TYPE:
+            {
+                int64_t lho = *this;
+                int64_t rho = other;
+                DynamicData result(primitive_type<int64_t>());
+                result = lho / rho;
+                return result;
+            }
+        case TypeKind::UINT_64_TYPE:
+            {
+                uint64_t lho = *this;
+                uint64_t rho = other;
+                DynamicData result(primitive_type<uint64_t>());
+                result = lho / rho;
+                return result;
+            }
+        case TypeKind::FLOAT_32_TYPE:
+            {
+                float lho = *this;
+                float rho = other;
+                DynamicData result(primitive_type<float>());
+                result = lho / rho;
+                return result;
+            }
+        case TypeKind::FLOAT_64_TYPE:
+            {
+                double lho = *this;
+                double rho = other;
+                DynamicData result(primitive_type<double>());
+                result = lho / rho;
+                return result;
+            }
+        case TypeKind::FLOAT_128_TYPE:
+            {
+                long double lho = *this;
+                long double rho = other;
+                DynamicData result(primitive_type<long double>());
+                result = lho / rho;
+                return result;
+            }
+        default:
+            return *this;
+    }
+
+}
+
+inline DynamicData DynamicData::operator % (const ReadableDynamicDataRef& other) const
+{
+    switch(type_.kind())
+    {
+        case TypeKind::INT_8_TYPE:
+            {
+                int8_t lho = *this;
+                int8_t rho = other;
+                DynamicData result(primitive_type<int8_t>());
+                result = lho % rho;
+                return result;
+            }
+        case TypeKind::UINT_8_TYPE:
+            {
+                uint8_t lho = *this;
+                uint8_t rho = other;
+                DynamicData result(primitive_type<uint8_t>());
+                result = lho % rho;
+                return result;
+            }
+        case TypeKind::INT_16_TYPE:
+            {
+                int16_t lho = *this;
+                int16_t rho = other;
+                DynamicData result(primitive_type<int16_t>());
+                result = lho % rho;
+                return result;
+            }
+        case TypeKind::UINT_16_TYPE:
+            {
+                uint16_t lho = *this;
+                uint16_t rho = other;
+                DynamicData result(primitive_type<uint16_t>());
+                result = lho % rho;
+                return result;
+            }
+        case TypeKind::INT_32_TYPE:
+            {
+                int32_t lho = *this;
+                int32_t rho = other;
+                DynamicData result(primitive_type<int32_t>());
+                result = lho % rho;
+                return result;
+            }
+        case TypeKind::UINT_32_TYPE:
+            {
+                uint32_t lho = *this;
+                uint32_t rho = other;
+                DynamicData result(primitive_type<uint32_t>());
+                result = lho % rho;
+                return result;
+            }
+        case TypeKind::INT_64_TYPE:
+            {
+                int64_t lho = *this;
+                int64_t rho = other;
+                DynamicData result(primitive_type<int64_t>());
+                result = lho % rho;
+                return result;
+            }
+        case TypeKind::UINT_64_TYPE:
+            {
+                uint64_t lho = *this;
+                uint64_t rho = other;
+                DynamicData result(primitive_type<uint64_t>());
+                result = lho % rho;
+                return result;
+            }
+        default:
+            return *this;
+    }
+
+}
+
+inline DynamicData DynamicData::operator + (const ReadableDynamicDataRef& other) const
+{
+    switch(type_.kind())
+    {
+        case TypeKind::INT_8_TYPE:
+            {
+                int8_t lho = *this;
+                int8_t rho = other;
+                DynamicData result(primitive_type<int8_t>());
+                result = lho + rho;
+                return result;
+            }
+        case TypeKind::UINT_8_TYPE:
+            {
+                uint8_t lho = *this;
+                uint8_t rho = other;
+                DynamicData result(primitive_type<uint8_t>());
+                result = lho + rho;
+                return result;
+            }
+        case TypeKind::INT_16_TYPE:
+            {
+                int16_t lho = *this;
+                int16_t rho = other;
+                DynamicData result(primitive_type<int16_t>());
+                result = lho + rho;
+                return result;
+            }
+        case TypeKind::UINT_16_TYPE:
+            {
+                uint16_t lho = *this;
+                uint16_t rho = other;
+                DynamicData result(primitive_type<uint16_t>());
+                result = lho + rho;
+                return result;
+            }
+        case TypeKind::INT_32_TYPE:
+            {
+                int32_t lho = *this;
+                int32_t rho = other;
+                DynamicData result(primitive_type<int32_t>());
+                result = lho + rho;
+                return result;
+            }
+        case TypeKind::UINT_32_TYPE:
+            {
+                uint32_t lho = *this;
+                uint32_t rho = other;
+                DynamicData result(primitive_type<uint32_t>());
+                result = lho + rho;
+                return result;
+            }
+        case TypeKind::INT_64_TYPE:
+            {
+                int64_t lho = *this;
+                int64_t rho = other;
+                DynamicData result(primitive_type<int64_t>());
+                result = lho + rho;
+                return result;
+            }
+        case TypeKind::UINT_64_TYPE:
+            {
+                uint64_t lho = *this;
+                uint64_t rho = other;
+                DynamicData result(primitive_type<uint64_t>());
+                result = lho + rho;
+                return result;
+            }
+        case TypeKind::FLOAT_32_TYPE:
+            {
+                float lho = *this;
+                float rho = other;
+                DynamicData result(primitive_type<float>());
+                result = lho + rho;
+                return result;
+            }
+        case TypeKind::FLOAT_64_TYPE:
+            {
+                double lho = *this;
+                double rho = other;
+                DynamicData result(primitive_type<double>());
+                result = lho + rho;
+                return result;
+            }
+        case TypeKind::FLOAT_128_TYPE:
+            {
+                long double lho = *this;
+                long double rho = other;
+                DynamicData result(primitive_type<long double>());
+                result = lho + rho;
+                return result;
+            }
+        default:
+            return *this;
+    }
+
+}
+
+inline DynamicData DynamicData::operator - (const ReadableDynamicDataRef& other) const
+{
+    switch(type_.kind())
+    {
+        case TypeKind::INT_8_TYPE:
+            {
+                int8_t lho = *this;
+                int8_t rho = other;
+                DynamicData result(primitive_type<int8_t>());
+                result = lho - rho;
+                return result;
+            }
+        case TypeKind::UINT_8_TYPE:
+            {
+                uint8_t lho = *this;
+                uint8_t rho = other;
+                DynamicData result(primitive_type<uint8_t>());
+                result = lho - rho;
+                return result;
+            }
+        case TypeKind::INT_16_TYPE:
+            {
+                int16_t lho = *this;
+                int16_t rho = other;
+                DynamicData result(primitive_type<int16_t>());
+                result = lho - rho;
+                return result;
+            }
+        case TypeKind::UINT_16_TYPE:
+            {
+                uint16_t lho = *this;
+                uint16_t rho = other;
+                DynamicData result(primitive_type<uint16_t>());
+                result = lho - rho;
+                return result;
+            }
+        case TypeKind::INT_32_TYPE:
+            {
+                int32_t lho = *this;
+                int32_t rho = other;
+                DynamicData result(primitive_type<int32_t>());
+                result = lho - rho;
+                return result;
+            }
+        case TypeKind::UINT_32_TYPE:
+            {
+                uint32_t lho = *this;
+                uint32_t rho = other;
+                DynamicData result(primitive_type<uint32_t>());
+                result = lho - rho;
+                return result;
+            }
+        case TypeKind::INT_64_TYPE:
+            {
+                int64_t lho = *this;
+                int64_t rho = other;
+                DynamicData result(primitive_type<int64_t>());
+                result = lho - rho;
+                return result;
+            }
+        case TypeKind::UINT_64_TYPE:
+            {
+                uint64_t lho = *this;
+                uint64_t rho = other;
+                DynamicData result(primitive_type<uint64_t>());
+                result = lho - rho;
+                return result;
+            }
+        case TypeKind::FLOAT_32_TYPE:
+            {
+                float lho = *this;
+                float rho = other;
+                DynamicData result(primitive_type<float>());
+                result = lho - rho;
+                return result;
+            }
+        case TypeKind::FLOAT_64_TYPE:
+            {
+                double lho = *this;
+                double rho = other;
+                DynamicData result(primitive_type<double>());
+                result = lho - rho;
+                return result;
+            }
+        case TypeKind::FLOAT_128_TYPE:
+            {
+                long double lho = *this;
+                long double rho = other;
+                DynamicData result(primitive_type<long double>());
+                result = lho - rho;
+                return result;
+            }
+        default:
+            return *this;
+    }
+
+}
+
+inline DynamicData DynamicData::operator << (const ReadableDynamicDataRef& other) const
+{
+    switch(type_.kind())
+    {
+        case TypeKind::INT_8_TYPE:
+            {
+                int8_t lho = *this;
+                int8_t rho = other;
+                DynamicData result(primitive_type<int8_t>());
+                result = lho << rho;
+                return result;
+            }
+        case TypeKind::UINT_8_TYPE:
+            {
+                uint8_t lho = *this;
+                uint8_t rho = other;
+                DynamicData result(primitive_type<uint8_t>());
+                result = lho << rho;
+                return result;
+            }
+        case TypeKind::INT_16_TYPE:
+            {
+                int16_t lho = *this;
+                int16_t rho = other;
+                DynamicData result(primitive_type<int16_t>());
+                result = lho << rho;
+                return result;
+            }
+        case TypeKind::UINT_16_TYPE:
+            {
+                uint16_t lho = *this;
+                uint16_t rho = other;
+                DynamicData result(primitive_type<uint16_t>());
+                result = lho << rho;
+                return result;
+            }
+        case TypeKind::INT_32_TYPE:
+            {
+                int32_t lho = *this;
+                int32_t rho = other;
+                DynamicData result(primitive_type<int32_t>());
+                result = lho << rho;
+                return result;
+            }
+        case TypeKind::UINT_32_TYPE:
+            {
+                uint32_t lho = *this;
+                uint32_t rho = other;
+                DynamicData result(primitive_type<uint32_t>());
+                result = lho << rho;
+                return result;
+            }
+        case TypeKind::INT_64_TYPE:
+            {
+                int64_t lho = *this;
+                int64_t rho = other;
+                DynamicData result(primitive_type<int64_t>());
+                result = lho << rho;
+                return result;
+            }
+        case TypeKind::UINT_64_TYPE:
+            {
+                uint64_t lho = *this;
+                uint64_t rho = other;
+                DynamicData result(primitive_type<uint64_t>());
+                result = lho << rho;
+                return result;
+            }
+        default:
+            return *this;
+    }
+
+}
+
+inline DynamicData DynamicData::operator >> (const ReadableDynamicDataRef& other) const
+{
+    switch(type_.kind())
+    {
+        case TypeKind::INT_8_TYPE:
+            {
+                int8_t lho = *this;
+                int8_t rho = other;
+                DynamicData result(primitive_type<int8_t>());
+                result = lho >> rho;
+                return result;
+            }
+        case TypeKind::UINT_8_TYPE:
+            {
+                uint8_t lho = *this;
+                uint8_t rho = other;
+                DynamicData result(primitive_type<uint8_t>());
+                result = lho >> rho;
+                return result;
+            }
+        case TypeKind::INT_16_TYPE:
+            {
+                int16_t lho = *this;
+                int16_t rho = other;
+                DynamicData result(primitive_type<int16_t>());
+                result = lho >> rho;
+                return result;
+            }
+        case TypeKind::UINT_16_TYPE:
+            {
+                uint16_t lho = *this;
+                uint16_t rho = other;
+                DynamicData result(primitive_type<uint16_t>());
+                result = lho >> rho;
+                return result;
+            }
+        case TypeKind::INT_32_TYPE:
+            {
+                int32_t lho = *this;
+                int32_t rho = other;
+                DynamicData result(primitive_type<int32_t>());
+                result = lho >> rho;
+                return result;
+            }
+        case TypeKind::UINT_32_TYPE:
+            {
+                uint32_t lho = *this;
+                uint32_t rho = other;
+                DynamicData result(primitive_type<uint32_t>());
+                result = lho >> rho;
+                return result;
+            }
+        case TypeKind::INT_64_TYPE:
+            {
+                int64_t lho = *this;
+                int64_t rho = other;
+                DynamicData result(primitive_type<int64_t>());
+                result = lho >> rho;
+                return result;
+            }
+        case TypeKind::UINT_64_TYPE:
+            {
+                uint64_t lho = *this;
+                uint64_t rho = other;
+                DynamicData result(primitive_type<uint64_t>());
+                result = lho >> rho;
+                return result;
+            }
+        default:
+            return *this;
+    }
+
+}
+
+inline DynamicData DynamicData::operator & (const ReadableDynamicDataRef& other) const
+{
+    switch(type_.kind())
+    {
+        case TypeKind::INT_8_TYPE:
+            {
+                int8_t lho = *this;
+                int8_t rho = other;
+                DynamicData result(primitive_type<int8_t>());
+                result = lho & rho;
+                return result;
+            }
+        case TypeKind::UINT_8_TYPE:
+            {
+                uint8_t lho = *this;
+                uint8_t rho = other;
+                DynamicData result(primitive_type<uint8_t>());
+                result = lho & rho;
+                return result;
+            }
+        case TypeKind::INT_16_TYPE:
+            {
+                int16_t lho = *this;
+                int16_t rho = other;
+                DynamicData result(primitive_type<int16_t>());
+                result = lho & rho;
+                return result;
+            }
+        case TypeKind::UINT_16_TYPE:
+            {
+                uint16_t lho = *this;
+                uint16_t rho = other;
+                DynamicData result(primitive_type<uint16_t>());
+                result = lho & rho;
+                return result;
+            }
+        case TypeKind::INT_32_TYPE:
+            {
+                int32_t lho = *this;
+                int32_t rho = other;
+                DynamicData result(primitive_type<int32_t>());
+                result = lho & rho;
+                return result;
+            }
+        case TypeKind::UINT_32_TYPE:
+            {
+                uint32_t lho = *this;
+                uint32_t rho = other;
+                DynamicData result(primitive_type<uint32_t>());
+                result = lho & rho;
+                return result;
+            }
+        case TypeKind::INT_64_TYPE:
+            {
+                int64_t lho = *this;
+                int64_t rho = other;
+                DynamicData result(primitive_type<int64_t>());
+                result = lho & rho;
+                return result;
+            }
+        case TypeKind::UINT_64_TYPE:
+            {
+                uint64_t lho = *this;
+                uint64_t rho = other;
+                DynamicData result(primitive_type<uint64_t>());
+                result = lho & rho;
+                return result;
+            }
+        default:
+            return *this;
+    }
+
+}
+
+inline DynamicData DynamicData::operator ^ (const ReadableDynamicDataRef& other) const
+{
+    switch(type_.kind())
+    {
+        case TypeKind::INT_8_TYPE:
+            {
+                int8_t lho = *this;
+                int8_t rho = other;
+                DynamicData result(primitive_type<int8_t>());
+                result = lho ^ rho;
+                return result;
+            }
+        case TypeKind::UINT_8_TYPE:
+            {
+                uint8_t lho = *this;
+                uint8_t rho = other;
+                DynamicData result(primitive_type<uint8_t>());
+                result = lho ^ rho;
+                return result;
+            }
+        case TypeKind::INT_16_TYPE:
+            {
+                int16_t lho = *this;
+                int16_t rho = other;
+                DynamicData result(primitive_type<int16_t>());
+                result = lho ^ rho;
+                return result;
+            }
+        case TypeKind::UINT_16_TYPE:
+            {
+                uint16_t lho = *this;
+                uint16_t rho = other;
+                DynamicData result(primitive_type<uint16_t>());
+                result = lho ^ rho;
+                return result;
+            }
+        case TypeKind::INT_32_TYPE:
+            {
+                int32_t lho = *this;
+                int32_t rho = other;
+                DynamicData result(primitive_type<int32_t>());
+                result = lho ^ rho;
+                return result;
+            }
+        case TypeKind::UINT_32_TYPE:
+            {
+                uint32_t lho = *this;
+                uint32_t rho = other;
+                DynamicData result(primitive_type<uint32_t>());
+                result = lho ^ rho;
+                return result;
+            }
+        case TypeKind::INT_64_TYPE:
+            {
+                int64_t lho = *this;
+                int64_t rho = other;
+                DynamicData result(primitive_type<int64_t>());
+                result = lho ^ rho;
+                return result;
+            }
+        case TypeKind::UINT_64_TYPE:
+            {
+                uint64_t lho = *this;
+                uint64_t rho = other;
+                DynamicData result(primitive_type<uint64_t>());
+                result = lho ^ rho;
+                return result;
+            }
+        default:
+            return *this;
+    }
+
+}
+
+inline DynamicData DynamicData::operator | (const ReadableDynamicDataRef& other) const
+{
+    switch(type_.kind())
+    {
+        case TypeKind::INT_8_TYPE:
+            {
+                //int8_t lho = value<int8_t>();
+                int8_t lho = *this;
+                int8_t rho = other;
+                DynamicData result(primitive_type<int8_t>());
+                result = lho | rho;
+                return result;
+            }
+        case TypeKind::UINT_8_TYPE:
+            {
+                uint8_t lho = *this;
+                uint8_t rho = other;
+                DynamicData result(primitive_type<uint8_t>());
+                result = lho | rho;
+                return result;
+            }
+        case TypeKind::INT_16_TYPE:
+            {
+                int16_t lho = *this;
+                int16_t rho = other;
+                DynamicData result(primitive_type<int16_t>());
+                result = lho | rho;
+                return result;
+            }
+        case TypeKind::UINT_16_TYPE:
+            {
+                uint16_t lho = *this;
+                uint16_t rho = other;
+                DynamicData result(primitive_type<uint16_t>());
+                result = lho | rho;
+                return result;
+            }
+        case TypeKind::INT_32_TYPE:
+            {
+                int32_t lho = *this;
+                int32_t rho = other;
+                DynamicData result(primitive_type<int32_t>());
+                result = lho | rho;
+                return result;
+            }
+        case TypeKind::UINT_32_TYPE:
+            {
+                uint32_t lho = *this;
+                uint32_t rho = other;
+                DynamicData result(primitive_type<uint32_t>());
+                result = lho | rho;
+                return result;
+            }
+        case TypeKind::INT_64_TYPE:
+            {
+                int64_t lho = *this;
+                int64_t rho = other;
+                DynamicData result(primitive_type<int64_t>());
+                result = lho | rho;
+                return result;
+            }
+        case TypeKind::UINT_64_TYPE:
+            {
+                uint64_t lho = *this;
+                uint64_t rho = other;
+                DynamicData result(primitive_type<uint64_t>());
+                result = lho | rho;
+                return result;
+            }
+        default:
+            return *this;
+    }
+
+}
 
 } //namespace xtypes
 } //namespace eprosima
