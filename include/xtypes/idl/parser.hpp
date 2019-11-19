@@ -1277,10 +1277,11 @@ private:
         {
             return get_dimension(node->token, outer, node);
         }
-        else
+        else if (!node->token.empty())
         {
             return std::stoul(node->token);
         }
+        return 0;
     }
 
     ArrayType::Ptr get_array_type(

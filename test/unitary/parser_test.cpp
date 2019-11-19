@@ -507,6 +507,7 @@ TEST (IDLParser, constants)
                 {
                     string my_str_array[SIZE];
                     sequence<long, SIZE> my_seq;
+                    string<SIZE> my_bounded_str;
                 };
                            )");
         }
@@ -521,6 +522,7 @@ TEST (IDLParser, constants)
         DynamicData data(*my_struct);
         ASSERT_EQ(data["my_str_array"].bounds(), 50);
         ASSERT_EQ(data["my_seq"].bounds(), 50);
+        ASSERT_EQ(data["my_bounded_str"].bounds(), 50);
     }
 }
 
