@@ -36,6 +36,10 @@ using PrimitiveOrString = typename std::enable_if<
     std::is_same<std::wstring, T>::value
     >::type;
 
+/// \brief Check if a C type is a primitive type.
+template<typename T>
+using Primitive = typename std::enable_if<std::is_arithmetic<T>::value>::type;
+
 /// \brief Class representing a only readable DynamicData reference.
 /// Only readable methods are available.
 class ReadableDynamicDataRef
@@ -445,6 +449,8 @@ protected:
 class WritableDynamicDataRef : public ReadableDynamicDataRef
 {
 public:
+    using ReadableDynamicDataRef::operator [];
+
     /// \brief Assignment operator.
     WritableDynamicDataRef& operator = (
             const WritableDynamicDataRef& other)
@@ -864,6 +870,13 @@ public:
     /// \brief Request a writable reference from this DynamicData.
     /// \returns a WritableDynamicDataRef identifying th DynamicData.
     WritableDynamicDataRef ref() const { return WritableDynamicDataRef(*this); }
+
+    template<typename T, class = Primitive<T>>
+    inline T cast() const;
+
+    template<typename T = std::string>
+    inline T cast() const;
+
 };
 
 } //namespace xtypes

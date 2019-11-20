@@ -110,6 +110,180 @@ inline std::string ReadableDynamicDataRef::to_string() const
     return ss.str();
 }
 
+template<typename T, class = Primitive<T>>
+inline T DynamicData::cast() const
+{
+    assert(type_.is_primitive_type());
+    switch (type_.kind())
+    {
+        case TypeKind::BOOLEAN_TYPE:
+        {
+            bool temp = *this;
+            return static_cast<T>(temp);
+        }
+        case TypeKind::INT_8_TYPE:
+        {
+            int8_t temp = *this;
+            return static_cast<T>(temp);
+        }
+        case TypeKind::UINT_8_TYPE:
+        {
+            uint8_t temp = *this;
+            return static_cast<T>(temp);
+        }
+        case TypeKind::INT_16_TYPE:
+        {
+            int16_t temp = *this;
+            return static_cast<T>(temp);
+        }
+        case TypeKind::UINT_16_TYPE:
+        {
+            uint16_t temp = *this;
+            return static_cast<T>(temp);
+        }
+        case TypeKind::INT_32_TYPE:
+        {
+            int32_t temp = *this;
+            return static_cast<T>(temp);
+        }
+        case TypeKind::UINT_32_TYPE:
+        {
+            uint32_t temp = *this;
+            return static_cast<T>(temp);
+        }
+        case TypeKind::INT_64_TYPE:
+        {
+            int64_t temp = *this;
+            return static_cast<T>(temp);
+        }
+        case TypeKind::UINT_64_TYPE:
+        {
+            uint64_t temp = *this;
+            return static_cast<T>(temp);
+        }
+        case TypeKind::FLOAT_32_TYPE:
+        {
+            float temp = *this;
+            return static_cast<T>(temp);
+        }
+        case TypeKind::FLOAT_64_TYPE:
+        {
+            double temp = *this;
+            return static_cast<T>(temp);
+        }
+        case TypeKind::FLOAT_128_TYPE:
+        {
+            long double temp = *this;
+            return static_cast<T>(temp);
+        }
+        case TypeKind::CHAR_8_TYPE:
+        {
+            char temp = *this;
+            return static_cast<T>(temp);
+        }
+        case TypeKind::CHAR_16_TYPE:
+        {
+            wchar_t temp = *this;
+            return static_cast<T>(temp);
+        }
+        //case TypeKind::ENUMERATION_TYPE: TODO
+    }
+    return T();
+}
+
+template<typename T = std::string>
+inline T DynamicData::cast() const
+{
+    assert(type_.is_primitive_type());
+    switch (type_.kind())
+    {
+        case TypeKind::BOOLEAN_TYPE:
+        {
+            bool temp = *this;
+            return std::to_string(temp);
+        }
+        case TypeKind::INT_8_TYPE:
+        {
+            int8_t temp = *this;
+            return std::to_string(temp);
+        }
+        case TypeKind::UINT_8_TYPE:
+        {
+            uint8_t temp = *this;
+            return std::to_string(temp);
+        }
+        case TypeKind::INT_16_TYPE:
+        {
+            int16_t temp = *this;
+            return std::to_string(temp);
+        }
+        case TypeKind::UINT_16_TYPE:
+        {
+            uint16_t temp = *this;
+            return std::to_string(temp);
+        }
+        case TypeKind::INT_32_TYPE:
+        {
+            int32_t temp = *this;
+            return std::to_string(temp);
+        }
+        case TypeKind::UINT_32_TYPE:
+        {
+            uint32_t temp = *this;
+            return std::to_string(temp);
+        }
+        case TypeKind::INT_64_TYPE:
+        {
+            int64_t temp = *this;
+            return std::to_string(temp);
+        }
+        case TypeKind::UINT_64_TYPE:
+        {
+            uint64_t temp = *this;
+            return std::to_string(temp);
+        }
+        case TypeKind::FLOAT_32_TYPE:
+        {
+            float temp = *this;
+            return std::to_string(temp);
+        }
+        case TypeKind::FLOAT_64_TYPE:
+        {
+            double temp = *this;
+            return std::to_string(temp);
+        }
+        case TypeKind::FLOAT_128_TYPE:
+        {
+            long double temp = *this;
+            return std::to_string(temp);
+        }
+        case TypeKind::CHAR_8_TYPE:
+        {
+            char temp = *this;
+            return std::to_string(temp);
+        }
+        case TypeKind::CHAR_16_TYPE:
+        {
+            wchar_t temp = *this;
+            return std::to_string(temp);
+        }
+        //case TypeKind::ENUMERATION_TYPE: TODO
+        case TypeKind::STRING_TYPE:
+        {
+            std::string temp = *this;
+            return temp;
+        }
+        /* // TODO
+        case TypeKind::WSTRING_TYPE:
+        {
+            std::wstring temp = *this;
+            return reinterpret_cast<T>(temp);
+        }
+        */
+    }
+    return T();
+}
+
 
 } //namespace xtypes
 } //namespace eprosima
