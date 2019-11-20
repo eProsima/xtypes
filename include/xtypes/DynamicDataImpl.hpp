@@ -111,7 +111,7 @@ inline std::string ReadableDynamicDataRef::to_string() const
 }
 
 template<typename T, class = Primitive<T>>
-inline T DynamicData::cast() const
+inline T ReadableDynamicDataRef::cast() const
 {
     assert(type_.is_primitive_type());
     switch (type_.kind())
@@ -192,7 +192,7 @@ inline T DynamicData::cast() const
 }
 
 template<typename T = std::string>
-inline T DynamicData::cast() const
+inline T ReadableDynamicDataRef::cast() const
 {
     assert(type_.is_primitive_type());
     switch (type_.kind())
@@ -284,6 +284,348 @@ inline T DynamicData::cast() const
     return T();
 }
 
+#define DYNAMIC_DATA_NEGATE(TYPE) \
+{\
+    DynamicData result(primitive_type<TYPE>());\
+    result = -(*this);\
+    return result;\
+}
+
+inline DynamicData DynamicData::operator - () const
+{
+    switch(type_.kind())
+    {
+        case TypeKind::INT_8_TYPE:
+            DYNAMIC_DATA_NEGATE(int8_t);
+        case TypeKind::UINT_8_TYPE:
+            DYNAMIC_DATA_NEGATE(uint8_t);
+        case TypeKind::INT_16_TYPE:
+            DYNAMIC_DATA_NEGATE(int16_t);
+        case TypeKind::UINT_16_TYPE:
+            DYNAMIC_DATA_NEGATE(uint16_t);
+        case TypeKind::INT_32_TYPE:
+            DYNAMIC_DATA_NEGATE(int32_t);
+        case TypeKind::UINT_32_TYPE:
+            DYNAMIC_DATA_NEGATE(uint32_t);
+        case TypeKind::INT_64_TYPE:
+            DYNAMIC_DATA_NEGATE(int64_t);
+        case TypeKind::UINT_64_TYPE:
+            DYNAMIC_DATA_NEGATE(uint64_t);
+        case TypeKind::FLOAT_32_TYPE:
+            DYNAMIC_DATA_NEGATE(float);
+        case TypeKind::FLOAT_64_TYPE:
+            DYNAMIC_DATA_NEGATE(double);
+        case TypeKind::FLOAT_128_TYPE:
+            DYNAMIC_DATA_NEGATE(long double);
+        default:
+            assert(false);
+            break;
+    }
+
+    return *this;
+}
+
+#define DYNAMIC_DATA_OPERATOR_RESULT(TYPE, OPERATOR) \
+{\
+    TYPE lho = *this;\
+    TYPE rho = other;\
+    DynamicData result(primitive_type<TYPE>());\
+    result = lho OPERATOR rho;\
+    return result;\
+}
+
+inline DynamicData DynamicData::operator * (const ReadableDynamicDataRef& other) const
+{
+    switch(type_.kind())
+    {
+        case TypeKind::INT_8_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int8_t, *);
+        case TypeKind::UINT_8_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint8_t, *);
+        case TypeKind::INT_16_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int16_t, *);
+        case TypeKind::UINT_16_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint16_t, *);
+        case TypeKind::INT_32_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int32_t, *);
+        case TypeKind::UINT_32_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint32_t, *);
+        case TypeKind::INT_64_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int64_t, *);
+        case TypeKind::UINT_64_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint64_t, *);
+        case TypeKind::FLOAT_32_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(float, *);
+        case TypeKind::FLOAT_64_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(double, *);
+        case TypeKind::FLOAT_128_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(long double, *);
+        default:
+            assert(false);
+            return *this;
+    }
+}
+
+inline DynamicData DynamicData::operator / (const ReadableDynamicDataRef& other) const
+{
+    switch(type_.kind())
+    {
+        case TypeKind::INT_8_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int8_t, /);
+        case TypeKind::UINT_8_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint8_t, /);
+        case TypeKind::INT_16_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int16_t, /);
+        case TypeKind::UINT_16_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint16_t, /);
+        case TypeKind::INT_32_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int32_t, /);
+        case TypeKind::UINT_32_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint32_t, /);
+        case TypeKind::INT_64_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int64_t, /);
+        case TypeKind::UINT_64_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint64_t, /);
+        case TypeKind::FLOAT_32_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(float, /);
+        case TypeKind::FLOAT_64_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(double, /);
+        case TypeKind::FLOAT_128_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(long double, /);
+        default:
+            assert(false);
+            return *this;
+    }
+
+}
+
+inline DynamicData DynamicData::operator % (const ReadableDynamicDataRef& other) const
+{
+    switch(type_.kind())
+    {
+        case TypeKind::INT_8_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int8_t, %);
+        case TypeKind::UINT_8_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint8_t, %);
+        case TypeKind::INT_16_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int16_t, %);
+        case TypeKind::UINT_16_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint16_t, %);
+        case TypeKind::INT_32_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int32_t, %);
+        case TypeKind::UINT_32_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint32_t, %);
+        case TypeKind::INT_64_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int64_t, %);
+        case TypeKind::UINT_64_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint64_t, %);
+        default:
+            assert(false);
+            return *this;
+    }
+
+}
+
+inline DynamicData DynamicData::operator + (const ReadableDynamicDataRef& other) const
+{
+    switch(type_.kind())
+    {
+        case TypeKind::INT_8_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int8_t, +);
+        case TypeKind::UINT_8_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint8_t, +);
+        case TypeKind::INT_16_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int16_t, +);
+        case TypeKind::UINT_16_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint16_t, +);
+        case TypeKind::INT_32_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int32_t, +);
+        case TypeKind::UINT_32_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint32_t, +);
+        case TypeKind::INT_64_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int64_t, +);
+        case TypeKind::UINT_64_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint64_t, +);
+        case TypeKind::FLOAT_32_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(float, +);
+        case TypeKind::FLOAT_64_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(double, +);
+        case TypeKind::FLOAT_128_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(long double, +);
+        default:
+            assert(false);
+            return *this;
+    }
+
+}
+
+inline DynamicData DynamicData::operator - (const ReadableDynamicDataRef& other) const
+{
+    switch(type_.kind())
+    {
+        case TypeKind::INT_8_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int8_t, -);
+        case TypeKind::UINT_8_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint8_t, -);
+        case TypeKind::INT_16_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int16_t, -);
+        case TypeKind::UINT_16_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint16_t, -);
+        case TypeKind::INT_32_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int32_t, -);
+        case TypeKind::UINT_32_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint32_t, -);
+        case TypeKind::INT_64_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int64_t, -);
+        case TypeKind::UINT_64_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint64_t, -);
+        case TypeKind::FLOAT_32_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(float, -);
+        case TypeKind::FLOAT_64_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(double, -);
+        case TypeKind::FLOAT_128_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(long double, -);
+        default:
+            assert(false);
+            return *this;
+    }
+
+}
+
+inline DynamicData DynamicData::operator << (const ReadableDynamicDataRef& other) const
+{
+    switch(type_.kind())
+    {
+        case TypeKind::INT_8_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int8_t, <<);
+        case TypeKind::UINT_8_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint8_t, <<);
+        case TypeKind::INT_16_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int16_t, <<);
+        case TypeKind::UINT_16_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint16_t, <<);
+        case TypeKind::INT_32_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int32_t, <<);
+        case TypeKind::UINT_32_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint32_t, <<);
+        case TypeKind::INT_64_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int64_t, <<);
+        case TypeKind::UINT_64_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint64_t, <<);
+        default:
+            assert(false);
+            return *this;
+    }
+
+}
+
+inline DynamicData DynamicData::operator >> (const ReadableDynamicDataRef& other) const
+{
+    switch(type_.kind())
+    {
+        case TypeKind::INT_8_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int8_t, >>);
+        case TypeKind::UINT_8_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint8_t, >>);
+        case TypeKind::INT_16_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int16_t, >>);
+        case TypeKind::UINT_16_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint16_t, >>);
+        case TypeKind::INT_32_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int32_t, >>);
+        case TypeKind::UINT_32_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint32_t, >>);
+        case TypeKind::INT_64_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int64_t, >>);
+        case TypeKind::UINT_64_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint64_t, >>);
+        default:
+            assert(false);
+            return *this;
+    }
+
+}
+
+inline DynamicData DynamicData::operator & (const ReadableDynamicDataRef& other) const
+{
+    switch(type_.kind())
+    {
+        case TypeKind::INT_8_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int8_t, &);
+        case TypeKind::UINT_8_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint8_t, &);
+        case TypeKind::INT_16_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int16_t, &);
+        case TypeKind::UINT_16_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint16_t, &);
+        case TypeKind::INT_32_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int32_t, &);
+        case TypeKind::UINT_32_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint32_t, &);
+        case TypeKind::INT_64_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int64_t, &);
+        case TypeKind::UINT_64_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint64_t, &);
+        default:
+            assert(false);
+            return *this;
+    }
+
+}
+
+inline DynamicData DynamicData::operator ^ (const ReadableDynamicDataRef& other) const
+{
+    switch(type_.kind())
+    {
+        case TypeKind::INT_8_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int8_t, ^);
+        case TypeKind::UINT_8_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint8_t, ^);
+        case TypeKind::INT_16_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int16_t, ^);
+        case TypeKind::UINT_16_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint16_t, ^);
+        case TypeKind::INT_32_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int32_t, ^);
+        case TypeKind::UINT_32_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint32_t, ^);
+        case TypeKind::INT_64_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int64_t, ^);
+        case TypeKind::UINT_64_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint64_t, ^);
+        default:
+            assert(false);
+            return *this;
+    }
+
+}
+
+inline DynamicData DynamicData::operator | (const ReadableDynamicDataRef& other) const
+{
+    switch(type_.kind())
+    {
+        case TypeKind::INT_8_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int8_t, |);
+        case TypeKind::UINT_8_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint8_t, |);
+        case TypeKind::INT_16_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int16_t, |);
+        case TypeKind::UINT_16_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint16_t, |);
+        case TypeKind::INT_32_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int32_t, |);
+        case TypeKind::UINT_32_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint32_t, |);
+        case TypeKind::INT_64_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(int64_t, |);
+        case TypeKind::UINT_64_TYPE:
+            DYNAMIC_DATA_OPERATOR_RESULT(uint64_t, |);
+        default:
+            assert(false);
+            return *this;
+    }
+
+}
 
 } //namespace xtypes
 } //namespace eprosima

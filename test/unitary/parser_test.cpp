@@ -51,7 +51,8 @@ TEST (IDLParser, simple_struct_test)
     DynamicData data(*my_struct);
 
     data["my_bool"] = true;
-    data["my_int8"] = 'c';
+    //data["my_int8"] = 'c';
+    data["my_int8"] = static_cast<int8_t>(-55);
     data["my_uint8"] = static_cast<uint8_t>(55);
     data["my_int16"] = static_cast<int16_t>(-5);
     data["my_uint16"] = static_cast<uint16_t>(6);
@@ -67,7 +68,8 @@ TEST (IDLParser, simple_struct_test)
     data["my_string"] = "It works!";
     data["my_wstring"] = L"It works!";
     EXPECT_TRUE(data["my_bool"].value<bool>());
-    EXPECT_EQ('c', data["my_int8"].value<char>());
+    //EXPECT_EQ('c', data["my_int8"].value<char>());
+    EXPECT_EQ(-55, data["my_int8"].value<int8_t>());
     EXPECT_EQ(55, data["my_uint8"].value<uint8_t>());
     EXPECT_EQ(-5, data["my_int16"].value<int16_t>());
     EXPECT_EQ(6, data["my_uint16"].value<uint16_t>());
@@ -114,18 +116,18 @@ TEST (IDLParser, array_sequence_struct_test)
     EXPECT_FALSE(data["my_bool_5"][3].value<bool>());
     EXPECT_TRUE(data["my_bool_5"][4].value<bool>());
 
-    data["my_int8_3_2"][0][0] = 'a';
-    data["my_int8_3_2"][0][1] = 'b';
-    data["my_int8_3_2"][1][0] = 'c';
-    data["my_int8_3_2"][1][1] = 'd';
-    data["my_int8_3_2"][2][0] = 'e';
-    data["my_int8_3_2"][2][1] = 'f';
-    EXPECT_EQ(data["my_int8_3_2"][0][0].value<char>(), 'a');
-    EXPECT_EQ(data["my_int8_3_2"][0][1].value<char>(), 'b');
-    EXPECT_EQ(data["my_int8_3_2"][1][0].value<char>(), 'c');
-    EXPECT_EQ(data["my_int8_3_2"][1][1].value<char>(), 'd');
-    EXPECT_EQ(data["my_int8_3_2"][2][0].value<char>(), 'e');
-    EXPECT_EQ(data["my_int8_3_2"][2][1].value<char>(), 'f');
+    data["my_int8_3_2"][0][0] = static_cast<int8_t>('a');
+    data["my_int8_3_2"][0][1] = static_cast<int8_t>('b');
+    data["my_int8_3_2"][1][0] = static_cast<int8_t>('c');
+    data["my_int8_3_2"][1][1] = static_cast<int8_t>('d');
+    data["my_int8_3_2"][2][0] = static_cast<int8_t>('e');
+    data["my_int8_3_2"][2][1] = static_cast<int8_t>('f');
+    EXPECT_EQ(data["my_int8_3_2"][0][0].value<int8_t>(), 'a');
+    EXPECT_EQ(data["my_int8_3_2"][0][1].value<int8_t>(), 'b');
+    EXPECT_EQ(data["my_int8_3_2"][1][0].value<int8_t>(), 'c');
+    EXPECT_EQ(data["my_int8_3_2"][1][1].value<int8_t>(), 'd');
+    EXPECT_EQ(data["my_int8_3_2"][2][0].value<int8_t>(), 'e');
+    EXPECT_EQ(data["my_int8_3_2"][2][1].value<int8_t>(), 'f');
 
     EXPECT_EQ(data["my_string16"].bounds(), 16);
     // data["my_string16"] = "0123456789abcdefghijklmnopqrstuvwxyz" ;
@@ -210,6 +212,331 @@ TEST (IDLParser, inner_struct_test)
     EXPECT_EQ("It works!", data["inner"]["message"].value<std::string>());
 }
 
+TEST (IDLParser, multiple_declarator_members_test)
+{
+    std::map<std::string, DynamicType::Ptr> result;
+    result = parse(R"(
+        struct SimpleStruct
+        {
+            boolean my_bool_5[5], other[55], another, multi_array[2][3];
+        };
+                   )");
+    EXPECT_EQ(1, result.size());
+}
+
+TEST (IDLParser, name_collision)
+{
+    std::map<std::string, DynamicType::Ptr> result;
+
+    {
+        // Test that the parser throws an exception when using a keyword (ignoring case) as identifier.
+        try
+        {
+            result = parse(R"(
+                struct MyStruct
+                {
+                    string STRUCT;
+                };
+                           )"
+                );
+            FAIL() << " Exception wasn't thrown!" << std::endl;
+        }
+        catch (const Parser::exception& e)
+        {
+            if (e.what().find("reserved word") == std::string::npos)
+            {
+                FAIL() << " Another Parser::exception was thrown." << std::endl;
+            }
+        }
+        catch (...)
+        {
+            FAIL() << " Unexpected exception catch" << std::endl;
+        }
+    }
+
+    {
+        // Test that the parser accepts an uppercase keyword when case isn't ignored.
+        result = parse(R"(
+            struct MyStruct
+            {
+                string STRUCT;
+            };
+                       )",
+                       true
+            );
+        EXPECT_EQ(1, result.size());
+    }
+
+    {
+        // Test that the parser accepts a keyword prefixed by an underscore even ignoring case, and
+        // the resulting identifier doesn't have the prefixed underscore.
+        result = parse(R"(
+            struct MyStruct
+            {
+                string _struct;
+            };
+                       )"
+            );
+        EXPECT_EQ(1, result.size());
+
+        const DynamicType* my_struct = result["MyStruct"].get();
+        DynamicData data(*my_struct);
+        data["struct"] = "It works!";
+        EXPECT_EQ("It works!", data["struct"].value<std::string>());
+    }
+
+    {
+        // Test that the parser throws an exception when using an already defined symbol as identifier.
+        try
+        {
+            result = parse(R"(
+                struct MyStruct
+                {
+                    uint32 MyStruct;
+                };
+                           )"
+                );
+            FAIL() << " Exception wasn't thrown!" << std::endl;
+        }
+        catch (const Parser::exception& e)
+        {
+            if (e.what().find("already") == std::string::npos)
+            {
+                FAIL() << " Another Parser::exception was thrown." << std::endl;
+            }
+        }
+        catch (...)
+        {
+            FAIL() << " Unexpected exception catch" << std::endl;
+        }
+    }
+
+    {
+        // Test that the parser throws an exception when using an already defined symbol as identifier (II).
+        try
+        {
+            result = parse(R"(
+                struct MyStruct
+                {
+                    uint32 a;
+                    string a;
+                };
+                           )"
+                );
+            FAIL() << " Exception wasn't thrown!" << std::endl;
+        }
+        catch (const Parser::exception& e)
+        {
+            if (e.what().find("already") == std::string::npos)
+            {
+                FAIL() << " Another Parser::exception was thrown." << std::endl;
+            }
+        }
+        catch (...)
+        {
+            FAIL() << " Unexpected exception catch" << std::endl;
+        }
+    }
+
+    {
+        // Test that the parser throws an exception when using an already defined symbol as identifier (III).
+        try
+        {
+            result = parse(R"(
+                struct MyStruct
+                {
+                    uint32 a, a;
+                };
+                           )"
+                );
+            FAIL() << " Exception wasn't thrown!" << std::endl;
+        }
+        catch (const Parser::exception& e)
+        {
+            if (e.what().find("already") == std::string::npos)
+            {
+                FAIL() << " Another Parser::exception was thrown." << std::endl;
+            }
+        }
+        catch (...)
+        {
+            FAIL() << " Unexpected exception catch" << std::endl;
+        }
+    }
+}
+
+TEST (IDLParser, module_scope_test)
+{
+    std::map<std::string, DynamicType::Ptr> result;
+    result = parse(R"(
+        module A
+        {
+            struct StA;
+        };
+
+        module B
+        {
+            module C
+            {
+                struct StBC
+                {
+                    A::StA st_a;
+                };
+            };
+
+            struct StB
+            {
+                C::StBC st_bc;
+            };
+        };
+
+        module A
+        {
+            struct StA
+            {
+                string my_string;
+            };
+
+            struct StD
+            {
+                ::B::C::StBC st_bc;
+            };
+        };
+
+        struct CompleteStruct
+        {
+            A::StA a;
+            B::StB b;
+            B::C::StBC bc;
+            ::A::StD d;
+        };
+                   )");
+
+    EXPECT_EQ(5, result.size());
+}
+
+TEST (IDLParser, constants)
+{
+    std::map<std::string, DynamicType::Ptr> result;
+    try
+    {
+        result = parse(R"(
+            const uint32 MAX_SIZE = 32 / 2;
+            const uint32 SUPER_MAX = MAX_SIZE * 1000 << 5;
+                       )");
+    }
+    catch(const Parser::exception& exc)
+    {
+        FAIL() << exc.what() << std::endl;
+    }
+
+    try
+    {
+        result = parse(R"(
+            const string C_STRING = "Hola";
+                       )");
+    }
+    catch(const Parser::exception& exc)
+    {
+        FAIL() << exc.what() << std::endl;
+    }
+
+    try
+    {
+        ASSERT_DEATH(
+            {
+                result = parse(R"(
+                    const string C_STRING = "Hola" + 55;
+                               )");
+            },
+            ".* Assertion .false. failed."
+        );
+    }
+    catch(const Parser::exception& /*exc*/)
+    {
+        /* TODO?
+        std::string msg = exc.what();
+        if (msg.find("Expected a STRING_LITERAL") == std::string::npos)
+        {
+            FAIL() << "Unexpected exception";
+        }
+        */
+    }
+
+    try
+    {
+        result = parse(R"(
+            const string C_STRING = "Hola";
+            const string C_STRING_2 = C_STRING;
+            const string C_STRING_3 = "Hey, " "Adios!!"
+                " Esto debe estar conca"   "tenado";
+                       )");
+    }
+    catch(const Parser::exception& exc)
+    {
+        FAIL() << exc.what() << std::endl;
+    }
+
+    try
+    {
+        result = parse(R"(
+            const float BAD_TYPE = "Hola";
+                       )");
+        FAIL() << "Exception not thown.";
+    }
+    catch(const Parser::exception& exc)
+    {
+        FAIL() << exc.what() << std::endl;
+    }
+    catch(const std::exception& exc)
+    {
+        std::string msg = exc.what();
+        if (msg.find("stof") == std::string::npos)
+        {
+            FAIL() << "Unexpected exception";
+        }
+    }
+
+    try
+    {
+        result = parse(R"(
+            const uint64 BAD_TYPE = 55.8;
+                       )");
+    }
+    catch(const Parser::exception& exc)
+    {
+        FAIL() << exc.what() << std::endl; // TODO?
+    }
+
+    {
+        try
+        {
+            result = parse(R"(
+                const uint32 SIZE = 50;
+
+                struct MyStruct
+                {
+                    string my_str_array[SIZE];
+                    sequence<long, SIZE> my_seq;
+                    string<SIZE> my_bounded_str;
+                };
+                           )");
+        }
+        catch(const Parser::exception& exc)
+        {
+            FAIL() << exc.what() << std::endl;
+        }
+
+        EXPECT_EQ(1, result.size());
+
+        const DynamicType* my_struct = result["MyStruct"].get();
+        DynamicData data(*my_struct);
+        ASSERT_EQ(data["my_str_array"].bounds(), 50);
+        ASSERT_EQ(data["my_seq"].bounds(), 50);
+        ASSERT_EQ(data["my_bounded_str"].bounds(), 50);
+    }
+}
+
 TEST (IDLParser, not_yet_supported)
 //TEST (IDLParser, DISABLED_not_yet_supported)
 {
@@ -236,7 +563,7 @@ TEST (IDLParser, not_yet_supported)
                 ForwardStruct fwd_struct;
             };
 
-            struct Forward
+            struct ForwardStruct
             {
                 string<MAX_SIZE> my_string;
             };
@@ -250,7 +577,7 @@ TEST (IDLParser, not_yet_supported)
 
             union ForwardUnion;
 
-            union MyUnion switch (MyEnum)
+            union MyUnion switch (int32)
             {
                 case AAA: string str_a;
                 case BBB: wstring wstr_b;
@@ -279,6 +606,10 @@ TEST (IDLParser, not_yet_supported)
                 @position(5) flag5,
                 flag6
             };
+
+            typedef uint8 MyArray[8];
+            typedef string MyString[2][3][4];
+            typedef FutureStruct future_is_now;
                        )");
     }
     catch(const Parser::exception& exc)
@@ -291,6 +622,39 @@ TEST (IDLParser, not_yet_supported)
     const DynamicType* my_struct = result["FutureStruct"].get();
     DynamicData data(*my_struct);
     */
+}
+
+TEST (IDLParser, const_value_parser)
+{
+    std::map<std::string, DynamicType::Ptr> result;
+    {
+        uint32_t value = (998 + 8) * 8;
+        try
+        {
+            result = parse(R"(
+                const uint32 SIZE = (998 + 8) * 8;
+
+                struct MyStruct
+                {
+                    string my_str_array[SIZE];
+                    sequence<long, SIZE> my_seq;
+                    string<SIZE> my_bounded_str;
+                };
+                           )");
+        }
+        catch(const Parser::exception& exc)
+        {
+            FAIL() << exc.what() << std::endl;
+        }
+
+        EXPECT_EQ(1, result.size());
+
+        const DynamicType* my_struct = result["MyStruct"].get();
+        DynamicData data(*my_struct);
+        ASSERT_EQ(data["my_str_array"].bounds(), value);
+        ASSERT_EQ(data["my_seq"].bounds(), value);
+        ASSERT_EQ(data["my_bounded_str"].bounds(), value);
+    }
 }
 
 int main(int argc, char** argv)
