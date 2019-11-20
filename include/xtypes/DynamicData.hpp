@@ -44,10 +44,6 @@ using Primitive = typename std::enable_if<std::is_arithmetic<T>::value>::type;
 /// Only readable methods are available.
 class ReadableDynamicDataRef
 {
-protected:
-    template<typename T, class = Primitive<T>>
-    inline T _cast() const;
-
 public:
     virtual ~ReadableDynamicDataRef() = default;
 
@@ -191,7 +187,10 @@ public:
     }
 
     template<typename T>
-    inline T cast() const;
+    inline T cast() const
+    {
+        return _cast<T>();
+    }
 
     /// \brief Class used by for_each() function to represent a readable DynamicData node in the tree.
     class ReadableNode
@@ -448,6 +447,86 @@ protected:
     /// \result The raw instance.
     uint8_t* p_instance(const ReadableDynamicDataRef& other) const { return other.instance_; }
 
+    template<typename T, class = Primitive<T>>
+    inline T _cast() const
+    {
+        assert(type_.is_primitive_type());
+        switch (type_.kind())
+        {
+            case TypeKind::BOOLEAN_TYPE:
+            {
+                bool temp = *this;
+                return static_cast<T>(temp);
+            }
+            case TypeKind::INT_8_TYPE:
+            {
+                int8_t temp = *this;
+                return static_cast<T>(temp);
+            }
+            case TypeKind::UINT_8_TYPE:
+            {
+                uint8_t temp = *this;
+                return static_cast<T>(temp);
+            }
+            case TypeKind::INT_16_TYPE:
+            {
+                int16_t temp = *this;
+                return static_cast<T>(temp);
+            }
+            case TypeKind::UINT_16_TYPE:
+            {
+                uint16_t temp = *this;
+                return static_cast<T>(temp);
+            }
+            case TypeKind::INT_32_TYPE:
+            {
+                int32_t temp = *this;
+                return static_cast<T>(temp);
+            }
+            case TypeKind::UINT_32_TYPE:
+            {
+                uint32_t temp = *this;
+                return static_cast<T>(temp);
+            }
+            case TypeKind::INT_64_TYPE:
+            {
+                int64_t temp = *this;
+                return static_cast<T>(temp);
+            }
+            case TypeKind::UINT_64_TYPE:
+            {
+                uint64_t temp = *this;
+                return static_cast<T>(temp);
+            }
+            case TypeKind::FLOAT_32_TYPE:
+            {
+                float temp = *this;
+                return static_cast<T>(temp);
+            }
+            case TypeKind::FLOAT_64_TYPE:
+            {
+                double temp = *this;
+                return static_cast<T>(temp);
+            }
+            case TypeKind::FLOAT_128_TYPE:
+            {
+                long double temp = *this;
+                return static_cast<T>(temp);
+            }
+            case TypeKind::CHAR_8_TYPE:
+            {
+                char temp = *this;
+                return static_cast<T>(temp);
+            }
+            case TypeKind::CHAR_16_TYPE:
+            {
+                wchar_t temp = *this;
+                return static_cast<T>(temp);
+            }
+            //case TypeKind::ENUMERATION_TYPE: TODO
+        }
+        return T();
+    }
 };
 
 
