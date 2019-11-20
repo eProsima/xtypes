@@ -110,8 +110,14 @@ inline std::string ReadableDynamicDataRef::to_string() const
     return ss.str();
 }
 
-template<typename T, class = Primitive<T>>
+template<typename T>
 inline T ReadableDynamicDataRef::cast() const
+{
+    return _cast<T>();
+}
+
+template<typename T, class = Primitive<T>>
+inline T ReadableDynamicDataRef::_cast() const
 {
     assert(type_.is_primitive_type());
     switch (type_.kind())
@@ -191,8 +197,8 @@ inline T ReadableDynamicDataRef::cast() const
     return T();
 }
 
-template<typename T = std::string>
-inline T ReadableDynamicDataRef::cast() const
+template<>
+inline std::string ReadableDynamicDataRef::cast<std::string>() const
 {
     assert(type_.is_primitive_type());
     switch (type_.kind())
@@ -281,7 +287,7 @@ inline T ReadableDynamicDataRef::cast() const
         }
         */
     }
-    return T();
+    return std::string();
 }
 
 #define DYNAMIC_DATA_NEGATE(TYPE) \

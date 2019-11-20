@@ -44,6 +44,10 @@ using Primitive = typename std::enable_if<std::is_arithmetic<T>::value>::type;
 /// Only readable methods are available.
 class ReadableDynamicDataRef
 {
+protected:
+    template<typename T, class = Primitive<T>>
+    inline T _cast() const;
+
 public:
     virtual ~ReadableDynamicDataRef() = default;
 
@@ -186,10 +190,7 @@ public:
         return std::vector<T>(location, location + size());
     }
 
-    template<typename T, class = Primitive<T>>
-    inline T cast() const;
-
-    template<typename T = std::string>
+    template<typename T>
     inline T cast() const;
 
     /// \brief Class used by for_each() function to represent a readable DynamicData node in the tree.
