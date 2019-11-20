@@ -186,6 +186,12 @@ public:
         return std::vector<T>(location, location + size());
     }
 
+    template<typename T, class = Primitive<T>>
+    inline T cast() const;
+
+    template<typename T = std::string>
+    inline T cast() const;
+
     /// \brief Class used by for_each() function to represent a readable DynamicData node in the tree.
     class ReadableNode
     {
@@ -885,12 +891,6 @@ public:
     /// \brief Request a writable reference from this DynamicData.
     /// \returns a WritableDynamicDataRef identifying th DynamicData.
     WritableDynamicDataRef ref() const { return WritableDynamicDataRef(*this); }
-
-    template<typename T, class = Primitive<T>>
-    inline T cast() const;
-
-    template<typename T = std::string>
-    inline T cast() const;
 
 };
 

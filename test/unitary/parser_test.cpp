@@ -427,7 +427,7 @@ TEST (IDLParser, constants)
     }
     catch(const Parser::exception& exc)
     {
-        std::cout << exc.what() << std::endl;
+        FAIL() << exc.what() << std::endl;
     }
 
     try
@@ -438,18 +438,29 @@ TEST (IDLParser, constants)
     }
     catch(const Parser::exception& exc)
     {
-        std::cout << exc.what() << std::endl;
+        FAIL() << exc.what() << std::endl;
     }
 
     try
     {
-        result = parse(R"(
-            const string C_STRING = "Hola" + 55;
-                       )");
+        ASSERT_DEATH(
+            {
+                result = parse(R"(
+                    const string C_STRING = "Hola" + 55;
+                               )");
+            },
+            ".* Assertion .false. failed."
+        );
     }
-    catch(const Parser::exception& exc)
+    catch(const Parser::exception& /*exc*/)
     {
-        std::cout << exc.what() << std::endl;
+        /* TODO?
+        std::string msg = exc.what();
+        if (msg.find("Expected a STRING_LITERAL") == std::string::npos)
+        {
+            FAIL() << "Unexpected exception";
+        }
+        */
     }
 
     try
@@ -463,7 +474,7 @@ TEST (IDLParser, constants)
     }
     catch(const Parser::exception& exc)
     {
-        std::cout << exc.what() << std::endl;
+        FAIL() << exc.what() << std::endl;
     }
 
     try
@@ -475,7 +486,7 @@ TEST (IDLParser, constants)
     }
     catch(const Parser::exception& exc)
     {
-        std::cout << exc.what() << std::endl;
+        FAIL() << exc.what() << std::endl;
     }
     catch(const std::exception& exc)
     {
@@ -494,7 +505,7 @@ TEST (IDLParser, constants)
     }
     catch(const Parser::exception& exc)
     {
-        std::cout << exc.what() << std::endl;
+        FAIL() << exc.what() << std::endl; // TODO?
     }
 
     {
@@ -513,7 +524,7 @@ TEST (IDLParser, constants)
         }
         catch(const Parser::exception& exc)
         {
-            std::cout << exc.what() << std::endl;
+            FAIL() << exc.what() << std::endl;
         }
 
         EXPECT_EQ(1, result.size());
@@ -617,9 +628,32 @@ TEST (IDLParser, const_value_parser)
 {
     std::map<std::string, DynamicType::Ptr> result;
     {
-        result = parse(R"(
-            const uint32 MAX_SIZE = (998 + 8) * 8;
-                       )");
+        uint32_t value = (998 + 8) * 8;
+        try
+        {
+            result = parse(R"(
+                const uint32 SIZE = (998 + 8) * 8;
+
+                struct MyStruct
+                {
+                    string my_str_array[SIZE];
+                    sequence<long, SIZE> my_seq;
+                    string<SIZE> my_bounded_str;
+                };
+                           )");
+        }
+        catch(const Parser::exception& exc)
+        {
+            FAIL() << exc.what() << std::endl;
+        }
+
+        EXPECT_EQ(1, result.size());
+
+        const DynamicType* my_struct = result["MyStruct"].get();
+        DynamicData data(*my_struct);
+        ASSERT_EQ(data["my_str_array"].bounds(), value);
+        ASSERT_EQ(data["my_seq"].bounds(), value);
+        ASSERT_EQ(data["my_bounded_str"].bounds(), value);
     }
 }
 

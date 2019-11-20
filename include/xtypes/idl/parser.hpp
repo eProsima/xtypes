@@ -712,7 +712,6 @@ private:
         DynamicData result(type);
         switch(ast->tag)
         {
-            //case "LITERAL"_:
             case "INTEGER_LITERAL"_:
             case "FLOAT_LITERAL"_:
             case "FIXED_PT_LITERAL"_:
