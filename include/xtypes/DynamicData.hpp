@@ -509,20 +509,6 @@ public:
         return ReadableDynamicDataRef::operator[](index);
     }
 
-    /*
-    ReadableDynamicDataRef operator [] (
-            const std::string& member_name) const
-    {
-        return ReadableDynamicDataRef::operator[](member_name);
-    }
-
-    ReadableDynamicDataRef operator [] (
-            size_t index) const
-    {
-        return ReadableDynamicDataRef::operator[](index);
-    }
-    */
-
     /// \brief Set a primitive or string value into the DynamicData
     /// \input[in] t The primitive or string value.
     /// \pre The DynamicData must represent a PrimitiveType or W/StringType value.
