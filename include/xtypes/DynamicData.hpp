@@ -445,6 +445,8 @@ protected:
 class WritableDynamicDataRef : public ReadableDynamicDataRef
 {
 public:
+    using ReadableDynamicDataRef::operator [];
+
     /// \brief Assignment operator.
     WritableDynamicDataRef& operator = (
             const WritableDynamicDataRef& other)
@@ -507,6 +509,7 @@ public:
         return ReadableDynamicDataRef::operator[](index);
     }
 
+    /*
     ReadableDynamicDataRef operator [] (
             const std::string& member_name) const
     {
@@ -518,6 +521,7 @@ public:
     {
         return ReadableDynamicDataRef::operator[](index);
     }
+    */
 
     /// \brief Set a primitive or string value into the DynamicData
     /// \input[in] t The primitive or string value.
