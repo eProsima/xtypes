@@ -311,53 +311,6 @@ private:
         return exec(cmd);
     }
 
-    /*
-    void get_include_files(
-        std::vector<std::string>& includes,
-        const std::string& pp_output)
-    {
-        // The expected pp_output follows the format:
-        // <file>.o: <file_path>.idl <dep1_path.idl> ... <depN_path.idl>
-        // Where X may depend on N, so, we must add them in reverse order.
-        size_t idx = std::string::npos;
-        idx = pp_output.find(":") + 2; // Skip "<file>.o: "
-        std::string temp = pp_output.substr(idx);
-        replace_all_string(temp, "\n", ""); // Remove final EOL?
-
-        // Remove escape characters for spaces
-        std::regex rgx(" ");
-
-        // Tokenize by spaces
-        std::sregex_token_iterator iter(
-            temp.begin(),
-            temp.end(),
-            rgx,
-            -1);
-
-        std::sregex_token_iterator end;
-
-        std::string file = "";
-        for (; iter != end; ++iter)
-        {
-            std::string it_str = *iter;
-            file += it_str;
-            if (it_str.rfind("\\") != it_str.size() - 1)
-            {
-                // if the token doesn't end with backslash, the the file name is complete.
-                includes.insert(includes.begin(), file);
-                file = "";
-            }
-            else
-            {
-                // Else, replace the backslash by the space.
-                file.replace(file.size() - 1, 1, " ");
-            }
-        }
-        // Finally pop_back, as we don't want the original file (<file_path>.idl>).
-        includes.pop_back();
-    }
-    */
-
     std::string preprocess_file(
             const std::string& idl_file)
     {
@@ -369,60 +322,13 @@ private:
         }
         std::string cmd = preprocessor_path_ + " " + args + idl_file;
         std::string output = exec(cmd);
-        //get_include_files(includes, output);
         Context context;
         context.clear = false;
         context.preprocess = false;
         context.ignore_case = ignore_case_;
-        //for (const std::string& file : includes)
-        //{
-        //    parse_file(file.c_str(), context);
-        //}
-        // parse(output, context);
         return output;
     }
 
-    /*
-    void preprocess_dependencies(
-            std::vector<std::string>& includes)
-    {
-        std::vector<std::string> new_deps;
-        for (const std::string& file : includes)
-        {
-            std::vector<std::string> file_includes;
-            std::string args = "-MM ";
-            for (const std::string inc_path : include_paths_)
-            {
-                args += "-I " + inc_path + " ";
-            }
-            std::string cmd = preprocessor_path_ + " " + args + file;
-            std::string output = exec(cmd);
-            get_include_files(file_includes, output);
-
-            for (const std::string& file : file_includes)
-            {
-                if (std::find(new_deps.begin, new_deps.end(), file) == new_deps.end())
-                {
-                    new_deps.push_back(file);
-                }
-            }
-        }
-        for (const std::string& file : new_deps)
-        {
-            auto it = std::find(includes.begin(), includes..end(), file);
-            if (it != includes.end())
-            {
-                includes.erase(it);
-                includes.insert(includes.begin(), file);
-            }
-            else
-            {
-                includes.insert(includes.begin(), file);
-
-            }
-        }
-    }
-    */
     class SymbolScope
     {
     public:
