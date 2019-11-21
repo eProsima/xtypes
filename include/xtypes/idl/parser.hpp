@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
-*/
+ */
 
 #ifndef EPROSIMA_XTYPES_IDL_PARSER_HPP_
 #define EPROSIMA_XTYPES_IDL_PARSER_HPP_
@@ -39,50 +39,143 @@ namespace eprosima {
 namespace xtypes {
 namespace idl {
 
+class Parser;
+
+struct Context
+{
+    // Config
+    bool ignore_case = false;
+    bool clear = true;
+    bool preprocess = true;
+    std::string preprocessor_exec = "";
+    std::vector<std::string> include_paths;
+
+    // Results
+    bool success = false;
+    std::map<std::string, DynamicType::Ptr> structs;
+    std::map<std::string, DynamicData> constants;
+    //std::map<std::string, Modules> modules;
+
+    ~Context()
+    {
+        clear_context();
+    }
+
+private:
+    friend class Parser;
+    Parser* instance_;
+
+    inline void clear_context();
+};
+
+static const Context DEFAULT_CONTEXT = Context();
+
+
 class Parser
 {
 public:
+    static Parser* instance()
+    {
+        if (my_instance_ == nullptr)
+        {
+            my_instance_ = new Parser();
+        }
+        return my_instance_;
+    }
+
+    static void destroy()
+    {
+        delete my_instance_;
+        my_instance_ = nullptr;
+    }
+
     Parser()
         : parser_(idl_grammar())
     {
         parser_.enable_ast();
     }
 
-    bool parse(
-            const char* idl_string,
-            bool ignore_case = false)
+    Context parse(
+            const std::string& idl_string)
     {
+        Context context = DEFAULT_CONTEXT;
+        parse(idl_string, context);
+        return context;
+    }
+
+    bool parse(
+            const std::string& idl_string,
+            Context& context)
+    {
+        context.instance_ = this;
         std::shared_ptr<peg::Ast> ast;
-        ignore_case_ = ignore_case;
-        if (!parser_.parse(idl_string, ast))
+        ignore_case_ = context.ignore_case;
+        clear_ = context.clear;
+        std::string idl_to_parse = idl_string;
+        preprocessor(context.preprocessor_exec);
+        include_paths_ = context.include_paths;
+        if (context.preprocess)
         {
+            idl_to_parse = preprocess_string(idl_to_parse);
+        }
+        if (!parser_.parse(idl_to_parse.c_str(), ast))
+        {
+            context.success = false;
             return false;
         }
         ast = peg::AstOptimizer(true).optimize(ast);
-        build_on_ast(ast)->fill_all_types(types_map_);
+        build_on_ast(ast);//->fill_all_types(types_map_);
+        root_scope_->fill_all_types(context.structs);
+        //root_scope->fill_context(context);
+        context.success = true;
         return true;
     }
 
-    bool parse_file(
-            const char* idl_file,
-            bool ignore_case = false)
+    Context parse_file(
+            const std::string& idl_file)
     {
+        Context context = DEFAULT_CONTEXT;
+        parse_file(idl_file, context);
+        return context;
+    }
+
+    bool parse_file(
+            const std::string& idl_file,
+            Context& context)
+    {
+        context.instance_ = this;
         std::vector<char> source;
         std::shared_ptr<peg::Ast> ast;
-        ignore_case_ = ignore_case;
-        if (!(read_file(idl_file, source) && parser_.parse_n(source.data(), source.size(), ast, idl_file)))
+        ignore_case_ = context.ignore_case;
+        clear_ = context.clear;
+        preprocessor(context.preprocessor_exec);
+        include_paths_ = context.include_paths;
+        if (context.preprocess)
         {
+            preprocess_file(idl_file);
+        }
+        if (!(read_file(idl_file.c_str(), source)
+              && parser_.parse_n(source.data(), source.size(), ast, idl_file.c_str())))
+        {
+            context.success = false;
             return false;
         }
         ast = peg::AstOptimizer(true).optimize(ast);
-        build_on_ast(ast)->fill_all_types(types_map_);
+        build_on_ast(ast);//->fill_all_types(types_map_);
+        root_scope_->fill_all_types(context.structs);
+        //root_scope->fill_context(context);
+        context.success = true;
         return true;
     }
 
     void get_all_types(
             std::map<std::string, DynamicType::Ptr>& types_map)
     {
-        types_map = types_map_;
+        if (root_scope_)
+        {
+            root_scope_->fill_all_types(types_map);
+        }
+        //types_map = types_map_;
     }
 
     class exception// : public std::exception
@@ -115,12 +208,35 @@ public:
         {
             return *ast_;
         }
+
     };
 
+    void preprocessor(
+            const std::string& path)
+    {
+        if (!path.empty())
+        {
+            preprocessor_path_ = path;
+        }
+    }
+
+    void include_paths(
+            const std::vector<std::string>& include_paths)
+    {
+        include_paths_ = include_paths;
+    }
+
 private:
+    friend struct Context;
+    static Parser* my_instance_;
+
     peg::parser parser_;
-    std::map<std::string, DynamicType::Ptr> types_map_;
+    //std::map<std::string, DynamicType::Ptr> types_map_;
     bool ignore_case_ = false;
+    bool preprocess_ = true;
+    bool clear_ = true;
+    std::string preprocessor_path_ = "cpp";
+    std::vector<std::string> include_paths_;
 
     bool read_file(
             const char* path,
@@ -140,6 +256,76 @@ private:
             ifs.seekg(0, std::ios::beg).read(&buff[0], static_cast<std::streamsize>(buff.size()));
         }
         return true;
+    }
+
+    std::string exec(
+            const std::string& cmd) const
+    {
+        std::array<char, 256> buffer;
+        std::string result;
+        std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
+        if (!pipe)
+        {
+            throw std::runtime_error("popen() failed!");
+        }
+        while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr)
+        {
+            result += buffer.data();
+        }
+        return result;
+    }
+
+    void escape_double_quotes(
+            std::string& original) const
+    {
+        std::string dq = "\"";
+        std::string edq = "\\\"";
+        size_t dqs = dq.size();
+        size_t edqs = edq.size();
+        size_t pos = original.find(dq);
+        while (pos != std::string::npos)
+        {
+            original.replace(pos, dqs, edq);
+            pos = original.find(dq, pos + edqs);
+        }
+    }
+
+    std::string preprocess_string(
+            const std::string& idl_string) const
+    {
+        std::string args = "-H ";
+        for (const std::string inc_path : include_paths_)
+        {
+            args += "-I " + inc_path + " ";
+        }
+        // Escape double quotes inside the idl_string
+        std::string escaped_idl_string = idl_string;
+        escape_double_quotes(escaped_idl_string);
+        //std::string cmd = preprocessor_path_ + " " + args + "<<< " + idl_string;
+        std::string cmd = "echo \"" + escaped_idl_string + "\" | " + preprocessor_path_ + " " + args;
+        return exec(cmd);
+        // preprocessor_path_
+        // return cpp [-I <path>]* -H <<< idl_string
+        // echo "#include <b.idl>\n#include <c.idl>" | cpp -I idl -H
+        //return idl_string;
+    }
+
+    void preprocess_file(
+            const std::string& idl_file)
+    {
+        std::vector<std::string> includes;
+
+        // preprocessor_path_
+        // std::string output = cpp [-I <path>]* -H idl_file
+        // get_include_guards(includes, output);
+        Context context;
+        context.clear = false;
+        context.preprocess = false;
+        context.ignore_case = ignore_case_;
+        for (const std::string& file : includes)
+        {
+            parse_file(file.c_str(), context);
+        }
     }
 
     class SymbolScope
@@ -269,10 +455,9 @@ private:
 
         bool set_constant(
                 const std::string& name,
-                const DynamicType::Ptr type,
                 const DynamicData& value)
         {
-            auto inserted = constants_types.emplace(name, *type);
+            auto inserted = constants_types.emplace(name, value.type());
             if (inserted.second)
             {
                 DynamicData temp(*(inserted.first->second));
@@ -295,6 +480,8 @@ private:
         std::string name;
     };
 
+    std::shared_ptr<SymbolScope> root_scope_;
+
     std::shared_ptr<SymbolScope> build_on_ast(
             const std::shared_ptr<peg::Ast> ast,
             std::shared_ptr<SymbolScope> scope = nullptr)
@@ -302,8 +489,12 @@ private:
         using namespace peg::udl;
         if (scope == nullptr)
         {
-            types_map_.clear();
-            scope = std::make_shared<SymbolScope>(nullptr);
+            //types_map_.clear();
+            if (clear_)
+            {
+                root_scope_ = std::make_shared<SymbolScope>(nullptr);
+            }
+            scope = root_scope_;
         }
         switch (ast->tag){
             case "MODULE_DCL"_:
@@ -460,7 +651,8 @@ private:
             for (size_t idx = 1; idx < node->nodes.size(); ++idx)
             {
                 dimensions.push_back(std::atoi(node->nodes[idx]->token.c_str()));
-            } type = get_array_type(dimensions, type);
+            }
+            type = get_array_type(dimensions, type);
         }
 
         std::cout << "Found \"typedef " << name << " for type " << type->name()
@@ -480,7 +672,7 @@ private:
 
         std::cout << "Found const " << type->name() << " " << identifier << " = " << expr.to_string();
 
-        outer->set_constant(identifier, type, expr);
+        outer->set_constant(identifier, expr);
     }
 
     bool get_literal_value(
@@ -710,7 +902,7 @@ private:
     {
         using namespace peg::udl;
         DynamicData result(type);
-        switch(ast->tag)
+        switch (ast->tag)
         {
             case "INTEGER_LITERAL"_:
             case "FLOAT_LITERAL"_:
@@ -1438,7 +1630,21 @@ private:
         }
         list.emplace_back(name, std::move(dimensions));
     }
+
 };
+
+Parser* Parser::my_instance_ = nullptr;
+
+void Context::clear_context()
+{
+    if (clear)
+    {
+        if (Parser::my_instance_ == instance_)
+        {
+            Parser::destroy();
+        }
+    }
+}
 
 } // namespace idl
 } // namespace xtypes

@@ -23,8 +23,7 @@ using namespace eprosima::xtypes::idl;
 
 TEST (IDLParser, simple_struct_test)
 {
-    std::map<std::string, DynamicType::Ptr> result;
-    result = parse(R"(
+    Context context = parse(R"(
         struct SimpleStruct
         {
             boolean my_bool;
@@ -45,6 +44,7 @@ TEST (IDLParser, simple_struct_test)
             wstring my_wstring;
         };
                    )");
+    std::map<std::string, DynamicType::Ptr>& result = context.structs;
     EXPECT_EQ(1, result.size());
 
     const DynamicType* my_struct = result["SimpleStruct"].get();
@@ -88,8 +88,7 @@ TEST (IDLParser, simple_struct_test)
 
 TEST (IDLParser, array_sequence_struct_test)
 {
-    std::map<std::string, DynamicType::Ptr> result;
-    result = parse(R"(
+    Context context = parse(R"(
         struct SimpleStruct
         {
             boolean my_bool_5[5];
@@ -100,6 +99,7 @@ TEST (IDLParser, array_sequence_struct_test)
             sequence<char, 6> my_char6_seq;
         };
                    )");
+    std::map<std::string, DynamicType::Ptr>& result = context.structs;
     EXPECT_EQ(1, result.size());
 
     const DynamicType* my_struct = result["SimpleStruct"].get();
@@ -185,8 +185,7 @@ TEST (IDLParser, array_sequence_struct_test)
 
 TEST (IDLParser, inner_struct_test)
 {
-    std::map<std::string, DynamicType::Ptr> result;
-    result = parse(R"(
+    Context context = parse(R"(
         struct InnerStruct
         {
             string message;
@@ -202,6 +201,7 @@ TEST (IDLParser, inner_struct_test)
             RecursiveStruct rec;
         };
                    )");
+    std::map<std::string, DynamicType::Ptr>& result = context.structs;
     EXPECT_EQ(3, result.size());
 
     const DynamicType* my_struct = result["SuperStruct"].get();
@@ -214,25 +214,23 @@ TEST (IDLParser, inner_struct_test)
 
 TEST (IDLParser, multiple_declarator_members_test)
 {
-    std::map<std::string, DynamicType::Ptr> result;
-    result = parse(R"(
+    Context context = parse(R"(
         struct SimpleStruct
         {
             boolean my_bool_5[5], other[55], another, multi_array[2][3];
         };
                    )");
+    std::map<std::string, DynamicType::Ptr>& result = context.structs;
     EXPECT_EQ(1, result.size());
 }
 
 TEST (IDLParser, name_collision)
 {
-    std::map<std::string, DynamicType::Ptr> result;
-
     {
         // Test that the parser throws an exception when using a keyword (ignoring case) as identifier.
         try
         {
-            result = parse(R"(
+            Context context = parse(R"(
                 struct MyStruct
                 {
                     string STRUCT;
@@ -256,27 +254,31 @@ TEST (IDLParser, name_collision)
 
     {
         // Test that the parser accepts an uppercase keyword when case isn't ignored.
-        result = parse(R"(
+        Context context;
+        context.ignore_case = true;
+        parse(R"(
             struct MyStruct
             {
                 string STRUCT;
             };
                        )",
-                       true
+                       context
             );
+        std::map<std::string, DynamicType::Ptr>& result = context.structs;
         EXPECT_EQ(1, result.size());
     }
 
     {
         // Test that the parser accepts a keyword prefixed by an underscore even ignoring case, and
         // the resulting identifier doesn't have the prefixed underscore.
-        result = parse(R"(
+        Context context = parse(R"(
             struct MyStruct
             {
                 string _struct;
             };
                        )"
             );
+        std::map<std::string, DynamicType::Ptr>& result = context.structs;
         EXPECT_EQ(1, result.size());
 
         const DynamicType* my_struct = result["MyStruct"].get();
@@ -289,7 +291,7 @@ TEST (IDLParser, name_collision)
         // Test that the parser throws an exception when using an already defined symbol as identifier.
         try
         {
-            result = parse(R"(
+            Context context = parse(R"(
                 struct MyStruct
                 {
                     uint32 MyStruct;
@@ -315,7 +317,7 @@ TEST (IDLParser, name_collision)
         // Test that the parser throws an exception when using an already defined symbol as identifier (II).
         try
         {
-            result = parse(R"(
+            Context context = parse(R"(
                 struct MyStruct
                 {
                     uint32 a;
@@ -342,7 +344,7 @@ TEST (IDLParser, name_collision)
         // Test that the parser throws an exception when using an already defined symbol as identifier (III).
         try
         {
-            result = parse(R"(
+            Context context = parse(R"(
                 struct MyStruct
                 {
                     uint32 a, a;
@@ -367,8 +369,7 @@ TEST (IDLParser, name_collision)
 
 TEST (IDLParser, module_scope_test)
 {
-    std::map<std::string, DynamicType::Ptr> result;
-    result = parse(R"(
+    Context context = parse(R"(
         module A
         {
             struct StA;
@@ -412,15 +413,15 @@ TEST (IDLParser, module_scope_test)
         };
                    )");
 
+    std::map<std::string, DynamicType::Ptr>& result = context.structs;
     EXPECT_EQ(5, result.size());
 }
 
 TEST (IDLParser, constants)
 {
-    std::map<std::string, DynamicType::Ptr> result;
     try
     {
-        result = parse(R"(
+        Context context = parse(R"(
             const uint32 MAX_SIZE = 32 / 2;
             const uint32 SUPER_MAX = MAX_SIZE * 1000 << 5;
                        )");
@@ -432,7 +433,7 @@ TEST (IDLParser, constants)
 
     try
     {
-        result = parse(R"(
+        Context context = parse(R"(
             const string C_STRING = "Hola";
                        )");
     }
@@ -445,7 +446,7 @@ TEST (IDLParser, constants)
     {
         ASSERT_DEATH(
             {
-                result = parse(R"(
+                Context context = parse(R"(
                     const string C_STRING = "Hola" + 55;
                                )");
             },
@@ -465,7 +466,7 @@ TEST (IDLParser, constants)
 
     try
     {
-        result = parse(R"(
+        Context context = parse(R"(
             const string C_STRING = "Hola";
             const string C_STRING_2 = C_STRING;
             const string C_STRING_3 = "Hey, " "Adios!!"
@@ -479,7 +480,7 @@ TEST (IDLParser, constants)
 
     try
     {
-        result = parse(R"(
+        Context context = parse(R"(
             const float BAD_TYPE = "Hola";
                        )");
         FAIL() << "Exception not thown.";
@@ -499,7 +500,7 @@ TEST (IDLParser, constants)
 
     try
     {
-        result = parse(R"(
+        Context context = parse(R"(
             const uint64 BAD_TYPE = 55.8;
                        )");
     }
@@ -509,24 +510,18 @@ TEST (IDLParser, constants)
     }
 
     {
-        try
-        {
-            result = parse(R"(
-                const uint32 SIZE = 50;
+        Context context = parse(R"(
+            const uint32 SIZE = 50;
 
-                struct MyStruct
-                {
-                    string my_str_array[SIZE];
-                    sequence<long, SIZE> my_seq;
-                    string<SIZE> my_bounded_str;
-                };
-                           )");
-        }
-        catch(const Parser::exception& exc)
-        {
-            FAIL() << exc.what() << std::endl;
-        }
+            struct MyStruct
+            {
+                string my_str_array[SIZE];
+                sequence<long, SIZE> my_seq;
+                string<SIZE> my_bounded_str;
+            };
+                       )");
 
+        std::map<std::string, DynamicType::Ptr>& result = context.structs;
         EXPECT_EQ(1, result.size());
 
         const DynamicType* my_struct = result["MyStruct"].get();
@@ -540,10 +535,9 @@ TEST (IDLParser, constants)
 TEST (IDLParser, not_yet_supported)
 //TEST (IDLParser, DISABLED_not_yet_supported)
 {
-    std::map<std::string, DynamicType::Ptr> result;
     try
     {
-        result = parse(R"(
+        Context context = parse(R"(
             const uint32 MAX_SIZE = 32 / 2;
 
             module A
@@ -626,27 +620,20 @@ TEST (IDLParser, not_yet_supported)
 
 TEST (IDLParser, const_value_parser)
 {
-    std::map<std::string, DynamicType::Ptr> result;
     {
         uint32_t value = (998 + 8) * 8;
-        try
-        {
-            result = parse(R"(
-                const uint32 SIZE = (998 + 8) * 8;
+        Context context = parse(R"(
+            const uint32 SIZE = (998 + 8) * 8;
 
-                struct MyStruct
-                {
-                    string my_str_array[SIZE];
-                    sequence<long, SIZE> my_seq;
-                    string<SIZE> my_bounded_str;
-                };
-                           )");
-        }
-        catch(const Parser::exception& exc)
-        {
-            FAIL() << exc.what() << std::endl;
-        }
+            struct MyStruct
+            {
+                string my_str_array[SIZE];
+                sequence<long, SIZE> my_seq;
+                string<SIZE> my_bounded_str;
+            };
+                       )");
 
+        std::map<std::string, DynamicType::Ptr>& result = context.structs;
         EXPECT_EQ(1, result.size());
 
         const DynamicType* my_struct = result["MyStruct"].get();
@@ -656,6 +643,18 @@ TEST (IDLParser, const_value_parser)
         ASSERT_EQ(data["my_bounded_str"].bounds(), value);
     }
 }
+
+/*
+TEST (IDLParser, TO_REMOVE_preprocessor)
+{
+    Parser p;
+    std::string output = p.preprocess_string(R"(
+#include <hey.idl>
+#define LUIS
+        )");
+    std::cout << output << std::endl;
+}
+*/
 
 int main(int argc, char** argv)
 {

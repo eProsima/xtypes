@@ -31,31 +31,37 @@ namespace idl {
 /// It supports IDL4.2
 /// \param[in] idl A IDL specification to parse into DynamicType.
 /// \return A map with the DynamicTypes parsed from the idl.
-inline std::map<std::string, DynamicType::Ptr> parse(
+inline Context& parse(
         const std::string& idl,
-        bool ignore_case = false)
+        Context& context)
 {
-    std::map<std::string, DynamicType::Ptr> result;
-    static Parser parser;
-    if (parser.parse(idl.c_str(), ignore_case))
-    {
-        parser.get_all_types(result);
-    }
-    return result;
+    Parser* parser = Parser::instance();
+    parser->parse(idl.c_str(), context);
+    return context;
+}
+
+inline Context parse(
+        const std::string& idl)
+{
+    Parser* parser = Parser::instance();
+    return parser->parse(idl);
 }
 
 /// \brief Same as parse() but it receives a path file where the IDL is located.
-inline std::map<std::string, DynamicType::Ptr> parse_file(
+inline Context& parse_file(
         const std::string& idl_file,
-        bool ignore_case = false)
+        Context& context)
 {
-    std::map<std::string, DynamicType::Ptr> result;
-    static Parser parser;
-    if (parser.parse_file(idl_file.c_str(), ignore_case))
-    {
-        parser.get_all_types(result);
-    }
-    return result;
+    Parser* parser = Parser::instance();
+    parser->parse_file(idl_file.c_str(), context);
+    return context;
+}
+
+inline Context parse_file(
+        const std::string& idl_file)
+{
+    Parser* parser = Parser::instance();
+    return parser->parse_file(idl_file);
 }
 
 /// \brief Generates the IDL that represents an StructType

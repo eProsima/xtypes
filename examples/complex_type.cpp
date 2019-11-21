@@ -14,7 +14,7 @@ int main()
         };
     )";
 
-    std::map<std::string, DynamicType::Ptr> from_idl = idl::parse(idl_spec);
+    std::map<std::string, DynamicType::Ptr> from_idl = idl::parse(idl_spec).structs;
     const StructType& inner = static_cast<const StructType&>(*from_idl.at("InnerType"));
 
     StructType outer("OuterType");
