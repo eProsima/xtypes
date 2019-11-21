@@ -644,17 +644,75 @@ TEST (IDLParser, const_value_parser)
     }
 }
 
-/*
-TEST (IDLParser, TO_REMOVE_preprocessor)
+TEST (IDLParser, parse_file)
 {
-    Parser p;
-    std::string output = p.preprocess_string(R"(
-#include <hey.idl>
-#define LUIS
-        )");
-    std::cout << output << std::endl;
+    Context context = parse_file("idl/test01.idl");
+    std::map<std::string, DynamicType::Ptr>& result = context.structs;
+    EXPECT_EQ(1, result.size());
+    const DynamicType* my_struct = result["Test01"].get();
+    DynamicData data(*my_struct);
+    ASSERT_EQ(data["my_long"].type().name(), "int32_t");
+    ASSERT_EQ(data["my_short"].type().name(), "int16_t");
+    ASSERT_EQ(data["my_long_long"].type().name(), "int64_t");
 }
-*/
+
+TEST (IDLParser, include_from_string)
+{
+    Context context = parse(R"(
+        #include "idl/include/test_include.idl"
+
+        module include
+        {
+            struct Test00
+            {
+                TestInclude incl;
+            };
+        };
+        )");
+    std::map<std::string, DynamicType::Ptr>& result = context.structs;
+    EXPECT_EQ(2, result.size());
+    const DynamicType* my_struct = result["Test00"].get();
+    DynamicData data(*my_struct);
+    ASSERT_EQ(data["incl"]["my_string"].type().name(), "std::string");
+}
+
+TEST (IDLParser, include_from_file_02_local)
+{
+    Context context;
+    context.include_paths.push_back("idl");
+    parse_file("idl/test02.idl", context);
+    std::map<std::string, DynamicType::Ptr>& result = context.structs;
+    EXPECT_EQ(2, result.size());
+    const DynamicType* my_struct = result["Test02"].get();
+    DynamicData data(*my_struct);
+    ASSERT_EQ(data["my_include"]["my_string"].type().name(), "std::string");
+}
+
+TEST (IDLParser, include_from_file_03_global)
+{
+    Context context;
+    context.include_paths.push_back("idl/include");
+    parse_file("idl/test03.idl", context);
+    std::map<std::string, DynamicType::Ptr>& result = context.structs;
+    EXPECT_EQ(2, result.size());
+    const DynamicType* my_struct = result["Test03"].get();
+    DynamicData data(*my_struct);
+    ASSERT_EQ(data["my_include"]["my_string"].type().name(), "std::string");
+}
+
+TEST (IDLParser, include_from_file_04_multi)
+{
+    Context context;
+    context.include_paths.push_back("idl");
+    context.include_paths.push_back("idl/include");
+    parse_file("idl/test04.idl", context);
+    std::map<std::string, DynamicType::Ptr>& result = context.structs;
+    EXPECT_EQ(3, result.size());
+    const DynamicType* my_struct = result["Test04"].get();
+    DynamicData data(*my_struct);
+    ASSERT_EQ(data["my_include"]["my_string"].type().name(), "std::string");
+    ASSERT_EQ(data["my_test03"]["my_include"]["my_string"].type().name(), "std::string");
+}
 
 int main(int argc, char** argv)
 {

@@ -83,6 +83,28 @@ if(XTYPES_BUILD_TESTS)
     compile_test(${PROJECT_NAME}_test_unitary test/unitary/main.cpp)
     compile_test(${PROJECT_NAME}_idl_parser_test_unitary test/unitary/parser_test.cpp)
     # ...
+
+    # Copy IDL files
+    configure_file(
+        ${PROJECT_SOURCE_DIR}/test/unitary/idl/test01.idl
+        ${PROJECT_BINARY_DIR}/idl/test01.idl
+        COPYONLY)
+    configure_file(
+        ${PROJECT_SOURCE_DIR}/test/unitary/idl/test02.idl
+        ${PROJECT_BINARY_DIR}/idl/test02.idl
+        COPYONLY)
+    configure_file(
+        ${PROJECT_SOURCE_DIR}/test/unitary/idl/test03.idl
+        ${PROJECT_BINARY_DIR}/idl/test03.idl
+        COPYONLY)
+    configure_file(
+        ${PROJECT_SOURCE_DIR}/test/unitary/idl/test04.idl
+        ${PROJECT_BINARY_DIR}/idl/test04.idl
+        COPYONLY)
+    configure_file(
+        ${PROJECT_SOURCE_DIR}/test/unitary/idl/include/test_include.idl
+        ${PROJECT_BINARY_DIR}/idl/include/test_include.idl
+        COPYONLY)
 endif()
 
 #####################################################################################
