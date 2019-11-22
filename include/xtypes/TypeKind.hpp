@@ -31,6 +31,7 @@ enum class TypeKind
     CONSTRUCTED_TYPE = 0x8000, ///< Represents a non PrimitiveType
     COLLECTION_TYPE  = 0x0200, ///< Represents a CollectionType
     AGGREGATION_TYPE = 0x0100, ///< Represents an AggregationType
+    ENUMERATED_TYPE  = 0x0400, ///< Represents an EnumeratedType
 
     UNSIGNED_TYPE   = 0x80, ///< Represents an unsigned value
 
@@ -49,9 +50,10 @@ enum class TypeKind
     CHAR_8_TYPE      = PRIMITIVE_TYPE | 0x000D, ///< char
     CHAR_16_TYPE     = PRIMITIVE_TYPE | 0x000E, ///< wchar
 
-    ENUMERATION_TYPE = CONSTRUCTED_TYPE | 0x0001, ///< Not supported
+    ENUMERATION_TYPE = CONSTRUCTED_TYPE | ENUMERATED_TYPE | 0x0001,
     BITSET_TYPE      = CONSTRUCTED_TYPE | 0x0002, ///< Not supported
     ALIAS_TYPE       = CONSTRUCTED_TYPE | 0x0003, ///< Not supported
+    BITMASK_TYPE     = CONSTRUCTED_TYPE | ENUMERATED_TYPE | 0x0004, ///< Not supported
 
     ARRAY_TYPE       = CONSTRUCTED_TYPE | COLLECTION_TYPE | 0x0004, ///< Reprensets an ArrayType
     SEQUENCE_TYPE    = CONSTRUCTED_TYPE | COLLECTION_TYPE | 0x0005, ///< Reprensets a SequenceType

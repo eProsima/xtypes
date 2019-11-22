@@ -63,12 +63,18 @@ DDS_CORE_XTYPES_PRIMITIVE(wchar_t, CHAR_16_TYPE)
 template<typename T>
 class PrimitiveType : public DynamicType
 {
-private:
+protected:
     template<typename R>
     friend const DynamicType& primitive_type();
 
     PrimitiveType()
         : DynamicType(PrimitiveTypeKindTrait<T>::kind, PrimitiveTypeKindTrait<T>::name)
+    {}
+
+    PrimitiveType(
+            TypeKind kind,
+            const std::string& name)
+        : DynamicType(kind, name)
     {}
 
     PrimitiveType(const PrimitiveType& other) = delete;
@@ -199,7 +205,6 @@ private:
         visitor(node);
     }
 
-protected:
     virtual DynamicType* clone() const override
     {
         return new PrimitiveType<T>();

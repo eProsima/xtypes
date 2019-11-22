@@ -74,6 +74,14 @@ public:
         return (kind_ & TypeKind::CONSTRUCTED_TYPE) != TypeKind::NO_TYPE;
     }
 
+    /// \brief check if this type is enumerated
+    /// (has the corresponding bit of TypeKind::ENUMERATED_TYPE in its kind).
+    /// \returns true if is enumerated
+    bool is_enumerated_type() const
+    {
+        return (kind_ & TypeKind::ENUMERATED_TYPE) != TypeKind::NO_TYPE;
+    }
+
     /// \brief check the compatibility with other DynamicType.
     /// returns The needed consistency required for the types can be compatibles.
     ///   TypeConsistency::EQUALS means that the types are identically.

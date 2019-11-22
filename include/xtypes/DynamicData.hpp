@@ -21,18 +21,34 @@
 #include <xtypes/CollectionType.hpp>
 #include <xtypes/SequenceType.hpp>
 #include <xtypes/PrimitiveType.hpp>
+#include <xtypes/EnumerationType.hpp>
 
 #include <cassert>
+#include <typeindex>
 
 namespace eprosima {
 namespace xtypes {
+
+template < template <typename...> class base, typename derived>
+struct is_base_of_template_impl
+{
+    template<typename... Ts>
+    static constexpr std::true_type  test(const base<Ts...> *);
+    static constexpr std::false_type test(...);
+    using type = decltype(test(std::declval<derived*>()));
+};
+
+/// \brief Check if a class inherits from a templated class.
+template < template <typename...> class base, typename derived>
+using is_base_of_template = typename is_base_of_template_impl<base, derived>::type;
 
 /// \brief Check if a C type can promote to a PrimitiveType or StringType.
 template<typename T>
 using PrimitiveOrString = typename std::enable_if<
     std::is_arithmetic<T>::value ||
     std::is_same<std::string, T>::value ||
-    std::is_same<std::wstring, T>::value
+    std::is_same<std::wstring, T>::value ||
+    is_base_of_template<EnumeratedType, T>::value
     >::type;
 
 /// \brief Check if a C type is a primitive type.
@@ -81,14 +97,22 @@ public:
     inline std::string to_string() const; // Into DynamicDataImpl.hpp
 
     /// \brief Returns a value as primitive or string.
-    /// \pre The DynamicData must represent a primitive or string value.
+    /// \pre The DynamicData must represent a primitive, enumerated or string value.
     /// \returns the value stored in the DynamicData.
     template<typename T, class = PrimitiveOrString<T>>
     const T& value() const
     {
         assert((type_.kind() == TypeKind::STRING_TYPE && std::is_same<std::string, T>::value)
             || (type_.kind() == TypeKind::WSTRING_TYPE && std::is_same<std::wstring, T>::value)
-            || (type_.kind() == primitive_type<T>().kind()));
+            || (type_.kind() == primitive_type<T>().kind())
+            || (type_.is_enumerated_type()));
+
+        if (type_.is_enumerated_type())
+        {
+            const EnumeratedType<T>& enum_type = static_cast<const EnumeratedType<T>&>(type_);
+            assert(std::type_index(enum_type.get_associated_type()) == std::type_index(typeid(T)));
+        }
+
         return *reinterpret_cast<T*>(instance_);
     }
 
@@ -522,7 +546,26 @@ protected:
                 wchar_t temp = *this;
                 return static_cast<T>(temp);
             }
-            //case TypeKind::ENUMERATION_TYPE: TODO
+            case TypeKind::ENUMERATION_TYPE:
+            {
+                // For checking the associated_type, any cast is valid, as long as e_type isn't accessed for anything else.
+                const EnumeratedType<uint8_t>& e_type = static_cast<const EnumeratedType<uint8_t>&>(type_);
+                if (std::type_index(e_type.get_associated_type()) == std::type_index(typeid(uint8_t)))
+                {
+                    uint8_t temp = *this;
+                    return static_cast<T>(temp);
+                }
+                else if (std::type_index(e_type.get_associated_type()) == std::type_index(typeid(uint16_t)))
+                {
+                    uint16_t temp = *this;
+                    return static_cast<T>(temp);
+                }
+                else if (std::type_index(e_type.get_associated_type()) == std::type_index(typeid(uint32_t)))
+                {
+                    uint32_t temp = *this;
+                    return static_cast<T>(temp);
+                }
+            }
         }
         return T();
     }
@@ -600,14 +643,22 @@ public:
     }
 
     /// \brief Set a primitive or string value into the DynamicData
-    /// \input[in] t The primitive or string value.
-    /// \pre The DynamicData must represent a PrimitiveType or W/StringType value.
+    /// \input[in] t The primitive, enumerated or string value.
+    /// \pre The DynamicData must represent a PrimitiveType, EnumeratedType or W/StringType value.
     template<typename T, class = PrimitiveOrString<T>>
     void value(const T& t)
     {
         assert((type_.kind() == TypeKind::STRING_TYPE && std::is_same<std::string, T>::value)
             || (type_.kind() == TypeKind::WSTRING_TYPE && std::is_same<std::wstring, T>::value)
-            || (type_.kind() == PrimitiveTypeKindTrait<T>::kind));
+            || (type_.kind() == PrimitiveTypeKindTrait<T>::kind)
+            || (type_.is_enumerated_type()));
+
+        if (type_.is_enumerated_type())
+        {
+            const EnumeratedType<T>& enum_type = static_cast<const EnumeratedType<T>&>(type_);
+            assert(std::type_index(enum_type.get_associated_type()) == std::type_index(typeid(T)));
+            assert(enum_type.is_allowed_value(t));
+        }
 
         type_.destroy_instance(instance_);
         type_.copy_instance(instance_, reinterpret_cast<const uint8_t*>(&t));
