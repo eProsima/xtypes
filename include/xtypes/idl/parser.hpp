@@ -71,23 +71,24 @@ private:
 
 static const Context DEFAULT_CONTEXT = Context();
 
-
 class Parser
 {
 public:
     static Parser* instance()
     {
-        if (my_instance_ == nullptr)
+        Parser* instance = get_instance();
+        if (instance == nullptr)
         {
-            my_instance_ = new Parser();
+            instance = new Parser();
         }
-        return my_instance_;
+        return instance;
     }
 
     static void destroy()
     {
-        delete my_instance_;
-        my_instance_ = nullptr;
+        Parser* instance = get_instance();
+        delete instance;
+        instance = nullptr;
     }
 
     Parser()
@@ -233,7 +234,6 @@ public:
 
 private:
     friend struct Context;
-    static Parser* my_instance_;
 
     peg::parser parser_;
     bool ignore_case_ = false;
@@ -241,6 +241,12 @@ private:
     bool clear_ = true;
     std::string preprocessor_path_ = "cpp";
     std::vector<std::string> include_paths_;
+
+    static Parser* get_instance()
+    {
+        static Parser* instance_ = nullptr;
+        return instance_;
+    }
 
     bool read_file(
             const char* path,
@@ -1631,13 +1637,11 @@ private:
 
 };
 
-Parser* Parser::my_instance_ = nullptr;
-
 void Context::clear_context()
 {
     if (clear)
     {
-        if (Parser::my_instance_ == instance_)
+        if (Parser::get_instance() == instance_)
         {
             Parser::destroy();
         }
