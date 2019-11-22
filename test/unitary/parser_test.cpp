@@ -916,6 +916,52 @@ TEST (IDLParser, real_world_parsing)
     ASSERT_TRUE(context.success);
 }
 
+TEST (IDLParser, enumerations_test)
+{
+    std::map<std::string, DynamicType::Ptr> result;
+    {
+        try
+        {
+            result = parse(R"(
+                enum MyEnum
+                {
+                    A,
+                    B,
+                    C
+                };
+
+                const uint32 D = B + C;
+
+                struct MyStruct
+                {
+                    string my_str_array[B];
+                    sequence<long, C> my_seq;
+                    string<D> my_bounded_str;
+                };
+                           )");
+        }
+        catch(const Parser::exception& exc)
+        {
+            FAIL() << exc.what() << std::endl;
+        }
+
+        EXPECT_EQ(1, result.size());
+
+        const DynamicType* my_struct = result["MyStruct"].get();
+        DynamicData data(*my_struct);
+        ASSERT_EQ(data["my_str_array"].bounds(), 1);
+        ASSERT_EQ(data["my_seq"].bounds(), 2);
+        ASSERT_EQ(data["my_bounded_str"].bounds(), 3);
+
+        // TODO Once merged, so we can retrieve the Context
+        // EnumerationType<uint32_t>* my_enum;
+        // context.get_enum_32("MyEnum", my_enum);
+        // ASSERT_EQ(my_enum.value("A"), 0);
+        // ASSERT_EQ(my_enum.value("B"), 1);
+        // ASSERT_EQ(my_enum.value("C"), 2);
+    }
+}
+
 int main(int argc, char** argv)
 {
     testing::InitGoogleTest(&argc, argv);

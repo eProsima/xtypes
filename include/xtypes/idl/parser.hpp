@@ -884,9 +884,21 @@ private:
         using namespace peg::udl;
 
         std::string name = ast->nodes[0]->token;
-        // std::vector<std::string> value[i] = ast->nodes[i]->token;
-
-        std::cout << "Found \"enum " << name << "\" but enumerations aren't supported. Ignoring." << std::endl;
+        EnumerationType<uint32_t> result(name); // TODO: Support other Enum types?, the grammar should be upgraded.
+        for (size_t idx = 1; idx < ast->nodes.size(); ++idx)
+        {
+            const std::string& token = ast->nodes[idx]->token;
+            result.add_enumerator(token);
+            // Little hack. Don't judge me.
+            DynamicData hack(primitive_type<uint32_t>());
+            hack = result.value(token);
+            outer->set_constant(name + "::" + token, primitive_type<uint32_t>(), hack);
+            outer->set_constant(token, primitive_type<uint32_t>(), hack); // Typically both are accessible
+            // End of hack
+        }
+        //outer->enumerations_32.emplace(
+        //    std::make_pair<std::string, EnumerationType<uint32_t>>(std::move(name), std::move(result)));
+        outer->enumerations_32.emplace(name, std::move(result));
     }
 
     void struct_fw_dcl(

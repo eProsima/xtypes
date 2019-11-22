@@ -286,6 +286,33 @@ public:
         return false;
     }
 
+    /*
+    Enumeration<uint32_t>& enum_32(
+            const std::string& name)
+    {
+        if (enumerations_32.count(name) > 0)
+        {
+            DynamicType* temp = const_cast<DynamicType*>(enumerations_32[name].get());
+            result = static_cast<EnumerationType<uint32_t>*>(temp);
+            return true;
+        }
+        return false;
+    }
+
+    bool has_enum_32(
+            const std::string& name) const
+    {
+        return enumerations_32.count(name) > 0;
+    }
+
+    bool enum_32(
+            Enumeration<uint32_t>&& enumeration,
+            bool replace = false)
+    {
+
+    }
+    */
+
     // Generic type retrieval.
     DynamicType::Ptr type(
             const std::string& name)
@@ -321,6 +348,7 @@ public:
 protected:
     std::map<std::string, DynamicType::Ptr> constants_types_;
     std::map<std::string, DynamicData> constants_;
+    std::map<std::string, DynamicType::Ptr> enumerations_32_;
     std::map<std::string, DynamicType::Ptr> structs_;
     //std::map<std::string, std::shared_ptr<AnnotationType>> annotations_;
     Module* outer_;

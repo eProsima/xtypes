@@ -103,6 +103,36 @@ with `T` being one of the following basic types:
 `bool` `char` `wchar_t` `uint8_t` `int16_t` `uint16_t` `int32_t` `uint32_t` `int64_t` `uint64_t` `float` `double`
 `long double`
 
+#### Enumerated Type
+EnumeratedTypes are a special kind of PrimitiveTypes. They are internally represented by a PrimitiveType, but only
+allows a user-defined subset of values.
+
+##### EnumerationType
+Similar to C++ enum, enumerations are the most basic kind of EnumeratedTypes.
+It can be bound to three different PrimitiveTypes, `uint8_t`, `uint16_t`, and `uint32_t`.
+The possible values for the enumeration are defined adding them as identifiers.
+The value can be explicitly specified or auto-assigned. Once an identifier is added, the next identifier's value must
+be greater than the previous one. By default, the first added value is zero (0).
+
+```c++
+EnumerationType<uint32_t> my_enum("MyEnum");
+my_enum.add_enumerator("A");                // The value of MyEnum::A is 0. The default initial value.
+my_enum.add_enumerator("B", 10);            // The value of MyEnum::B is 10. Explicitely defined.
+my_enum.add_enumerator("C");                // The value of MyEnum::C is 11. Implicitely assigned.
+
+DynamicData enum_data(my_enum);             // DynamicData of type "MyEnum".
+enum_data = my_enum.value("C");             // Assign to the data the value of MyEnum::C.
+
+uint32_t value = enum_data;                 // Retrieve the data as its primitive type.
+DynamicData enum_data2 = enum_data;         // Copy the DynamicData.
+enum_data2 = static_cast<uint32_t>(10);     // Assign to the copy, a raw value from its primitive type.
+```
+
+Assign or retrieve enumeration data of a different primitive type isn't allowed,
+so the user should cast the value by himself.
+
+Assign a value that doesn't belongs to the enumeration isn't supported.
+
 #### Collection Type
 As pointed by the self-explanatory name, CollectionTypes provide a way to create the most various collections.
 There are several collection types:
