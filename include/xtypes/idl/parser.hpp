@@ -125,9 +125,9 @@ public:
             return false;
         }
         ast = peg::AstOptimizer(true).optimize(ast);
-        build_on_ast(ast);//->fill_all_types(types_map_);
+        build_on_ast(ast);
         root_scope_->fill_all_types(context.structs);
-        //root_scope->fill_context(context);
+        //TODO: root_scope->fill_context(context);
         context.success = true;
         return true;
     }
@@ -166,9 +166,9 @@ public:
             }
 
             ast = peg::AstOptimizer(true).optimize(ast);
-            build_on_ast(ast);//->fill_all_types(types_map_);
+            build_on_ast(ast);
             root_scope_->fill_all_types(context.structs);
-            //root_scope->fill_context(context);
+            //TODO: root_scope->fill_context(context);
             context.success = true;
             return true;
         }
@@ -181,10 +181,9 @@ public:
         {
             root_scope_->fill_all_types(types_map);
         }
-        //types_map = types_map_;
     }
 
-    class exception// : public std::exception
+    class exception
     {
     private:
         std::string message_;
@@ -237,7 +236,6 @@ private:
     static Parser* my_instance_;
 
     peg::parser parser_;
-    //std::map<std::string, DynamicType::Ptr> types_map_;
     bool ignore_case_ = false;
     bool preprocess_ = true;
     bool clear_ = true;
@@ -490,7 +488,6 @@ private:
         using namespace peg::udl;
         if (scope == nullptr)
         {
-            //types_map_.clear();
             if (clear_ || root_scope_ == nullptr)
             {
                 root_scope_ = std::make_shared<SymbolScope>(nullptr);
