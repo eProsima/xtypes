@@ -280,7 +280,7 @@ TEST (IDLParser, name_collision)
                        )",
                        context
             );
-        std::map<std::string, DynamicType::Ptr>& result = context.structs;
+        std::map<std::string, DynamicType::Ptr> result = context.module->get_all_types();
         EXPECT_EQ(1, result.size());
     }
 
