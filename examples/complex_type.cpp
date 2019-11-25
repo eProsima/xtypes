@@ -15,7 +15,7 @@ int main()
         };
     )";
 
-    std::map<std::string, DynamicType::Ptr> from_idl = idl::parse(idl_spec).structs;
+    std::map<std::string, DynamicType::Ptr> from_idl = idl::parse(idl_spec).module->get_all_types();
     const StructType& inner = static_cast<const StructType&>(*from_idl.at("InnerType"));
 
     StructType outer("OuterType");
@@ -62,6 +62,9 @@ int main()
     std::cout << "Does ::InnerType exists?: " << root.has_struct("::InnerType") << std::endl;
     std::cout << "Does InnerType exists?: " << root.has_struct("InnerType") << std::endl;
     std::cout << "Does OuterType exists?: " << root.has_struct("OuterType") << std::endl;
+
+    DynamicData module_data(root["A"]["A"].get_struct("OuterType")); // ::A::A::OuterType
+    module_data["om3"] = "This is a string.";
 
     return 0;
 }

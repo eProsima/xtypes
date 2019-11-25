@@ -43,6 +43,19 @@ public:
         return *result.first->second.get();
     }
 
+    std::shared_ptr<Module> get_submodule(
+            const std::string& submodule)
+    {
+        return inner[submodule];
+    }
+
+
+    bool has_submodule(
+            const std::string& submodule)
+    {
+        return inner.count(submodule) > 0;
+    }
+
     Module& operator [] (
             const std::string& submodule)
     {
@@ -56,6 +69,7 @@ public:
         {
             return false; // Cannot add a module with scoped name.
         }
+        module->outer = this;
         auto result = inner.emplace(module->name_, std::move(module));
         return result.second;
     }
@@ -122,6 +136,26 @@ public:
         return static_cast<const StructType&>(*structs.end()->second);
     }
 
+    StructType& get_struct(
+            const std::string& name)
+    {
+        // Solve scope
+        PairModuleSymbol module = resolve_scope(name);
+        if (module.first == nullptr)
+        {
+            // This will fail
+            return static_cast<StructType&>(const_cast<DynamicType&>(*structs.end()->second));
+        }
+
+        auto it = module.first->structs.find(module.second);
+        if (it != module.first->structs.end())
+        {
+            return static_cast<StructType&>(const_cast<DynamicType&>(*it->second));
+        }
+        // This will fail
+        return static_cast<StructType&>(const_cast<DynamicType&>(*structs.end()->second));
+    }
+
     bool set_struct(
             const StructType& struct_type)
     {
@@ -135,11 +169,21 @@ public:
     }
 
     bool set_struct(
-            StructType&& struct_type)
+            StructType&& struct_type,
+            bool replace = false)
     {
         if (struct_type.name().find("::") != std::string::npos)
         {
             return false; // Cannot add a symbol with scoped name.
+        }
+
+        if (replace)
+        {
+            auto it = structs.find(struct_type.name());
+            if (it != structs.end())
+            {
+                structs.erase(it);
+            }
         }
 
         auto result = structs.emplace(struct_type.name(), std::move(struct_type));
@@ -222,6 +266,38 @@ public:
             return result.second;
         }
         return false;
+    }
+
+    // Generic type retrieval.
+    DynamicType::Ptr get_type(
+            const std::string& name)
+    {
+        // Solve scope
+        PairModuleSymbol module = resolve_scope(name);
+        if (module.first == nullptr)
+        {
+            return DynamicType::Ptr();
+        }
+
+        // Check enums
+        // TODO
+
+        // Check structs
+        if (module.first->has_struct(module.second))
+        {
+            return module.first->structs.at(module.second);
+        }
+
+        // Check unions
+        // TODO
+
+        // Check bitsets
+        // TODO
+
+        // Check bitmasks
+        // TODO
+
+        return DynamicType::Ptr();
     }
 
 protected:

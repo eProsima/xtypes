@@ -1412,6 +1412,9 @@ TEST (Utilities, Modules)
     DynamicData my_data(my_struct);
     my_data["outer_float"] = 5.678f;
     ASSERT_EQ(my_data["outer_float"].value<float>(), 5.678f);
+
+    const StructType& same_struct = root["A"]["A"].get_struct("OuterType"); // ::A::A::OuterType
+    ASSERT_EQ(&my_struct, &same_struct); // Both access ways must be equivalent.
 }
 
 int main(int argc, char** argv)
