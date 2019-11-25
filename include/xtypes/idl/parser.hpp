@@ -48,6 +48,7 @@ struct Context
     bool ignore_case = false;
     bool clear = true;
     bool preprocess = true;
+    bool allow_keyword_identifiers = false;
     std::string preprocessor_exec = "";
     std::vector<std::string> include_paths;
 
@@ -113,6 +114,7 @@ public:
         std::shared_ptr<peg::Ast> ast;
         ignore_case_ = context.ignore_case;
         clear_ = context.clear;
+        allow_kw_ids_ = context.allow_keyword_identifiers;
         std::string idl_to_parse = idl_string;
         preprocessor(context.preprocessor_exec);
         include_paths_ = context.include_paths;
@@ -150,6 +152,7 @@ public:
         std::shared_ptr<peg::Ast> ast;
         ignore_case_ = context.ignore_case;
         clear_ = context.clear;
+        allow_kw_ids_ = context.allow_keyword_identifiers;
         preprocessor(context.preprocessor_exec);
         include_paths_ = context.include_paths;
         if (context.preprocess)
@@ -239,6 +242,7 @@ private:
     bool ignore_case_ = false;
     bool preprocess_ = true;
     bool clear_ = true;
+    bool allow_kw_ids_ = false;
     std::string preprocessor_path_ = "cpp";
     std::vector<std::string> include_paths_;
 
@@ -555,7 +559,7 @@ private:
             return identifier.substr(1); // If the identifier starts with "_", remove the underscode and return.
         }
 
-        if (is_token(identifier))
+        if (!allow_kw_ids_ && is_token(identifier))
         {
             throw exception("The identifier \"" + identifier + "\" is a reserved word.", ast);
         }
