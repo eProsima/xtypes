@@ -269,6 +269,22 @@ TEST (IDLParser, name_collision)
     }
 
     {
+        // Test that the parser accepts a keyword when the usage of keywords as identifiers is allowed.
+        Context context;
+        context.allow_keyword_identifiers = true;
+        parse(R"(
+            struct struct
+            {
+                string string;
+            };
+                       )",
+                       context
+            );
+        std::map<std::string, DynamicType::Ptr>& result = context.structs;
+        EXPECT_EQ(1, result.size());
+    }
+
+    {
         // Test that the parser accepts a keyword prefixed by an underscore even ignoring case, and
         // the resulting identifier doesn't have the prefixed underscore.
         Context context = parse(R"(
