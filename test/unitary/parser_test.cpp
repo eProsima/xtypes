@@ -918,33 +918,26 @@ TEST (IDLParser, real_world_parsing)
 
 TEST (IDLParser, enumerations_test)
 {
-    std::map<std::string, DynamicType::Ptr> result;
     {
-        try
-        {
-            result = parse(R"(
-                enum MyEnum
-                {
-                    A,
-                    B,
-                    C
-                };
+        Context context = parse(R"(
+            enum MyEnum
+            {
+                A,
+                B,
+                C
+            };
 
-                const uint32 D = B + C;
+            const uint32 D = B + C;
 
-                struct MyStruct
-                {
-                    string my_str_array[B];
-                    sequence<long, C> my_seq;
-                    string<D> my_bounded_str;
-                };
-                           )");
-        }
-        catch(const Parser::exception& exc)
-        {
-            FAIL() << exc.what() << std::endl;
-        }
+            struct MyStruct
+            {
+                string my_str_array[B];
+                sequence<long, C> my_seq;
+                string<D> my_bounded_str;
+            };
+                       )");
 
+        std::map<std::string, DynamicType::Ptr>& result = context.structs;
         EXPECT_EQ(1, result.size());
 
         const DynamicType* my_struct = result["MyStruct"].get();
@@ -953,7 +946,7 @@ TEST (IDLParser, enumerations_test)
         ASSERT_EQ(data["my_seq"].bounds(), 2);
         ASSERT_EQ(data["my_bounded_str"].bounds(), 3);
 
-        // TODO Once merged, so we can retrieve the Context
+        // TODO Once merged, so we can retrieve the Context's enums
         // EnumerationType<uint32_t>* my_enum;
         // context.get_enum_32("MyEnum", my_enum);
         // ASSERT_EQ(my_enum.value("A"), 0);

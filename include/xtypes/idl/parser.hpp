@@ -892,8 +892,8 @@ private:
             // Little hack. Don't judge me.
             DynamicData hack(primitive_type<uint32_t>());
             hack = result.value(token);
-            outer->set_constant(name + "::" + token, primitive_type<uint32_t>(), hack);
-            outer->set_constant(token, primitive_type<uint32_t>(), hack); // Typically both are accessible
+            outer->set_constant(name + "::" + token, hack);
+            outer->set_constant(token, hack); // Typically both are accessible
             // End of hack
         }
         //outer->enumerations_32.emplace(
