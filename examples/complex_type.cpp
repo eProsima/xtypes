@@ -1,4 +1,5 @@
 #include <xtypes/xtypes.hpp>
+#include <xtypes/Module.hpp>
 
 #include <iostream>
 
@@ -48,6 +49,19 @@ int main()
     data["om8"][1] = data["om2"];                          //ArrayType(inner)
 
     std::cout << data.to_string() << std::endl; //See to_string() implementation as an example of data instrospection
+
+    Module root;
+    Module& submod_A = root.create_submodule("A");
+    Module& submod_B = root.create_submodule("B");
+    Module& submod_AA = submod_A.create_submodule("A");
+    root.set_struct(inner);
+    submod_AA.set_struct(outer);
+
+    std::cout << std::boolalpha;
+    std::cout << "Does A::A::OuterType exists?: " << root.has_struct("A::A::OuterType") << std::endl;
+    std::cout << "Does ::InnerType exists?: " << root.has_struct("::InnerType") << std::endl;
+    std::cout << "Does InnerType exists?: " << root.has_struct("InnerType") << std::endl;
+    std::cout << "Does OuterType exists?: " << root.has_struct("OuterType") << std::endl;
 
     return 0;
 }

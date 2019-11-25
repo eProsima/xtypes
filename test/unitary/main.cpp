@@ -14,6 +14,7 @@
 
 #include <gtest/gtest.h>
 #include <xtypes/xtypes.hpp>
+#include <xtypes/Module.hpp>
 #include <iostream>
 
 #include <cmath>
@@ -1327,6 +1328,90 @@ TEST (Utilities, for_each_types)
     });
 
     EXPECT_EQ(i, expected_output.size());
+}
+
+// This test checks the correct behavior of Modules, by checking visibility of the different structs from
+// each possible scope. The expected results are the same that would apply to the C++ namespaces.
+TEST (Utilities, Modules)
+{
+    StructType inner = StructType("InnerType")
+        .add_member("inner_int32", primitive_type<uint32_t>())
+        .add_member("inner_float", primitive_type<float>());
+
+    StructType outer = StructType("OuterType")
+        .add_member("outer_float", primitive_type<float>());
+
+    StructType b = StructType("BType")
+        .add_member("b_float", primitive_type<float>());
+
+    Module root;
+    Module& submod_A = root.create_submodule("A");
+    Module& submod_B = root.create_submodule("B");
+    Module& submod_AA = submod_A.create_submodule("A");
+    root.set_struct(inner);
+    submod_AA.set_struct(outer);
+    submod_B.set_struct(b);
+
+    // (root) - A - A - OuterType
+    //        \ B - BType
+    //        \ InnerType
+
+    // Check scopes from ROOT
+    ASSERT_TRUE(root.has_struct("A::A::OuterType"));
+    ASSERT_TRUE(root.has_struct("::A::A::OuterType"));
+    ASSERT_FALSE(root.has_struct("::A::OuterType"));
+    ASSERT_FALSE(root.has_struct("A::OuterType"));
+    ASSERT_TRUE(root.has_struct("::InnerType"));
+    ASSERT_TRUE(root.has_struct("InnerType"));
+    ASSERT_FALSE(root.has_struct("OuterType"));
+    ASSERT_FALSE(root.has_struct("BType"));
+    ASSERT_TRUE(root.has_struct("B::BType"));
+    ASSERT_TRUE(root.has_struct("::B::BType"));
+    ASSERT_FALSE(root.has_struct("A::B::BType"));
+    ASSERT_FALSE(root.has_struct("::A::B::BType"));
+    ASSERT_FALSE(root.has_struct("::B::B::BType"));
+
+    // Check scopes from A
+    ASSERT_TRUE(submod_A.has_struct("::A::A::OuterType"));
+    ASSERT_FALSE(submod_A.has_struct("A::A::OuterType"));
+    ASSERT_TRUE(submod_A.has_struct("A::OuterType"));
+    ASSERT_FALSE(submod_A.has_struct("OuterType"));
+    ASSERT_TRUE(submod_A.has_struct("::InnerType"));
+    ASSERT_FALSE(submod_A.has_struct("InnerType"));
+    ASSERT_FALSE(submod_A.has_struct("BType"));
+    ASSERT_TRUE(submod_A.has_struct("B::BType"));
+    ASSERT_FALSE(submod_A.has_struct("A::BType"));
+    ASSERT_TRUE(submod_A.has_struct("::B::BType"));
+
+    // Check scopes from A::A
+    ASSERT_TRUE(submod_AA.has_struct("::A::A::OuterType"));
+    ASSERT_FALSE(submod_AA.has_struct("A::A::OuterType"));
+    ASSERT_TRUE(submod_AA.has_struct("A::OuterType"));
+    ASSERT_TRUE(submod_AA.has_struct("OuterType"));
+    ASSERT_TRUE(submod_AA.has_struct("::InnerType"));
+    ASSERT_FALSE(submod_AA.has_struct("InnerType"));
+    ASSERT_FALSE(submod_AA.has_struct("BType"));
+    ASSERT_TRUE(submod_AA.has_struct("B::BType"));
+    ASSERT_FALSE(submod_AA.has_struct("A::BType"));
+    ASSERT_TRUE(submod_AA.has_struct("::B::BType"));
+
+    // Check scopes from B
+    ASSERT_TRUE(submod_B.has_struct("::A::A::OuterType"));
+    ASSERT_TRUE(submod_B.has_struct("A::A::OuterType"));
+    ASSERT_FALSE(submod_B.has_struct("A::OuterType"));
+    ASSERT_FALSE(submod_B.has_struct("OuterType"));
+    ASSERT_TRUE(submod_B.has_struct("::InnerType"));
+    ASSERT_FALSE(submod_B.has_struct("InnerType"));
+    ASSERT_TRUE(submod_B.has_struct("BType"));
+    ASSERT_TRUE(submod_B.has_struct("B::BType"));
+    ASSERT_FALSE(submod_B.has_struct("A::BType"));
+    ASSERT_TRUE(submod_B.has_struct("::B::BType"));
+
+    // Check accesibility and DynamicData creation.
+    const StructType& my_struct = root.get_struct("A::A::OuterType");
+    DynamicData my_data(my_struct);
+    my_data["outer_float"] = 5.678f;
+    ASSERT_EQ(my_data["outer_float"].value<float>(), 5.678f);
 }
 
 int main(int argc, char** argv)
