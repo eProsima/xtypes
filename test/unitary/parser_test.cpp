@@ -293,7 +293,7 @@ TEST (IDLParser, name_collision)
         Context context;
         context.ignore_case = true;
         parse(R"(
-            struct MyStruct
+            struct Struct
             {
                 string STRUCT;
             };
@@ -302,6 +302,8 @@ TEST (IDLParser, name_collision)
             );
         std::map<std::string, DynamicType::Ptr> result = context.module().get_all_types();
         EXPECT_EQ(1, result.size());
+        const DynamicType* my_struct = result["Struct"].get();
+        EXPECT_EQ(my_struct->name(), "Struct");
     }
 
     {
