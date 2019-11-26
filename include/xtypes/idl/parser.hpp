@@ -529,7 +529,7 @@ private:
 
         std::cout << "Found const " << type->name() << " " << identifier << " = " << expr.to_string();
 
-        outer->constant(identifier, expr);
+        outer->create_constant(identifier, expr);
     }
 
     bool get_literal_value(

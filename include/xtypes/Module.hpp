@@ -255,13 +255,24 @@ public:
         return false;
     }
 
-    bool constant(
+    bool create_constant(
             const std::string& name,
-            const DynamicData& value)
+            const DynamicData& value,
+            bool replace = false)
     {
         if (name.find("::") != std::string::npos)
         {
             return false; // Cannot add a symbol with scoped name.
+        }
+
+        if (replace)
+        {
+            auto it = constants.find(name);
+            if (it != constants.end())
+            {
+                constants.erase(it);
+                constants_types.erase(constants_types.find(name));
+            }
         }
 
         auto inserted = constants_types.emplace(name, value.type());
