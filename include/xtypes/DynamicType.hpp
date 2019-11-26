@@ -143,6 +143,13 @@ public:
         catch(bool value) { return value; }
     }
 
+    /// \brief Set the name of the DynamicType.
+    /// param[in] name New name for the dynamic type
+    void name(const std::string& name)
+    {
+        name_ = name;
+    }
+
 protected:
     DynamicType(
             TypeKind kind,
