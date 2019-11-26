@@ -1348,72 +1348,72 @@ TEST (Utilities, Modules)
     Module& submod_A = root.create_submodule("A");
     Module& submod_B = root.create_submodule("B");
     Module& submod_AA = submod_A.create_submodule("A");
-    root.set_struct(inner);
-    submod_AA.set_struct(outer);
-    submod_B.set_struct(b);
+    root.structure(inner);
+    submod_AA.structure(outer);
+    submod_B.structure(b);
 
     // (root) - A - A - OuterType
     //        \ B - BType
     //        \ InnerType
 
     // Check scopes from ROOT
-    ASSERT_TRUE(root.has_struct("A::A::OuterType"));
-    ASSERT_TRUE(root.has_struct("::A::A::OuterType"));
-    ASSERT_FALSE(root.has_struct("::A::OuterType"));
-    ASSERT_FALSE(root.has_struct("A::OuterType"));
-    ASSERT_TRUE(root.has_struct("::InnerType"));
-    ASSERT_TRUE(root.has_struct("InnerType"));
-    ASSERT_FALSE(root.has_struct("OuterType"));
-    ASSERT_FALSE(root.has_struct("BType"));
-    ASSERT_TRUE(root.has_struct("B::BType"));
-    ASSERT_TRUE(root.has_struct("::B::BType"));
-    ASSERT_FALSE(root.has_struct("A::B::BType"));
-    ASSERT_FALSE(root.has_struct("::A::B::BType"));
-    ASSERT_FALSE(root.has_struct("::B::B::BType"));
+    ASSERT_TRUE(root.has_structure("A::A::OuterType"));
+    ASSERT_TRUE(root.has_structure("::A::A::OuterType"));
+    ASSERT_FALSE(root.has_structure("::A::OuterType"));
+    ASSERT_FALSE(root.has_structure("A::OuterType"));
+    ASSERT_TRUE(root.has_structure("::InnerType"));
+    ASSERT_TRUE(root.has_structure("InnerType"));
+    ASSERT_FALSE(root.has_structure("OuterType"));
+    ASSERT_FALSE(root.has_structure("BType"));
+    ASSERT_TRUE(root.has_structure("B::BType"));
+    ASSERT_TRUE(root.has_structure("::B::BType"));
+    ASSERT_FALSE(root.has_structure("A::B::BType"));
+    ASSERT_FALSE(root.has_structure("::A::B::BType"));
+    ASSERT_FALSE(root.has_structure("::B::B::BType"));
 
     // Check scopes from A
-    ASSERT_TRUE(submod_A.has_struct("::A::A::OuterType"));
-    ASSERT_FALSE(submod_A.has_struct("A::A::OuterType"));
-    ASSERT_TRUE(submod_A.has_struct("A::OuterType"));
-    ASSERT_FALSE(submod_A.has_struct("OuterType"));
-    ASSERT_TRUE(submod_A.has_struct("::InnerType"));
-    ASSERT_FALSE(submod_A.has_struct("InnerType"));
-    ASSERT_FALSE(submod_A.has_struct("BType"));
-    ASSERT_TRUE(submod_A.has_struct("B::BType"));
-    ASSERT_FALSE(submod_A.has_struct("A::BType"));
-    ASSERT_TRUE(submod_A.has_struct("::B::BType"));
+    ASSERT_TRUE(submod_A.has_structure("::A::A::OuterType"));
+    ASSERT_FALSE(submod_A.has_structure("A::A::OuterType"));
+    ASSERT_TRUE(submod_A.has_structure("A::OuterType"));
+    ASSERT_FALSE(submod_A.has_structure("OuterType"));
+    ASSERT_TRUE(submod_A.has_structure("::InnerType"));
+    ASSERT_FALSE(submod_A.has_structure("InnerType"));
+    ASSERT_FALSE(submod_A.has_structure("BType"));
+    ASSERT_TRUE(submod_A.has_structure("B::BType"));
+    ASSERT_FALSE(submod_A.has_structure("A::BType"));
+    ASSERT_TRUE(submod_A.has_structure("::B::BType"));
 
     // Check scopes from A::A
-    ASSERT_TRUE(submod_AA.has_struct("::A::A::OuterType"));
-    ASSERT_FALSE(submod_AA.has_struct("A::A::OuterType"));
-    ASSERT_TRUE(submod_AA.has_struct("A::OuterType"));
-    ASSERT_TRUE(submod_AA.has_struct("OuterType"));
-    ASSERT_TRUE(submod_AA.has_struct("::InnerType"));
-    ASSERT_FALSE(submod_AA.has_struct("InnerType"));
-    ASSERT_FALSE(submod_AA.has_struct("BType"));
-    ASSERT_TRUE(submod_AA.has_struct("B::BType"));
-    ASSERT_FALSE(submod_AA.has_struct("A::BType"));
-    ASSERT_TRUE(submod_AA.has_struct("::B::BType"));
+    ASSERT_TRUE(submod_AA.has_structure("::A::A::OuterType"));
+    ASSERT_FALSE(submod_AA.has_structure("A::A::OuterType"));
+    ASSERT_TRUE(submod_AA.has_structure("A::OuterType"));
+    ASSERT_TRUE(submod_AA.has_structure("OuterType"));
+    ASSERT_TRUE(submod_AA.has_structure("::InnerType"));
+    ASSERT_FALSE(submod_AA.has_structure("InnerType"));
+    ASSERT_FALSE(submod_AA.has_structure("BType"));
+    ASSERT_TRUE(submod_AA.has_structure("B::BType"));
+    ASSERT_FALSE(submod_AA.has_structure("A::BType"));
+    ASSERT_TRUE(submod_AA.has_structure("::B::BType"));
 
     // Check scopes from B
-    ASSERT_TRUE(submod_B.has_struct("::A::A::OuterType"));
-    ASSERT_TRUE(submod_B.has_struct("A::A::OuterType"));
-    ASSERT_FALSE(submod_B.has_struct("A::OuterType"));
-    ASSERT_FALSE(submod_B.has_struct("OuterType"));
-    ASSERT_TRUE(submod_B.has_struct("::InnerType"));
-    ASSERT_FALSE(submod_B.has_struct("InnerType"));
-    ASSERT_TRUE(submod_B.has_struct("BType"));
-    ASSERT_TRUE(submod_B.has_struct("B::BType"));
-    ASSERT_FALSE(submod_B.has_struct("A::BType"));
-    ASSERT_TRUE(submod_B.has_struct("::B::BType"));
+    ASSERT_TRUE(submod_B.has_structure("::A::A::OuterType"));
+    ASSERT_TRUE(submod_B.has_structure("A::A::OuterType"));
+    ASSERT_FALSE(submod_B.has_structure("A::OuterType"));
+    ASSERT_FALSE(submod_B.has_structure("OuterType"));
+    ASSERT_TRUE(submod_B.has_structure("::InnerType"));
+    ASSERT_FALSE(submod_B.has_structure("InnerType"));
+    ASSERT_TRUE(submod_B.has_structure("BType"));
+    ASSERT_TRUE(submod_B.has_structure("B::BType"));
+    ASSERT_FALSE(submod_B.has_structure("A::BType"));
+    ASSERT_TRUE(submod_B.has_structure("::B::BType"));
 
     // Check accesibility and DynamicData creation.
-    const StructType& my_struct = root.get_struct("A::A::OuterType");
+    const StructType& my_struct = root.structure("A::A::OuterType");
     DynamicData my_data(my_struct);
     my_data["outer_float"] = 5.678f;
     ASSERT_EQ(my_data["outer_float"].value<float>(), 5.678f);
 
-    const StructType& same_struct = root["A"]["A"].get_struct("OuterType"); // ::A::A::OuterType
+    const StructType& same_struct = root["A"]["A"].structure("OuterType"); // ::A::A::OuterType
     ASSERT_EQ(&my_struct, &same_struct); // Both access ways must be equivalent.
 }
 

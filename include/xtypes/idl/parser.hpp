@@ -471,12 +471,12 @@ private:
                     {
                         // New scope
                         outer->create_submodule(name);
-                        scope = outer->get_submodule(name);
+                        scope = outer->submodule(name);
                     }
                     else
                     {
                         // Adding to an already defined scope
-                        scope = outer->get_submodule(name);
+                        scope = outer->submodule(name);
                     }
                     break;
                 }
@@ -529,7 +529,7 @@ private:
 
         std::cout << "Found const " << type->name() << " " << identifier << " = " << expr.to_string();
 
-        outer->set_constant(identifier, expr);
+        outer->constant(identifier, expr);
     }
 
     bool get_literal_value(
@@ -776,7 +776,7 @@ private:
                 break;
             }
             case "SCOPED_NAME"_:
-                result = outer->get_constant(ast->token);
+                result = outer->constant(ast->token);
                 break;
             case "UNARY_EXPR"_:
                 {
@@ -897,7 +897,7 @@ private:
         }
 
         StructType result(name);
-        outer->set_struct(std::move(result));
+        outer->structure(std::move(result));
     }
 
     void union_fw_dcl(
@@ -913,7 +913,7 @@ private:
 
         // TODO Replace by Unions. Kept as Struct to allow name solving.
         StructType result(name);
-        outer->set_struct(std::move(result));
+        outer->structure(std::move(result));
     }
 
     void struct_def(
@@ -931,7 +931,7 @@ private:
                 {
                     name = resolve_identifier(ast, node->token, outer, true);
                     StructType result(name);
-                    outer->set_struct(std::move(result));
+                    outer->structure(std::move(result));
                     break;
                 }
                 case "INHERITANCE"_:
@@ -943,7 +943,7 @@ private:
             }
         }
 
-        StructType& struct_type = outer->get_struct(name);
+        StructType& struct_type = outer->structure(name);
         if (!struct_type.members().empty())
         {
             throw exception("Struct " + name + " redefinition.", ast);
@@ -952,8 +952,6 @@ private:
         {
             struct_type.add_member(std::move(member.second));
         }
-        // Replace
-        // outer->set_struct(struct_type, true);
     }
 
     void union_def(
@@ -1187,7 +1185,7 @@ private:
             case "SCOPED_NAME"_: // Scoped name
             case "IDENTIFIER"_:
             {
-                DynamicType::Ptr type = outer->get_type(node->token);
+                DynamicType::Ptr type = outer->type(node->token);
                 if (type.get() == nullptr)
                 {
                     throw exception("Member type " + node->token + " is unknown", node);
@@ -1276,7 +1274,7 @@ private:
             std::shared_ptr<Module> outer,
             const std::shared_ptr<peg::Ast> node)
     {
-        DynamicData c_data = outer->get_constant(value);
+        DynamicData c_data = outer->constant(value);
         size_t dim = 0;
         switch (c_data.type().kind())
         {
@@ -1441,7 +1439,7 @@ private:
                         }
                         case "SCOPED_NAME"_:
                         {
-                            DynamicData c_data = outer->get_constant(subnode->token);
+                            DynamicData c_data = outer->constant(subnode->token);
                             size_t dim = 0;
                             switch (c_data.type().kind())
                             {

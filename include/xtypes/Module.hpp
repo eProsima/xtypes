@@ -39,11 +39,10 @@ public:
     {
         Module* new_module = new Module(this, submodule);
         auto result = inner.emplace(submodule, new_module);
-        //auto result = inner.emplace(submodule, std::make_shared<Module>(this, submodule));
         return *result.first->second.get();
     }
 
-    std::shared_ptr<Module> get_submodule(
+    std::shared_ptr<Module> submodule(
             const std::string& submodule)
     {
         return inner[submodule];
@@ -62,6 +61,13 @@ public:
         return *inner[submodule];
     }
 
+    const Module& operator [] (
+            const std::string& submodule) const
+    {
+        return *inner.at(submodule);
+    }
+
+    /* TODO - Probably should be removed.
     bool emplace(
             std::shared_ptr<Module>&& module)
     {
@@ -73,6 +79,7 @@ public:
         auto result = inner.emplace(module->name_, std::move(module));
         return result.second;
     }
+    */
 
     const std::string& name() const
     {
@@ -104,7 +111,7 @@ public:
         return false;
     }
 
-    bool has_struct(
+    bool has_structure(
             const std::string& name) const
     {
         // Solve scope
@@ -116,7 +123,7 @@ public:
         return module.first->structs.count(module.second) > 0;
     }
 
-    const StructType& get_struct(
+    const StructType& structure(
             const std::string& name) const
     {
         // Solve scope
@@ -136,7 +143,7 @@ public:
         return static_cast<const StructType&>(*structs.end()->second);
     }
 
-    StructType& get_struct(
+    StructType& structure(
             const std::string& name)
     {
         // Solve scope
@@ -156,7 +163,7 @@ public:
         return static_cast<StructType&>(const_cast<DynamicType&>(*structs.end()->second));
     }
 
-    bool set_struct(
+    bool structure(
             const StructType& struct_type)
     {
         if (struct_type.name().find("::") != std::string::npos)
@@ -168,7 +175,7 @@ public:
         return result.second;
     }
 
-    bool set_struct(
+    bool structure(
             StructType&& struct_type,
             bool replace = false)
     {
@@ -210,7 +217,7 @@ public:
         }
     }
 
-    DynamicData get_constant(
+    DynamicData constant(
             const std::string& name) const
     {
         // Solve scope
@@ -248,7 +255,7 @@ public:
         return false;
     }
 
-    bool set_constant(
+    bool constant(
             const std::string& name,
             const DynamicData& value)
     {
@@ -269,7 +276,7 @@ public:
     }
 
     // Generic type retrieval.
-    DynamicType::Ptr get_type(
+    DynamicType::Ptr type(
             const std::string& name)
     {
         // Solve scope
@@ -283,7 +290,7 @@ public:
         // TODO
 
         // Check structs
-        if (module.first->has_struct(module.second))
+        if (module.first->has_structure(module.second))
         {
             return module.first->structs.at(module.second);
         }
