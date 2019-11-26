@@ -939,7 +939,7 @@ TEST (IDLParser, enumerations_test)
             };
                        )");
 
-        std::map<std::string, DynamicType::Ptr>& result = context.structs;
+        std::map<std::string, DynamicType::Ptr> result = context.module->get_all_types();
         EXPECT_EQ(1, result.size());
 
         const DynamicType* my_struct = result["MyStruct"].get();

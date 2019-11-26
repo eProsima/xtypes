@@ -286,17 +286,24 @@ public:
         return false;
     }
 
-    /*
-    Enumeration<uint32_t>& enum_32(
+    EnumerationType<uint32_t>& enum_32(
             const std::string& name)
     {
-        if (enumerations_32.count(name) > 0)
+        // Solve scope
+        PairModuleSymbol module = resolve_scope(name);
+        if (module.first == nullptr)
         {
-            DynamicType* temp = const_cast<DynamicType*>(enumerations_32[name].get());
-            result = static_cast<EnumerationType<uint32_t>*>(temp);
-            return true;
+            // This will fail
+            return static_cast<EnumerationType<uint32_t>&>(const_cast<DynamicType&>(*enumerations_32.end()->second));
         }
-        return false;
+
+        auto it = module.first->enumerations_32.find(module.second);
+        if (it != module.first->enumerations_32.end())
+        {
+            return static_cast<EnumerationType<uint32_t>&>(const_cast<DynamicType&>(*it->second));
+        }
+        // This will fail
+        return static_cast<EnumerationType<uint32_t>&>(const_cast<DynamicType&>(*enumerations_32.end()->second));
     }
 
     bool has_enum_32(
@@ -306,12 +313,26 @@ public:
     }
 
     bool enum_32(
-            Enumeration<uint32_t>&& enumeration,
+            EnumerationType<uint32_t>&& enumeration,
             bool replace = false)
     {
+        if (enumeration.name().find("::") != std::string::npos)
+        {
+            return false; // Cannot add a symbol with scoped name.
+        }
 
+        if (replace)
+        {
+            auto it = enumerations_32.find(enumeration.name());
+            if (it != enumerations_32.end())
+            {
+                enumerations_32.erase(it);
+            }
+        }
+
+        auto result = enumerations_32.emplace(enumeration.name(), std::move(enumeration));
+        return result.second;
     }
-    */
 
     // Generic type retrieval.
     DynamicType::Ptr type(
@@ -325,7 +346,10 @@ public:
         }
 
         // Check enums
-        // TODO
+        if (module.first->has_enum_32(module.second))
+        {
+            return module.first->enumerations_32.at(module.second);
+        }
 
         // Check structs
         if (module.first->has_structure(module.second))
