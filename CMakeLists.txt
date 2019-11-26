@@ -35,7 +35,17 @@ target_compile_features(${PROJECT_NAME}
 #####################################################################################
 #                                    Examples
 #####################################################################################
-macro(compile_example EXAMPLE_NAME EXAMPLE_SOURCE)
+macro(compile_example)
+    # Parse arguments
+    if("${ARGV0}" STREQUAL "NAME")
+        set(uniValueArgs NAME)
+    else()
+        set(EXAMPLE_NAME "${ARGV0}")
+    endif()
+
+    set(multiValueArgs SOURCE)
+    cmake_parse_arguments(EXAMPLE "" "${uniValueArgs}" "${multiValueArgs}" ${ARGN})
+
     add_executable(${EXAMPLE_NAME} ${EXAMPLE_SOURCE})
 
     target_link_libraries(${EXAMPLE_NAME}
@@ -58,15 +68,24 @@ macro(compile_example EXAMPLE_NAME EXAMPLE_SOURCE)
 endmacro()
 
 if(XTYPES_BUILD_EXAMPLES)
-    compile_example(${PROJECT_NAME}_example_complex_type examples/complex_type.cpp)
+    compile_example(${PROJECT_NAME}_example_complex_type SOURCE examples/complex_type.cpp)
     # ...
 endif()
 
 #####################################################################################
 #                                      Tests
 #####################################################################################
-macro(compile_test TEST_NAME TEST_SOURCE)
-    compile_example(${TEST_NAME} ${TEST_SOURCE})
+macro(compile_test)
+    # Parse arguments
+    if("${ARGV0}" STREQUAL "NAME")
+        set(uniValueArgs NAME)
+    else()
+        set(TEST_NAME "${ARGV0}")
+    endif()
+    set(multiValueArgs SOURCE)
+    cmake_parse_arguments(TEST "" "${uniValueArgs}" "${multiValueArgs}" ${ARGN})
+
+    compile_example(${TEST_NAME} SOURCE ${TEST_SOURCE})
 
     target_link_libraries(${TEST_NAME}
         PRIVATE
@@ -80,8 +99,18 @@ if(XTYPES_BUILD_TESTS)
     include(test/gtest.cmake)
     enable_testing()
 
-    compile_test(${PROJECT_NAME}_test_unitary test/unitary/main.cpp)
-    compile_test(${PROJECT_NAME}_idl_parser_test_unitary test/unitary/parser_test.cpp)
+    compile_test(${PROJECT_NAME}_test_unitary SOURCE
+        test/unitary/xtypes/main.cpp
+        test/unitary/xtypes/primitive_types.cpp
+        test/unitary/xtypes/collection_types.cpp
+        test/unitary/xtypes/struct_type.cpp
+        test/unitary/xtypes/iterators.cpp
+        test/unitary/xtypes/module.cpp
+        test/unitary/xtypes/consistency.cpp
+        test/unitary/xtypes/integration.cpp
+        )
+
+    compile_test(${PROJECT_NAME}_idl_parser_test_unitary SOURCE test/unitary/parser/parser_test.cpp)
     # ...
 
     # Copy IDL files
