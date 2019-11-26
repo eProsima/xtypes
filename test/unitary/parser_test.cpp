@@ -44,7 +44,7 @@ TEST (IDLParser, simple_struct_test)
             wstring my_wstring;
         };
                    )");
-    std::map<std::string, DynamicType::Ptr>& result = context.structs;
+    std::map<std::string, DynamicType::Ptr> result = context.module->get_all_types();
     EXPECT_EQ(1, result.size());
 
     const DynamicType* my_struct = result["SimpleStruct"].get();
@@ -99,7 +99,7 @@ TEST (IDLParser, array_sequence_struct_test)
             sequence<char, 6> my_char6_seq;
         };
                    )");
-    std::map<std::string, DynamicType::Ptr>& result = context.structs;
+    std::map<std::string, DynamicType::Ptr> result = context.module->get_all_types();
     EXPECT_EQ(1, result.size());
 
     const DynamicType* my_struct = result["SimpleStruct"].get();
@@ -201,7 +201,7 @@ TEST (IDLParser, inner_struct_test)
             RecursiveStruct rec;
         };
                    )");
-    std::map<std::string, DynamicType::Ptr>& result = context.structs;
+    std::map<std::string, DynamicType::Ptr> result = context.module->get_all_types();
     EXPECT_EQ(3, result.size());
 
     const DynamicType* my_struct = result["SuperStruct"].get();
@@ -220,7 +220,7 @@ TEST (IDLParser, multiple_declarator_members_test)
             boolean my_bool_5[5], other[55], another, multi_array[2][3];
         };
                    )");
-    std::map<std::string, DynamicType::Ptr>& result = context.structs;
+    std::map<std::string, DynamicType::Ptr> result = context.module->get_all_types();
     EXPECT_EQ(1, result.size());
 }
 
@@ -264,7 +264,7 @@ TEST (IDLParser, name_collision)
                        )",
                        context
             );
-        std::map<std::string, DynamicType::Ptr>& result = context.structs;
+        std::map<std::string, DynamicType::Ptr> result = context.module->get_all_types();
         EXPECT_EQ(1, result.size());
     }
 
@@ -280,7 +280,7 @@ TEST (IDLParser, name_collision)
                        )",
                        context
             );
-        std::map<std::string, DynamicType::Ptr>& result = context.structs;
+        std::map<std::string, DynamicType::Ptr> result = context.module->get_all_types();
         EXPECT_EQ(1, result.size());
     }
 
@@ -294,7 +294,7 @@ TEST (IDLParser, name_collision)
             };
                        )"
             );
-        std::map<std::string, DynamicType::Ptr>& result = context.structs;
+        std::map<std::string, DynamicType::Ptr> result = context.module->get_all_types();
         EXPECT_EQ(1, result.size());
 
         const DynamicType* my_struct = result["MyStruct"].get();
@@ -429,7 +429,7 @@ TEST (IDLParser, module_scope_test)
         };
                    )");
 
-    std::map<std::string, DynamicType::Ptr>& result = context.structs;
+    std::map<std::string, DynamicType::Ptr> result = context.module->get_all_types();
     EXPECT_EQ(5, result.size());
 }
 
@@ -537,7 +537,7 @@ TEST (IDLParser, constants)
             };
                        )");
 
-        std::map<std::string, DynamicType::Ptr>& result = context.structs;
+        std::map<std::string, DynamicType::Ptr> result = context.module->get_all_types();
         EXPECT_EQ(1, result.size());
 
         const DynamicType* my_struct = result["MyStruct"].get();
@@ -649,7 +649,7 @@ TEST (IDLParser, const_value_parser)
             };
                        )");
 
-        std::map<std::string, DynamicType::Ptr>& result = context.structs;
+        std::map<std::string, DynamicType::Ptr> result = context.module->get_all_types();
         EXPECT_EQ(1, result.size());
 
         const DynamicType* my_struct = result["MyStruct"].get();
@@ -663,7 +663,7 @@ TEST (IDLParser, const_value_parser)
 TEST (IDLParser, parse_file)
 {
     Context context = parse_file("idl/test01.idl");
-    std::map<std::string, DynamicType::Ptr>& result = context.structs;
+    std::map<std::string, DynamicType::Ptr> result = context.module->get_all_types();
     EXPECT_EQ(1, result.size());
     const DynamicType* my_struct = result["Test01"].get();
     DynamicData data(*my_struct);
@@ -685,7 +685,7 @@ TEST (IDLParser, include_from_string)
             };
         };
         )");
-    std::map<std::string, DynamicType::Ptr>& result = context.structs;
+    std::map<std::string, DynamicType::Ptr> result = context.module->get_all_types();
     EXPECT_EQ(2, result.size());
     const DynamicType* my_struct = result["Test00"].get();
     DynamicData data(*my_struct);
@@ -697,7 +697,7 @@ TEST (IDLParser, include_from_file_02_local)
     Context context;
     context.include_paths.push_back("idl");
     parse_file("idl/test02.idl", context);
-    std::map<std::string, DynamicType::Ptr>& result = context.structs;
+    std::map<std::string, DynamicType::Ptr> result = context.module->get_all_types();
     EXPECT_EQ(2, result.size());
     const DynamicType* my_struct = result["Test02"].get();
     DynamicData data(*my_struct);
@@ -709,7 +709,7 @@ TEST (IDLParser, include_from_file_03_global)
     Context context;
     context.include_paths.push_back("idl/include");
     parse_file("idl/test03.idl", context);
-    std::map<std::string, DynamicType::Ptr>& result = context.structs;
+    std::map<std::string, DynamicType::Ptr> result = context.module->get_all_types();
     EXPECT_EQ(2, result.size());
     const DynamicType* my_struct = result["Test03"].get();
     DynamicData data(*my_struct);
@@ -722,7 +722,7 @@ TEST (IDLParser, include_from_file_04_multi)
     context.include_paths.push_back("idl");
     context.include_paths.push_back("idl/include");
     parse_file("idl/test04.idl", context);
-    std::map<std::string, DynamicType::Ptr>& result = context.structs;
+    std::map<std::string, DynamicType::Ptr> result = context.module->get_all_types();
     EXPECT_EQ(3, result.size());
     const DynamicType* my_struct = result["Test04"].get();
     DynamicData data(*my_struct);

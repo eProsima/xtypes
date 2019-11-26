@@ -1,4 +1,5 @@
 #include <xtypes/xtypes.hpp>
+#include <xtypes/Module.hpp>
 
 #include <iostream>
 
@@ -14,7 +15,7 @@ int main()
         };
     )";
 
-    std::map<std::string, DynamicType::Ptr> from_idl = idl::parse(idl_spec).structs;
+    std::map<std::string, DynamicType::Ptr> from_idl = idl::parse(idl_spec).module->get_all_types();
     const StructType& inner = static_cast<const StructType&>(*from_idl.at("InnerType"));
 
     StructType outer("OuterType");
@@ -48,6 +49,22 @@ int main()
     data["om8"][1] = data["om2"];                          //ArrayType(inner)
 
     std::cout << data.to_string() << std::endl; //See to_string() implementation as an example of data instrospection
+
+    Module root;
+    Module& submod_a = root.create_submodule("a");
+    Module& submod_b = root.create_submodule("b");
+    Module& submod_aa = submod_a.create_submodule("a");
+    root.structure(inner);
+    submod_aa.structure(outer);
+
+    std::cout << std::boolalpha;
+    std::cout << "Does a::a::OuterType exists?: " << root.has_structure("a::a::OuterType") << std::endl;
+    std::cout << "Does ::InnerType exists?: " << root.has_structure("::InnerType") << std::endl;
+    std::cout << "Does InnerType exists?: " << root.has_structure("InnerType") << std::endl;
+    std::cout << "Does OuterType exists?: " << root.has_structure("OuterType") << std::endl;
+
+    DynamicData module_data(root["a"]["a"].structure("OuterType")); // ::a::a::OuterType
+    module_data["om3"] = "This is a string.";
 
     return 0;
 }

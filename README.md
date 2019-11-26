@@ -169,6 +169,31 @@ The returned `TypeConsistency` is going to be a subset of the following *QoS pol
 
 Note: `TypeConsistency` is an enum with `|` and `&` operators overrided to manage it as a set of QoS policies.
 
+### Module
+Modules are equivalent to C++ namespaces. They can store sets of StructType, Constants and other Modules
+(as submodules).
+They allow organizing types into different scopes, allowing scope solving when accessing the stored types.
+```c++
+Module root;
+Module& submod_a = root.create_submodule("a");
+Module& submod_b = root.create_submodule("b");
+Module& submod_aa = submod_a.create_submodule("a");
+root.structure(inner);
+submod_aa.structure(outer);
+
+std::cout << std::boolalpha;
+std::cout << "Does a::a::OuterType exists?: " << root.has_structure("a::a::OuterType") << std::endl;   // true
+std::cout << "Does ::InnerType exists?: " << root.has_structure("::InnerType") << std::endl;           // true
+std::cout << "Does InnerType exists?: " << root.has_structure("InnerType") << std::endl;               // true
+std::cout << "Does OuterType exists?: " << root.has_structure("OuterType") << std::endl;               // false
+
+DynamicData module_data(root["a"]["a"].structure("OuterType")); // ::a::a::OuterType
+module_data["om3"] = "This is a string.";
+```
+As can be seen in the example, a module allows the user to access their internal definitions in two ways:
+Accessing directly using a scope name (`root.structure("a::a::OuterType")`), or navigating manually through the
+inner modules (`root["a"]["a"].structure("OuterType")`).
+
 ### Data instance
 #### Initialization
 To instantiate a data, only is necessary a `DynamicType`:
