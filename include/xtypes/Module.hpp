@@ -37,8 +37,8 @@ public:
     Module& create_submodule(
             const std::string& submodule)
     {
-        Module* new_module = new Module(this, submodule);
-        auto result = inner.emplace(submodule, new_module);
+        std::shared_ptr<Module> new_submodule(new Module(this, submodule));
+        auto result = inner.emplace(submodule, new_submodule);
         return *result.first->second.get();
     }
 
