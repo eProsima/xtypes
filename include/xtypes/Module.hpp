@@ -294,22 +294,22 @@ public:
         if (module.first == nullptr)
         {
             // This will fail
-            return static_cast<EnumerationType<uint32_t>&>(const_cast<DynamicType&>(*enumerations_32.end()->second));
+            return static_cast<EnumerationType<uint32_t>&>(const_cast<DynamicType&>(*enumerations_32_.end()->second));
         }
 
-        auto it = module.first->enumerations_32.find(module.second);
-        if (it != module.first->enumerations_32.end())
+        auto it = module.first->enumerations_32_.find(module.second);
+        if (it != module.first->enumerations_32_.end())
         {
             return static_cast<EnumerationType<uint32_t>&>(const_cast<DynamicType&>(*it->second));
         }
         // This will fail
-        return static_cast<EnumerationType<uint32_t>&>(const_cast<DynamicType&>(*enumerations_32.end()->second));
+        return static_cast<EnumerationType<uint32_t>&>(const_cast<DynamicType&>(*enumerations_32_.end()->second));
     }
 
     bool has_enum_32(
             const std::string& name) const
     {
-        return enumerations_32.count(name) > 0;
+        return enumerations_32_.count(name) > 0;
     }
 
     bool enum_32(
@@ -323,14 +323,14 @@ public:
 
         if (replace)
         {
-            auto it = enumerations_32.find(enumeration.name());
-            if (it != enumerations_32.end())
+            auto it = enumerations_32_.find(enumeration.name());
+            if (it != enumerations_32_.end())
             {
-                enumerations_32.erase(it);
+                enumerations_32_.erase(it);
             }
         }
 
-        auto result = enumerations_32.emplace(enumeration.name(), std::move(enumeration));
+        auto result = enumerations_32_.emplace(enumeration.name(), std::move(enumeration));
         return result.second;
     }
 
@@ -348,7 +348,7 @@ public:
         // Check enums
         if (module.first->has_enum_32(module.second))
         {
-            return module.first->enumerations_32.at(module.second);
+            return module.first->enumerations_32_.at(module.second);
         }
 
         // Check structs
