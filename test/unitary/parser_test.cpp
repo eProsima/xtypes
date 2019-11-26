@@ -948,12 +948,10 @@ TEST (IDLParser, enumerations_test)
         ASSERT_EQ(data["my_seq"].bounds(), 2);
         ASSERT_EQ(data["my_bounded_str"].bounds(), 3);
 
-        // TODO Once merged, so we can retrieve the Context's enums
-        // EnumerationType<uint32_t>* my_enum;
-        // context.get_enum_32("MyEnum", my_enum);
-        // ASSERT_EQ(my_enum.value("A"), 0);
-        // ASSERT_EQ(my_enum.value("B"), 1);
-        // ASSERT_EQ(my_enum.value("C"), 2);
+        EnumerationType<uint32_t>& my_enum = context.module().enum_32("MyEnum");
+        ASSERT_EQ(my_enum.value("A"), 0);
+        ASSERT_EQ(my_enum.value("B"), 1);
+        ASSERT_EQ(my_enum.value("C"), 2);
     }
 }
 
