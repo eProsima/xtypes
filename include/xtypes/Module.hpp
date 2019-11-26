@@ -30,7 +30,7 @@ protected:
 
 public:
     Module()
-        : outer(nullptr)
+        : outer_(nullptr)
         , name_("")
     {}
 
@@ -38,33 +38,33 @@ public:
             const std::string& submodule)
     {
         std::shared_ptr<Module> new_submodule(new Module(this, submodule));
-        auto result = inner.emplace(submodule, new_submodule);
+        auto result = inner_.emplace(submodule, new_submodule);
         return *result.first->second.get();
     }
 
     std::shared_ptr<Module> submodule(
             const std::string& submodule)
     {
-        return inner[submodule];
+        return inner_[submodule];
     }
 
 
     bool has_submodule(
             const std::string& submodule)
     {
-        return inner.count(submodule) > 0;
+        return inner_.count(submodule) > 0;
     }
 
     Module& operator [] (
             const std::string& submodule)
     {
-        return *inner[submodule];
+        return *inner_[submodule];
     }
 
     const Module& operator [] (
             const std::string& submodule) const
     {
-        return *inner.at(submodule);
+        return *inner_.at(submodule);
     }
 
     /* TODO - Probably should be removed.
@@ -75,8 +75,8 @@ public:
         {
             return false; // Cannot add a module with scoped name.
         }
-        module->outer = this;
-        auto result = inner.emplace(module->name_, std::move(module));
+        module->outer_ = this;
+        auto result = inner_.emplace(module->name_, std::move(module));
         return result.second;
     }
     */
@@ -88,9 +88,9 @@ public:
 
     std::string scope()
     {
-        if (outer != nullptr && !outer->scope().empty())
+        if (outer_ != nullptr && !outer_->scope().empty())
         {
-            return outer->scope() + "::" + name_;
+            return outer_->scope() + "::" + name_;
         }
         return name_;
     }
@@ -99,14 +99,14 @@ public:
             const std::string& ident,
             bool extend = true) const
     {
-        size_t n_elems = structs.count(ident); // + constants.count(ident) + members.count(ident) + types.count(ident);
+        size_t n_elems = structs_.count(ident); // + constants_.count(ident) + members.count(ident) + types.count(ident);
         if (n_elems > 0)
         {
             return true;
         }
-        if (extend && outer != nullptr)
+        if (extend && outer_ != nullptr)
         {
-            return outer->has_symbol(ident, extend);
+            return outer_->has_symbol(ident, extend);
         }
         return false;
     }
@@ -120,7 +120,7 @@ public:
         {
             return false;
         }
-        return module.first->structs.count(module.second) > 0;
+        return module.first->structs_.count(module.second) > 0;
     }
 
     const StructType& structure(
@@ -131,16 +131,16 @@ public:
         if (module.first == nullptr)
         {
             // This will fail
-            return static_cast<const StructType&>(*structs.end()->second);
+            return static_cast<const StructType&>(*structs_.end()->second);
         }
 
-        auto it = module.first->structs.find(module.second);
-        if (it != module.first->structs.end())
+        auto it = module.first->structs_.find(module.second);
+        if (it != module.first->structs_.end())
         {
             return static_cast<const StructType&>(*it->second);
         }
         // This will fail
-        return static_cast<const StructType&>(*structs.end()->second);
+        return static_cast<const StructType&>(*structs_.end()->second);
     }
 
     StructType& structure(
@@ -151,16 +151,16 @@ public:
         if (module.first == nullptr)
         {
             // This will fail
-            return static_cast<StructType&>(const_cast<DynamicType&>(*structs.end()->second));
+            return static_cast<StructType&>(const_cast<DynamicType&>(*structs_.end()->second));
         }
 
-        auto it = module.first->structs.find(module.second);
-        if (it != module.first->structs.end())
+        auto it = module.first->structs_.find(module.second);
+        if (it != module.first->structs_.end())
         {
             return static_cast<StructType&>(const_cast<DynamicType&>(*it->second));
         }
         // This will fail
-        return static_cast<StructType&>(const_cast<DynamicType&>(*structs.end()->second));
+        return static_cast<StructType&>(const_cast<DynamicType&>(*structs_.end()->second));
     }
 
     bool structure(
@@ -171,7 +171,7 @@ public:
             return false; // Cannot add a symbol with scoped name.
         }
 
-        auto result = structs.emplace(struct_type.name(), struct_type);
+        auto result = structs_.emplace(struct_type.name(), struct_type);
         return result.second;
     }
 
@@ -186,14 +186,14 @@ public:
 
         if (replace)
         {
-            auto it = structs.find(struct_type.name());
-            if (it != structs.end())
+            auto it = structs_.find(struct_type.name());
+            if (it != structs_.end())
             {
-                structs.erase(it);
+                structs_.erase(it);
             }
         }
 
-        auto result = structs.emplace(struct_type.name(), std::move(struct_type));
+        auto result = structs_.emplace(struct_type.name(), std::move(struct_type));
         return result.second;
     }
 
@@ -210,8 +210,8 @@ public:
     void fill_all_types(
             std::map<std::string, DynamicType::Ptr>& map) const
     {
-        map.insert(structs.begin(), structs.end());
-        for (const auto& pair : inner)
+        map.insert(structs_.begin(), structs_.end());
+        for (const auto& pair : inner_)
         {
             pair.second->fill_all_types(map);
         }
@@ -227,8 +227,8 @@ public:
             return DynamicData(primitive_type<bool>());
         }
 
-        auto it = module.first->constants.find(module.second);
-        if (it != module.first->constants.end())
+        auto it = module.first->constants_.find(module.second);
+        if (it != module.first->constants_.end())
         {
             return it->second;
         }
@@ -246,8 +246,8 @@ public:
             return false;
         }
 
-        auto it = module.first->constants.find(module.second);
-        if (it != module.first->constants.end())
+        auto it = module.first->constants_.find(module.second);
+        if (it != module.first->constants_.end())
         {
             return true;
         }
@@ -267,20 +267,20 @@ public:
 
         if (replace)
         {
-            auto it = constants.find(name);
-            if (it != constants.end())
+            auto it = constants_.find(name);
+            if (it != constants_.end())
             {
-                constants.erase(it);
-                constants_types.erase(constants_types.find(name));
+                constants_.erase(it);
+                constants_types_.erase(constants_types_.find(name));
             }
         }
 
-        auto inserted = constants_types.emplace(name, value.type());
+        auto inserted = constants_types_.emplace(name, value.type());
         if (inserted.second)
         {
             DynamicData temp(*(inserted.first->second));
             temp = value;
-            auto result = constants.emplace(name, temp);
+            auto result = constants_.emplace(name, temp);
             return result.second;
         }
         return false;
@@ -303,7 +303,7 @@ public:
         // Check structs
         if (module.first->has_structure(module.second))
         {
-            return module.first->structs.at(module.second);
+            return module.first->structs_.at(module.second);
         }
 
         // Check unions
@@ -319,18 +319,18 @@ public:
     }
 
 protected:
-    std::map<std::string, DynamicType::Ptr> constants_types;
-    std::map<std::string, DynamicData> constants;
-    std::map<std::string, DynamicType::Ptr> structs;
-    //std::map<std::string, std::shared_ptr<AnnotationType>> annotations;
-    Module* outer;
-    std::map<std::string, std::shared_ptr<Module>> inner;
+    std::map<std::string, DynamicType::Ptr> constants_types_;
+    std::map<std::string, DynamicData> constants_;
+    std::map<std::string, DynamicType::Ptr> structs_;
+    //std::map<std::string, std::shared_ptr<AnnotationType>> annotations_;
+    Module* outer_;
+    std::map<std::string, std::shared_ptr<Module>> inner_;
     std::string name_;
 
     Module(
             Module* outer,
             const std::string& name)
-        : outer(outer)
+        : outer_(outer)
         , name_(name)
     {
     }
@@ -364,13 +364,13 @@ protected:
         {
             if (symbol_name.find("::") == 0) // Looking for root
             {
-                if (outer == nullptr) // We are the root, now go down.
+                if (outer_ == nullptr) // We are the root, now go down.
                 {
                     return resolve_scope(symbol_name.substr(2), original_name);
                 }
                 else // We are not the root, go up, with the original name.
                 {
-                    return outer->resolve_scope(original_name, original_name, true);
+                    return outer_->resolve_scope(original_name, original_name, true);
                 }
             }
             else // not looking for root
@@ -380,10 +380,10 @@ protected:
                 if (inner_scope == name_)
                 {
                     std::string innest_scope = inner_scope.substr(0, inner_scope.find("::"));
-                    if (inner.count(innest_scope) > 0)
+                    if (inner_.count(innest_scope) > 0)
                     {
                         std::string inner_name = symbol_name.substr(symbol_name.find("::") + 2);
-                        const auto& it = inner.find(innest_scope);
+                        const auto& it = inner_.find(innest_scope);
                         PairModuleSymbol result = it->second->resolve_scope(inner_name, original_name);
                         if (result.first != nullptr)
                         {
@@ -392,16 +392,16 @@ protected:
                     }
                 }
                 // Do we have a inner scope that matches?
-                if (inner.count(inner_scope) > 0)
+                if (inner_.count(inner_scope) > 0)
                 {
                     std::string inner_name = symbol_name.substr(symbol_name.find("::") + 2);
-                    const auto& it = inner.find(inner_scope);
+                    const auto& it = inner_.find(inner_scope);
                     return it->second->resolve_scope(inner_name, original_name);
                 }
                 // Try going back
-                if (outer != nullptr && first)
+                if (outer_ != nullptr && first)
                 {
-                    return outer->resolve_scope(original_name, original_name, true);
+                    return outer_->resolve_scope(original_name, original_name, true);
                 }
                 // Unknown scope
                 PairModuleSymbol pair;

@@ -55,16 +55,20 @@ struct Context
 
     // Results
     bool success = false;
-    std::shared_ptr<Module> module = nullptr;
 
     std::map<std::string, DynamicType::Ptr> get_all_types()
     {
         std::map<std::string, DynamicType::Ptr> result;
-        if (module != nullptr)
+        if (module_ != nullptr)
         {
-            module->fill_all_types(result);
+            module_->fill_all_types(result);
         }
         return result;
+    }
+
+    Module& module()
+    {
+        return *module_;
     }
 
     ~Context()
@@ -75,6 +79,7 @@ struct Context
 private:
     friend class Parser;
     Parser* instance_;
+    std::shared_ptr<Module> module_ = nullptr;
 
     inline void clear_context();
 };
@@ -138,7 +143,7 @@ public:
         }
         ast = peg::AstOptimizer(true).optimize(ast);
         build_on_ast(ast);
-        context.module = root_scope_;
+        context.module_ = root_scope_;
         context.success = true;
         return true;
     }
@@ -179,7 +184,7 @@ public:
 
             ast = peg::AstOptimizer(true).optimize(ast);
             build_on_ast(ast);
-            context.module = root_scope_;
+            context.module_ = root_scope_;
             context.success = true;
             return true;
         }
