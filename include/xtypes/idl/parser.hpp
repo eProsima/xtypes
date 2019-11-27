@@ -45,11 +45,19 @@ class Parser;
 
 struct Context
 {
+    enum CharType
+    {
+        CHAR,
+        UINT8,
+        INT8
+    };
+
     // Config
     bool ignore_case = false;
     bool clear = true;
     bool preprocess = true;
     bool allow_keyword_identifiers = false;
+    CharType char_translation = CHAR;
     std::string preprocessor_exec = "";
     std::vector<std::string> include_paths;
 
@@ -129,6 +137,7 @@ public:
         ignore_case_ = context.ignore_case;
         clear_ = context.clear;
         allow_kw_ids_ = context.allow_keyword_identifiers;
+        char_translation_ = context.char_translation;
         std::string idl_to_parse = idl_string;
         preprocessor(context.preprocessor_exec);
         include_paths_ = context.include_paths;
@@ -166,6 +175,7 @@ public:
         ignore_case_ = context.ignore_case;
         clear_ = context.clear;
         allow_kw_ids_ = context.allow_keyword_identifiers;
+        char_translation_ = context.char_translation;
         preprocessor(context.preprocessor_exec);
         include_paths_ = context.include_paths;
         if (context.preprocess)
@@ -270,6 +280,7 @@ private:
     bool preprocess_ = true;
     bool clear_ = true;
     bool allow_kw_ids_ = false;
+    Context::CharType char_translation_ = Context::CHAR;
     std::string preprocessor_path_ = "cpp";
     std::vector<std::string> include_paths_;
     std::shared_ptr<Module> root_scope_;
@@ -1238,7 +1249,17 @@ private:
             case "LONG_DOUBLE_TYPE"_:
                 return primitive_type<long double>();
             case "CHAR_TYPE"_:
-                return primitive_type<char>();
+            {
+                switch (char_translation_)
+                {
+                    case Context::CHAR:
+                        return primitive_type<char>();
+                    case Context::UINT8:
+                        return primitive_type<uint8_t>();
+                    case Context::INT8:
+                        return primitive_type<int8_t>();
+                }
+            }
             case "WIDE_CHAR_TYPE"_:
                 return primitive_type<wchar_t>();
             case "STRING_TYPE"_:
