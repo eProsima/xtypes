@@ -64,6 +64,14 @@ inline Context parse_file(
     return parser->parse_file(idl_file);
 }
 
+/// \brief Preprocess the file and returns the preprocessed content.
+inline std::string preprocess(
+        const std::string& idl_file,
+        const std::vector<std::string>& includes)
+{
+    return Parser::preprocess("cpp", idl_file, includes);
+}
+
 /// \brief Generates the IDL that represents an StructType
 /// \param[in] type Type to represent into IDL
 /// \return An IDL that represents the StructType given.

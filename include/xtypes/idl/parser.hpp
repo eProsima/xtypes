@@ -247,6 +247,21 @@ public:
         include_paths_ = include_paths;
     }
 
+    static std::string preprocess(
+            const std::string& preprocessor_path,
+            const std::string& idl_file,
+            const std::vector<std::string>& includes)
+    {
+        std::string args = "-H ";
+        for (const std::string inc_path : includes)
+        {
+            args += "-I " + inc_path + " ";
+        }
+        std::string cmd = preprocessor_path + " " + args + idl_file;
+        std::string output = exec(cmd);
+        return output;
+    }
+
 private:
     friend struct Context;
 
@@ -285,8 +300,8 @@ private:
         return true;
     }
 
-    std::string exec(
-            const std::string& cmd) const
+    static std::string exec(
+            const std::string& cmd)
     {
         std::array<char, 256> buffer;
         std::string result;
