@@ -23,7 +23,6 @@
 #include <xtypes/PrimitiveType.hpp>
 
 #include <cassert>
-#include <iostream>
 
 namespace eprosima {
 namespace xtypes {
@@ -85,7 +84,7 @@ public:
     /// \pre The DynamicData must represent a primitive or string value.
     /// \returns the value stored in the DynamicData.
     template<typename T, class = PrimitiveOrString<T>>
-    T& value() const
+    const T& value() const
     {
         assert((type_.kind() == TypeKind::STRING_TYPE && std::is_same<std::string, T>::value)
             || (type_.kind() == TypeKind::WSTRING_TYPE && std::is_same<std::wstring, T>::value)
@@ -536,6 +535,7 @@ class WritableDynamicDataRef : public ReadableDynamicDataRef
 {
 public:
     using ReadableDynamicDataRef::operator [];
+    using ReadableDynamicDataRef::value;
 
     /// \brief Assignment operator.
     WritableDynamicDataRef& operator = (
