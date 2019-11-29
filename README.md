@@ -158,6 +158,7 @@ The returned `TypeConsistency` is going to be a subset of the following *QoS pol
 
 - `NONE`: Unknown way to interpret both types as equivalents.
 - `EQUALS`: The evaluation is analogous to an equal evaluation.
+- `IGNORE_TYPE_SIGN`: the evaluation will be true independently of the sign.
 - `IGNORE_TYPE_WIDTH`: the evaluation will be true if the width of the some primitive types are less or
   equals than the other type.
 - `IGNORE_SEQUENCE_BOUNDS`: the evaluation will be true if the bounds of the some sequences are less or
@@ -165,7 +166,7 @@ The returned `TypeConsistency` is going to be a subset of the following *QoS pol
 - `IGNORE_ARRAY_BOUNDS`: same as `IGNORE_SEQUENCE_BOUNDS` but for the case of arrays.
 - `IGNORE_STRING_BOUNDS`: same as `IGNORE_SEQUENCE_BOUNDS` but for the case of string.
 - `IGNORE_MEMBER_NAMES`: the evaluation will be true if the names of some members differs (but no the position).
-- `IGNORE_OTHER_MEMBERS`: the evaluation will be true if some members of `other_type` are ignored.
+- `IGNORE_MEMBERS`: the evaluation will be true if some members of `other_type` are ignored.
 
 Note: `TypeConsistency` is an enum with `|` and `&` operators overrided to manage it as a set of QoS policies.
 
