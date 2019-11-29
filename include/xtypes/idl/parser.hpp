@@ -953,7 +953,7 @@ private:
     {
         using namespace peg::udl;
         std::string name;
-        std::map<std::string, Member> member_list;
+        std::vector<Member> member_list;
         for (const auto& node : ast->nodes)
         {
             switch (node->tag)
@@ -981,7 +981,7 @@ private:
         }
         for (auto& member : member_list)
         {
-            struct_type.add_member(std::move(member.second));
+            struct_type.add_member(std::move(member));
         }
     }
 
@@ -991,7 +991,7 @@ private:
     {
         using namespace peg::udl;
         std::string name;
-        //std::map<std::string, Member> member_list;
+        //std::vector<Member> member_list;
         DynamicType::Ptr type;
         for (const auto& node : ast->nodes)
         {
@@ -1055,7 +1055,7 @@ private:
     {
         using namespace peg::udl;
         std::string name;
-        //std::map<std::string, Member> member_list;
+        //std::vector<Member> member_list;
         for (const auto& node : ast->nodes)
         {
             switch (node->original_tag)
@@ -1097,7 +1097,7 @@ private:
     {
         using namespace peg::udl;
         std::string name;
-        //std::map<std::string, Member> member_list;
+        //std::vector<Member> member_list;
         for (const auto& node : ast->nodes)
         {
             switch (node->original_tag)
@@ -1144,7 +1144,7 @@ private:
     {
         using namespace peg::udl;
         std::string name;
-        //std::map<std::string, Member> member_list;
+        //std::vector<Member> member_list;
         for (const auto& node : ast->nodes)
         {
             switch (node->original_tag)
@@ -1184,7 +1184,7 @@ private:
     void member_def(
             const std::shared_ptr<peg::Ast> ast,
             std::shared_ptr<Module> outer,
-            std::map<std::string, Member>& result)
+            std::vector<Member>& result)
     {
         using namespace peg::udl;
         DynamicType::Ptr type;
@@ -1391,16 +1391,16 @@ private:
             const std::string& name,
             const std::vector<size_t>& dimensions,
             const DynamicType::Ptr type,
-            std::map<std::string, Member>& result)
+            std::vector<Member>& result)
     {
-        result.emplace(name, Member(name, *get_array_type(dimensions, type)));
+        result.emplace_back(Member(name, *get_array_type(dimensions, type)));
     }
 
     void members(
             const std::shared_ptr<peg::Ast> ast,
             std::shared_ptr<Module> outer,
             const DynamicType::Ptr type,
-            std::map<std::string, Member>& result)
+            std::vector<Member>& result)
     {
         using namespace peg::udl;
         using id_pair = std::pair<std::string, std::vector<size_t>>;
@@ -1411,13 +1411,24 @@ private:
         {
             std::string name = pair.first;
             std::vector<size_t> dimensions = pair.second;
-            if (result.count(name) > 0)
+
+            bool already_defined = false;
+            for (const Member& m : result)
+            {
+                if (m.name() == name)
+                {
+                    already_defined = true;
+                    break;
+                }
+            }
+
+            if (already_defined)
             {
                 throw exception("Member identifier " + ast->token + " already defined", ast);
             }
             if (dimensions.empty())
             {
-                result.emplace(name, Member(name, *type));
+                result.emplace_back(Member(name, *type));
             }
             else
             {

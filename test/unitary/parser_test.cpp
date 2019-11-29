@@ -68,7 +68,6 @@ TEST (IDLParser, simple_struct_test)
     data["my_string"] = "It works!";
     data["my_wstring"] = L"It works!";
     EXPECT_TRUE(data["my_bool"].value<bool>());
-    //EXPECT_EQ('c', data["my_int8"].value<char>());
     EXPECT_EQ(-55, data["my_int8"].value<int8_t>());
     EXPECT_EQ(55, data["my_uint8"].value<uint8_t>());
     EXPECT_EQ(-5, data["my_int16"].value<int16_t>());
@@ -84,6 +83,25 @@ TEST (IDLParser, simple_struct_test)
     EXPECT_EQ(L'e', data["my_wchar"].value<wchar_t>());
     EXPECT_EQ("It works!", data["my_string"].value<std::string>());
     EXPECT_EQ(L"It works!", data["my_wstring"].value<std::wstring>());
+
+    // Verify members order
+    size_t idx = 0;
+    EXPECT_EQ(data[idx++].type().name(), "bool");
+    EXPECT_EQ(data[idx++].type().name(), "int8_t");
+    EXPECT_EQ(data[idx++].type().name(), "uint8_t");
+    EXPECT_EQ(data[idx++].type().name(), "int16_t");
+    EXPECT_EQ(data[idx++].type().name(), "uint16_t");
+    EXPECT_EQ(data[idx++].type().name(), "int32_t");
+    EXPECT_EQ(data[idx++].type().name(), "uint32_t");
+    EXPECT_EQ(data[idx++].type().name(), "int64_t");
+    EXPECT_EQ(data[idx++].type().name(), "uint64_t");
+    EXPECT_EQ(data[idx++].type().name(), "float");
+    EXPECT_EQ(data[idx++].type().name(), "double");
+    EXPECT_EQ(data[idx++].type().name(), "long double");
+    EXPECT_EQ(data[idx++].type().name(), "char");
+    EXPECT_EQ(data[idx++].type().name(), "wchar_t");
+    EXPECT_EQ(data[idx++].type().name(), "std::string");
+    EXPECT_EQ(data[idx++].type().name(), "std::wstring");
 }
 
 TEST (IDLParser, array_sequence_struct_test)
@@ -97,6 +115,7 @@ TEST (IDLParser, array_sequence_struct_test)
             wstring<32> my_wstring32;
             sequence<int32> my_int_seq;
             sequence<char, 6> my_char6_seq;
+            sequence<sequence<string, 2>, 3> my_seq_seq_str;
         };
                    )");
     std::map<std::string, DynamicType::Ptr> result = context.module().get_all_types();
@@ -181,6 +200,23 @@ TEST (IDLParser, array_sequence_struct_test)
     EXPECT_EQ(data["my_char6_seq"].size(), 6);
     EXPECT_EQ(data["my_char6_seq"].bounds(), 6);
 
+    for (int32_t i = 0; i < 3; ++i)
+    {
+        DynamicData seq(static_cast<const SequenceType&>(data["my_seq_seq_str"].type()).content_type());
+        for (int32_t j = 0; j < 2; ++j)
+        {
+            seq.push(std::to_string(j + (i * 2)));
+        }
+        data["my_seq_seq_str"].push(seq);
+    }
+
+    for (int32_t i = 0; i < 3; ++i)
+    {
+        for (int32_t j = 0; j < 2; ++j)
+        {
+            EXPECT_EQ(data["my_seq_seq_str"][i][j].value<std::string>(), std::to_string(j + (i * 2)));
+        }
+    }
 }
 
 TEST (IDLParser, inner_struct_test)
