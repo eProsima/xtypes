@@ -86,7 +86,7 @@ public:
         return name_;
     }
 
-    std::string scope()
+    std::string scope() const
     {
         if (outer_ != nullptr && !outer_->scope().empty())
         {
@@ -200,22 +200,37 @@ public:
     // TODO has, get and set of:
     // enums, bitmasks and unions
 
-    std::map<std::string, DynamicType::Ptr> get_all_types() const
+    std::map<std::string, DynamicType::Ptr> get_all_types(
+            bool add_scope = false) const
     {
         std::map<std::string, DynamicType::Ptr> result;
-        fill_all_types(result);
+        fill_all_types(result, add_scope);
         return result;
     }
 
     void fill_all_types(
-            std::map<std::string, DynamicType::Ptr>& map) const
+            std::map<std::string, DynamicType::Ptr>& map,
+            bool add_scope = false) const
     {
-        map.insert(structs_.begin(), structs_.end());
+        std::string module_name = scope();
+        if (add_scope && !module_name.empty())
+        {
+            for (const auto& pair : structs_)
+            {
+                map.emplace(module_name + "::" + pair.first, pair.second);
+            }
+        }
+        else
+        {
+            map.insert(structs_.begin(), structs_.end());
+        }
+
         for (const auto& pair : inner_)
         {
-            pair.second->fill_all_types(map);
+            pair.second->fill_all_types(map, add_scope);
         }
     }
+
 
     DynamicData constant(
             const std::string& name) const

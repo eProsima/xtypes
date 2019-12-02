@@ -65,12 +65,13 @@ struct Context
     // Results
     bool success = false;
 
-    std::map<std::string, DynamicType::Ptr> get_all_types()
+    std::map<std::string, DynamicType::Ptr> get_all_types(
+            bool scope = false)
     {
         std::map<std::string, DynamicType::Ptr> result;
         if (module_ != nullptr)
         {
-            module_->fill_all_types(result);
+            module_->fill_all_types(result, scope);
         }
         return result;
     }
