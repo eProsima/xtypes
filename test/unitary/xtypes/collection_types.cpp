@@ -198,6 +198,59 @@ TEST (CollectionTypes, sequence)
     }
 }
 
+TEST (CollectionTypes, resize_sequence)
+{
+    SequenceType seq(primitive_type<uint16_t>(), 100);
+
+    DynamicData d(seq);
+    EXPECT_EQ(0, d.size());
+    EXPECT_EQ(100, d.bounds());
+
+    for(uint16_t i = 0; i < 10; ++i)
+    {
+        d.push(i);
+    }
+
+    EXPECT_EQ(10, d.size());
+
+    for (size_t i = 0; i < d.size(); ++i)
+    {
+        EXPECT_EQ(d[i].value<uint16_t>(), i);
+    }
+
+    // Check nothing happens
+    d.resize(2);
+    EXPECT_EQ(10, d.size());
+    EXPECT_EQ(100, d.bounds());
+    for (size_t i = 0; i < d.size(); ++i)
+    {
+        EXPECT_EQ(d[i].value<uint16_t>(), i);
+    }
+
+    // A resize must keep the size and content,
+    d.resize(20);
+    EXPECT_EQ(20, d.size());
+    EXPECT_EQ(100, d.bounds());
+    for (size_t i = 0; i < 10; ++i) // From 10 to 20, the values are default initialized, so uninteresting to us now.
+    {
+        EXPECT_EQ(d[i].value<uint16_t>(), i);
+    }
+
+    // And of course, allow to modify the new elements
+    for(size_t i = 0; i < 10; ++i)
+    {
+        d[i + 10] = uint16_t(i);
+    }
+    EXPECT_EQ(20, d.size());
+    for (size_t i = 0; i < d.size(); ++i)
+    {
+        EXPECT_EQ(d[i].value<uint16_t>(), i%10);
+    }
+
+    // Cannot grow over the bounds
+    ASSERT_DEATH({d.resize(101);}, "bounds()");
+}
+
 TEST (CollectionTypes, multi_sequence)
 {
     SequenceType simple_seq(primitive_type<uint32_t>(), 5);
@@ -295,7 +348,6 @@ TEST (CollectionTypes, primitive_sequences)
     check_primitive_seq<wchar_t>(L'G');
 }
 
-/////////////////////////////////////////////
 TEST (CollectionTypes, string)
 {
     StringType s(20);

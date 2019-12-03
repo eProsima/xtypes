@@ -115,8 +115,10 @@ inline std::string ReadableDynamicDataRef::to_string() const
 template<>
 inline std::string ReadableDynamicDataRef::cast<std::string>() const
 {
-    xtypes_assert(type_.is_primitive_type(),
-        "Expected a primitive type but '" << type_.name() << "' received while casting data to 'std::string'.");
+    xtypes_assert(type_.is_primitive_type() ||
+           type_.kind() == TypeKind::STRING_TYPE ||
+           type_.kind() == TypeKind::WSTRING_TYPE,
+        "Expected a primitive or string type but '" << type_.name() << "' received while casting data to 'std::string'.");
     switch (type_.kind())
     {
         case TypeKind::BOOLEAN_TYPE:

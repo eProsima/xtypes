@@ -48,7 +48,7 @@ public:
         : content_(other.content_)
         , block_size_(other.block_size_)
         , capacity_(other.capacity_)
-        , memory_(other.capacity_ > 0 ? new uint8_t[other.capacity_ * other.block_size_] : nullptr)
+        , memory_(capacity_ > 0 ? new uint8_t[capacity_ * block_size_] : nullptr)
         , size_(other.size_)
     {
         if(memory_ != nullptr)
@@ -68,9 +68,9 @@ public:
             uint32_t bounds)
         : content_(content)
         , block_size_(content.memory_size())
-        , capacity_(std::min(other.capacity_, bounds))
+        , capacity_(bounds == 0 ? other.capacity_ : std::min(other.capacity_, bounds))
         , memory_(capacity_ > 0 ? new uint8_t[capacity_ * block_size_] : nullptr)
-        , size_(std::min(other.size_, bounds))
+        , size_(bounds == 0 ? other.size_ : std::min(other.size_, bounds))
     {
         if(memory_ != nullptr)
         {

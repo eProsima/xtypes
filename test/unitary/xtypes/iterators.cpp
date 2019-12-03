@@ -274,3 +274,104 @@ TEST (Iterators, for_each_types)
 
     EXPECT_EQ(i, expected_output.size());
 }
+
+TEST (Iterators, for_each_data)
+{
+    StructType l2 = StructType("Level2")
+        .add_member("l2m1", primitive_type<uint32_t>())
+        .add_member("l2m2", primitive_type<float>())
+        .add_member("l2m3", StringType());
+
+    StructType l1 = StructType("Level1")
+        .add_member("l1m1", SequenceType(primitive_type<uint32_t>()))
+        .add_member("l1m2", SequenceType(l2))
+        .add_member("l1m3", ArrayType(primitive_type<uint32_t>(), 2))
+        .add_member("l1m4", ArrayType(l2, 4))
+        .add_member("l1m5", l2);
+
+    StructType l0 = StructType("Level0")
+        .add_member("l0m1", l1)
+        .add_member("l0m2", l2);
+
+    uint32_t uint_value = 0;
+    DynamicData data(l0);
+    data["l0m1"]["l1m1"].push(uint_value++);    // [0] = 0
+    data["l0m1"]["l1m1"].push(uint_value++);    // [1] = 1
+    data["l0m1"]["l1m1"].push(uint_value++);    // [2] = 2
+    {
+        DynamicData l2data(l2);
+        l2data["l2m1"] = uint_value++;          // 3
+        l2data["l2m2"] = 12.345f;
+        l2data["l2m3"] = "l2m3";
+        data["l0m1"]["l1m2"].push(l2data);      // [0]
+        data["l0m1"]["l1m2"].push(l2data);      // [1]
+    }
+    data["l0m1"]["l1m3"][0] = uint_value++;     // 4
+    data["l0m1"]["l1m3"][1] = uint_value++;     // 5
+    {
+        DynamicData l2data(l2);
+        l2data["l2m1"] = uint_value++;          // 6
+        l2data["l2m2"] = 123.45f;
+        l2data["l2m3"] = "l2m3_bis";
+        data["l0m1"]["l1m4"][0] = l2data;       // [0]
+        data["l0m1"]["l1m4"][1] = l2data;       // [1]
+        data["l0m1"]["l1m4"][2] = l2data;       // [2]
+        data["l0m1"]["l1m4"][3] = l2data;       // [3]
+    }
+    {
+        DynamicData l2data(l2);
+        l2data["l2m1"] = uint_value++;          // 7
+        l2data["l2m2"] = 1234.5f;
+        l2data["l2m3"] = "l2m3_bis_2";
+        data["l0m1"]["l1m5"] = l2data;
+    }
+    data["l0m2"]["l2m1"] = uint_value++;        // 8
+    data["l0m2"]["l2m2"] = 12345.f;
+    data["l0m2"]["l2m3"] = "l2m3_bis_3";
+
+    std::vector<std::string> expected_output =
+    {
+        "0",
+        "1",
+        "2",
+        "3",
+        std::to_string(12.345f),
+        "l2m3",
+        "3",
+        std::to_string(12.345f),
+        "l2m3",
+        "4",
+        "5",
+        "6",
+        std::to_string(123.45f),
+        "l2m3_bis",
+        "6",
+        std::to_string(123.45f),
+        "l2m3_bis",
+        "6",
+        std::to_string(123.45f),
+        "l2m3_bis",
+        "6",
+        std::to_string(123.45f),
+        "l2m3_bis",
+        "7",
+        std::to_string(1234.5f),
+        "l2m3_bis_2",
+        "8",
+        std::to_string(12345.f),
+        "l2m3_bis_3",
+    };
+
+    size_t i = 0;
+
+    data.for_each([&](const DynamicData::ReadableNode& node)
+    {
+        if (node.type().is_primitive_type() || node.type().kind() == TypeKind::STRING_TYPE)
+        {
+            EXPECT_EQ(expected_output[i], node.data().cast<std::string>());
+            i++;
+        }
+    });
+
+    EXPECT_EQ(i, expected_output.size());
+}

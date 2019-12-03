@@ -325,7 +325,7 @@ DynamicData create_dynamic_data(
     return the_data;
 }
 
-TEST (StructType, complex)
+TEST (StructType, complex_and_member_access)
 {
     StructType the_struct("the_struct");
     StructType inner_struct("inner_struct");
@@ -345,13 +345,28 @@ TEST (StructType, complex)
     EXPECT_EQ(DOUBLE, the_data["double"].value<double>());
     EXPECT_EQ(LDOUBLE, the_data["long_double"].value<long double>());
 
+    EXPECT_EQ(true, the_data[0].value<bool>());
+    EXPECT_EQ(UINT8, the_data[1].value<uint8_t>());
+    EXPECT_EQ(INT16, the_data[2].value<int16_t>());
+    EXPECT_EQ(UINT16, the_data[3].value<uint16_t>());
+    EXPECT_EQ(INT32, the_data[4].value<int32_t>());
+    EXPECT_EQ(UINT32, the_data[5].value<uint32_t>());
+    EXPECT_EQ(INT64, the_data[6].value<int64_t>());
+    EXPECT_EQ(UINT64, the_data[7].value<uint64_t>());
+    EXPECT_EQ(FLOAT, the_data[8].value<float>());
+    EXPECT_EQ(DOUBLE, the_data[9].value<double>());
+    EXPECT_EQ(LDOUBLE, the_data[10].value<long double>());
+
     for (size_t i = 0; i < STRUCTS_SIZE; ++i)
     {
         EXPECT_EQ(the_data["sequence"][i]["inner_string"].value<std::string>(), INNER_STRING_VALUE);
+        EXPECT_EQ(the_data[12][i][0].value<std::string>(), INNER_STRING_VALUE);
         EXPECT_EQ(the_data["sequence"][i]["inner_float"].value<float>(), FLOAT);
+        EXPECT_EQ(the_data[12][i][1].value<float>(), FLOAT);
         for (size_t j = 0; j < STRUCTS_SIZE; ++j)
         {
             EXPECT_EQ(the_data["sequence"][i]["inner_sequence_string"][j].value<string>(), INNER_SEQUENCE_STRING);
+            EXPECT_EQ(the_data[12][i][2][j].value<string>(), INNER_SEQUENCE_STRING);
         }
 
         for (int j = 0; j < STRUCTS_SIZE; ++j)
@@ -362,10 +377,19 @@ TEST (StructType, complex)
             EXPECT_EQ(
                 the_data["sequence"][i]["inner_sequence_struct"][j]["second_inner_uint32_t"].value<uint32_t>(),
                 UINT32);
+            EXPECT_EQ(
+                the_data[12][i][3][j][0].value<std::string>(),
+                SECOND_INNER_STRING);
+            EXPECT_EQ(
+                the_data[12][i][3][j][1].value<uint32_t>(),
+                UINT32);
             for(int k = 0; k < STRUCTS_SIZE; ++k)
             {
                 EXPECT_EQ(
                     the_data["sequence"][i]["inner_sequence_struct"][j]["second_inner_array"][k].value<uint8_t>(),
+                    UINT8);
+                EXPECT_EQ(
+                    the_data[12][i][3][j][2][k].value<uint8_t>(),
                     UINT8);
             }
         }
@@ -373,6 +397,7 @@ TEST (StructType, complex)
         for(int j = 0; j < STRUCTS_SIZE; ++j)
         {
             EXPECT_EQ(the_data["array"][i][j].value<long double>(), LDOUBLE);
+            EXPECT_EQ(the_data[11][i][j].value<long double>(), LDOUBLE);
         }
     }
 }

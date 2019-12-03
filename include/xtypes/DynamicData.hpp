@@ -734,11 +734,20 @@ public:
     /// otherwise a default-initialized values are insert to the sequence to increase its size.
     /// \param[int] size New sequence size
     /// \pre The DynamicData must represent a SequenceType.
+    /// \pre The bounds must be greater or equal to the new size.
     /// \returns The writable reference to this DynamicData
     WritableDynamicDataRef& resize(size_t size) // this = SequenceType
     {
         xtypes_assert(type_.kind() == TypeKind::SEQUENCE_TYPE,
             "resize() is only available for sequence types but called for '" << type_.name() << "'.");
+        xtypes_assert(bounds() >= size,
+            "The desired size (" << size << ") is bigger than maximum allowed size for the type '"
+            << type_.name() << "' (" << bounds() << ").");
+        if (bounds() < size)
+        {
+            // Release protection (do nothing).
+            return *this;
+        }
         const SequenceType& sequence = static_cast<const SequenceType&>(type_);
 
         sequence.resize_instance(instance_, size);
