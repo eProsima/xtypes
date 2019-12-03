@@ -1455,7 +1455,7 @@ TEST(EnumerationType, enumeration_tests)
         DynamicData enum_data(my_enum);
         enum_data = my_enum.value("C");
 
-        ASSERT_DEATH({uint64_t die = enum_data; (void) die;}, "type_index"); // This will assert
+        ASSERT_DEATH({uint64_t die = enum_data; (void) die;}, "memory_size"); // This will assert
 
         // EnumerationType<uint64_t> my_long_enum("MyLongEnum"); // Static assert, uint64_t isn't allowed
 

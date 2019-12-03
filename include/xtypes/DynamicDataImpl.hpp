@@ -190,19 +190,18 @@ inline std::string ReadableDynamicDataRef::cast<std::string>() const
         }
         case TypeKind::ENUMERATION_TYPE:
         {
-            // For checking the associated_type, any cast is valid, as long as e_type isn't accessed for anything else.
-            const EnumeratedType<uint8_t>& e_type = static_cast<const EnumeratedType<uint8_t>&>(type_);
-            if (std::type_index(e_type.get_associated_type()) == std::type_index(typeid(uint8_t)))
+            // For checking the associated_type, check for its memory_size
+            if (type_.memory_size() == sizeof(uint8_t))
             {
                 uint8_t temp = *this;
                 return std::to_string(temp);
             }
-            else if (std::type_index(e_type.get_associated_type()) == std::type_index(typeid(uint16_t)))
+            else if (type_.memory_size() == sizeof(uint16_t))
             {
                 uint16_t temp = *this;
                 return std::to_string(temp);
             }
-            else if (std::type_index(e_type.get_associated_type()) == std::type_index(typeid(uint32_t)))
+            else if (type_.memory_size() == sizeof(uint32_t))
             {
                 uint32_t temp = *this;
                 return std::to_string(temp);

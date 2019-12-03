@@ -125,7 +125,7 @@ enum_data = my_enum.value("C");             // Assign to the data the value of M
 
 uint32_t value = enum_data;                 // Retrieve the data as its primitive type.
 DynamicData enum_data2 = enum_data;         // Copy the DynamicData.
-enum_data2 = static_cast<uint32_t>(10);     // Assign to the copy, a raw value from its primitive type.
+enum_data2 = uint32_t(10);                  // Assign to the copy, a raw value from its primitive type.
 ```
 
 Assign or retrieve enumeration data of a different primitive type isn't allowed,

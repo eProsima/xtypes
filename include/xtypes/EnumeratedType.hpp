@@ -52,11 +52,6 @@ public:
         return values_.at(name);
     }
 
-    const std::type_info& get_associated_type() const
-    {
-        return associated_type_;
-    }
-
     bool is_allowed_value(T value) const
     {
         for (const auto& pair : values_)
@@ -79,7 +74,7 @@ public:
                 return TypeConsistency::EQUALS;
             }
 
-            return TypeConsistency::EQUALS | TypeConsistency::IGNORE_TYPE_WIDTH;
+            return TypeConsistency::IGNORE_TYPE_WIDTH;
         }
 
         if(!other.is_primitive_type())
@@ -112,7 +107,6 @@ protected:
             TypeKind kind,
             const std::string& name)
         : PrimitiveType<T>(kind, name)
-        , associated_type_(typeid(T))
     {
     }
 
@@ -129,7 +123,6 @@ protected:
     }
 
     std::map<std::string, T> values_;
-    const std::type_info& associated_type_;
 };
 
 } //namespace xtypes
