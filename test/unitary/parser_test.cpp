@@ -277,7 +277,7 @@ TEST (IDLParser, name_collision)
         }
         catch (const Parser::exception& e)
         {
-            if (e.what().find("reserved word") == std::string::npos)
+            if (std::string(e.what()).find("reserved word") == std::string::npos)
             {
                 FAIL() << " Another Parser::exception was thrown." << std::endl;
             }
@@ -354,7 +354,7 @@ TEST (IDLParser, name_collision)
         }
         catch (const Parser::exception& e)
         {
-            if (e.what().find("already") == std::string::npos)
+            if (std::string(e.what()).find("already") == std::string::npos)
             {
                 FAIL() << " Another Parser::exception was thrown." << std::endl;
             }
@@ -381,7 +381,7 @@ TEST (IDLParser, name_collision)
         }
         catch (const Parser::exception& e)
         {
-            if (e.what().find("already") == std::string::npos)
+            if (std::string(e.what()).find("already") == std::string::npos)
             {
                 FAIL() << " Another Parser::exception was thrown." << std::endl;
             }
@@ -407,7 +407,7 @@ TEST (IDLParser, name_collision)
         }
         catch (const Parser::exception& e)
         {
-            if (e.what().find("already") == std::string::npos)
+            if (std::string(e.what()).find("already") == std::string::npos)
             {
                 FAIL() << " Another Parser::exception was thrown." << std::endl;
             }
@@ -764,6 +764,156 @@ TEST (IDLParser, include_from_file_04_multi)
     DynamicData data(*my_struct);
     ASSERT_EQ(data["my_include"]["my_string"].type().name(), "std::string");
     ASSERT_EQ(data["my_test03"]["my_include"]["my_string"].type().name(), "std::string");
+}
+
+TEST (IDLParser, real_world_parsing)
+{
+    std::string idl_content = R"(
+        module geometry_msgs {
+            module msg {
+                struct Point {
+                    double x;
+                    double y;
+                    double z;
+                };
+            };
+        };
+        module geometry_msgs {
+            module msg {
+                struct Quaternion {
+                    double x;
+                    double y;
+                    double z;
+                    double w;
+                };
+            };
+        };
+        module geometry_msgs {
+            module msg {
+                struct Pose {
+                    geometry_msgs::msg::Point position;
+                    geometry_msgs::msg::Quaternion orientation;
+                };
+            };
+        };
+        module builtin_interfaces {
+            module msg {
+                struct Time {
+                    int32 sec;
+                    uint32 nanosec;
+                };
+            };
+        };
+        module std_msgs {
+            module msg {
+                struct Header {
+                    builtin_interfaces::msg::Time stamp;
+                    string frame_id;
+                };
+            };
+        };
+        module geometry_msgs {
+            module msg {
+                struct PoseStamped {
+                    std_msgs::msg::Header header;
+                    geometry_msgs::msg::Pose pose;
+                };
+            };
+        };
+        module geometry_msgs {
+            module msg {
+                struct Point {
+                    double x;
+                    double y;
+                    double z;
+                };
+            };
+        };
+        module geometry_msgs {
+            module msg {
+                struct Quaternion {
+                    double x;
+                    double y;
+                    double z;
+                    double w;
+                };
+            };
+        };
+        module geometry_msgs {
+            module msg {
+                struct Pose {
+                    geometry_msgs::msg::Point position;
+                    geometry_msgs::msg::Quaternion orientation;
+                };
+            };
+        };
+        module builtin_interfaces {
+            module msg {
+                struct Time {
+                    int32 sec;
+                    uint32 nanosec;
+                };
+            };
+        };
+        module std_msgs {
+            module msg {
+                struct Header {
+                    builtin_interfaces::msg::Time stamp;
+                    string frame_id;
+                };
+            };
+        };
+        module geometry_msgs {
+            module msg {
+                struct PoseStamped {
+                    std_msgs::msg::Header header;
+                    geometry_msgs::msg::Pose pose;
+                };
+            };
+        };
+        module builtin_interfaces {
+            module msg {
+                struct Time {
+                    int32 sec;
+                    uint32 nanosec;
+                };
+            };
+        };
+        module std_msgs {
+            module msg {
+                struct Header {
+                    builtin_interfaces::msg::Time stamp;
+                    string frame_id;
+                };
+            };
+        };
+        module nav_msgs {
+            module msg {
+                struct Path {
+                    std_msgs::msg::Header header;
+                    sequence<geometry_msgs::msg::PoseStamped> poses;
+                };
+            };
+        };
+        module nav_msgs {
+            module srv {
+                struct GetPlan_Request {
+                    geometry_msgs::msg::PoseStamped start;
+                    geometry_msgs::msg::PoseStamped goal;
+                    float tolerance;
+                };
+                struct GetPlan_Response {
+                    nav_msgs::msg::Path plan;
+                };
+            };
+        };
+    )";
+
+    Context context;
+    context.allow_keyword_identifiers = true;
+    context.ignore_redefinition = true;
+    parse(idl_content, context);
+    ASSERT_TRUE(context.success);
 }
 
 int main(int argc, char** argv)

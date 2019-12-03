@@ -57,8 +57,9 @@ struct Context
     bool clear = true;
     bool preprocess = true;
     bool allow_keyword_identifiers = false;
+    bool ignore_redefinition = false;
     CharType char_translation = CHAR;
-    std::string preprocessor_exec = "";
+    std::string preprocessor_exec = "cpp";
     std::vector<std::string> include_paths;
 
     // Results
@@ -116,6 +117,7 @@ public:
 
     Parser()
         : parser_(idl_grammar())
+        , context_(nullptr)
     {
         parser_.enable_ast();
     }
@@ -133,14 +135,9 @@ public:
             Context& context)
     {
         context.instance_ = this;
+        context_ = &context;
         std::shared_ptr<peg::Ast> ast;
-        ignore_case_ = context.ignore_case;
-        clear_ = context.clear;
-        allow_kw_ids_ = context.allow_keyword_identifiers;
-        char_translation_ = context.char_translation;
         std::string idl_to_parse = idl_string;
-        preprocessor(context.preprocessor_exec);
-        include_paths_ = context.include_paths;
         if (context.preprocess)
         {
             idl_to_parse = preprocess_string(idl_to_parse);
@@ -170,14 +167,9 @@ public:
             Context& context)
     {
         context.instance_ = this;
+        context_ = &context;
         std::vector<char> source;
         std::shared_ptr<peg::Ast> ast;
-        ignore_case_ = context.ignore_case;
-        clear_ = context.clear;
-        allow_kw_ids_ = context.allow_keyword_identifiers;
-        char_translation_ = context.char_translation;
-        preprocessor(context.preprocessor_exec);
-        include_paths_ = context.include_paths;
         if (context.preprocess)
         {
             std::string file_content = preprocess_file(idl_file);
@@ -209,7 +201,7 @@ public:
         }
     }
 
-    class exception
+    class exception : public std::runtime_error
     {
     private:
         std::string message_;
@@ -218,17 +210,13 @@ public:
         exception(
                 const std::string& message,
                 const std::shared_ptr<peg::Ast> ast)
-            : message_(message)
+            : std::runtime_error(
+                  std::string("Parser exception (" + (ast->path.empty() ? "<no file>" : ast->path)
+                  + ":" + std::to_string(ast->line)
+                  + ":" + std::to_string(ast->column) + "): " + message))
+            , message_(message)
             , ast_(ast)
         {}
-
-        const std::string what() const noexcept
-        {
-            std::string output;
-            output = "Parser exception (" + ast_->path + ":" + std::to_string(ast_->line)
-                     + ":" + std::to_string(ast_->column) + "): " + message_;
-            return output;
-        }
 
         const std::string& message() const
         {
@@ -241,21 +229,6 @@ public:
         }
 
     };
-
-    void preprocessor(
-            const std::string& path)
-    {
-        if (!path.empty())
-        {
-            preprocessor_path_ = path;
-        }
-    }
-
-    void include_paths(
-            const std::vector<std::string>& include_paths)
-    {
-        include_paths_ = include_paths;
-    }
 
     static std::string preprocess(
             const std::string& preprocessor_path,
@@ -276,13 +249,7 @@ private:
     friend struct Context;
 
     peg::parser parser_;
-    bool ignore_case_ = false;
-    bool preprocess_ = true;
-    bool clear_ = true;
-    bool allow_kw_ids_ = false;
-    Context::CharType char_translation_ = Context::CHAR;
-    std::string preprocessor_path_ = "cpp";
-    std::vector<std::string> include_paths_;
+    Context* context_;
     std::shared_ptr<Module> root_scope_;
 
     static Parser* get_instance()
@@ -312,11 +279,17 @@ private:
     }
 
     static std::string exec(
-            const std::string& cmd)
+            const std::string& cmd,
+            bool filter_stderr = true)
     {
         std::array<char, 256> buffer;
+        std::string command = cmd;
+        if (filter_stderr)
+        {
+            command.append(" 2> /dev/null");
+        }
         std::string result;
-        std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
+        std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(command.c_str(), "r"), pclose);
         if (!pipe)
         {
             throw std::runtime_error("popen() failed!");
@@ -347,14 +320,14 @@ private:
             const std::string& idl_string) const
     {
         std::string args = "-H ";
-        for (const std::string inc_path : include_paths_)
+        for (const std::string inc_path : context_->include_paths)
         {
             args += "-I " + inc_path + " ";
         }
         // Escape double quotes inside the idl_string
         std::string escaped_idl_string = idl_string;
         replace_all_string(escaped_idl_string, "\"", "\\\"");
-        std::string cmd = "echo \"" + escaped_idl_string + "\" | " + preprocessor_path_ + " " + args;
+        std::string cmd = "echo \"" + escaped_idl_string + "\" | " + context_->preprocessor_exec + " " + args;
         return exec(cmd);
     }
 
@@ -363,11 +336,11 @@ private:
     {
         std::vector<std::string> includes;
         std::string args = "-H ";
-        for (const std::string inc_path : include_paths_)
+        for (const std::string inc_path : context_->include_paths)
         {
             args += "-I " + inc_path + " ";
         }
-        std::string cmd = preprocessor_path_ + " " + args + idl_file;
+        std::string cmd = context_->preprocessor_exec + " " + args + idl_file;
         std::string output = exec(cmd);
         return output;
     }
@@ -379,7 +352,7 @@ private:
         using namespace peg::udl;
         if (scope == nullptr)
         {
-            if (clear_ || root_scope_ == nullptr)
+            if (context_->clear || root_scope_ == nullptr)
             {
                 root_scope_ = std::make_shared<Module>();
             }
@@ -440,7 +413,7 @@ private:
             return identifier.substr(1); // If the identifier starts with "_", remove the underscode and return.
         }
 
-        if (!allow_kw_ids_ && is_token(identifier))
+        if (!context_->allow_keyword_identifiers && is_token(identifier))
         {
             throw exception("The identifier \"" + identifier + "\" is a reserved word.", ast);
         }
@@ -468,7 +441,7 @@ private:
     {
         std::string aux_id = identifier;
 
-        if (!ignore_case_)
+        if (!context_->ignore_case)
         {
             to_lower(aux_id);
         }
@@ -977,6 +950,11 @@ private:
         StructType& struct_type = outer->structure(name);
         if (!struct_type.members().empty())
         {
+            if (context_->ignore_redefinition)
+            {
+                // TODO log in the context that the struct was ignored.
+                return;
+            }
             throw exception("Struct " + name + " redefinition.", ast);
         }
         for (auto& member : member_list)
@@ -1039,6 +1017,7 @@ private:
         UnionType& union_type = outer->get_union(name);
         if (!union_type.members().empty())
         {
+            if (context_.ignore_redefinition) ...
             throw exception("Union " + name + " redefinition.", ast);
         }
         for (auto& member : member_list)
@@ -1250,7 +1229,7 @@ private:
                 return primitive_type<long double>();
             case "CHAR_TYPE"_:
             {
-                switch (char_translation_)
+                switch (context_->char_translation)
                 {
                     case Context::CHAR:
                         return primitive_type<char>();
