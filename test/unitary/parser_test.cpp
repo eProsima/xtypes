@@ -465,8 +465,19 @@ TEST (IDLParser, module_scope_test)
         };
                    )");
 
-    std::map<std::string, DynamicType::Ptr> result = context.module().get_all_types();
+    std::map<std::string, DynamicType::Ptr> result = context.get_all_scoped_types();
     EXPECT_EQ(5, result.size());
+
+    DynamicType::Ptr StA = result.at("A::StA");
+    EXPECT_TRUE(StA.get() != nullptr);
+
+    DynamicType::Ptr StBC = result.at("B::C::StBC");
+    EXPECT_TRUE(StBC.get() != nullptr);
+
+    EXPECT_TRUE(result.count("StBC") == 0);
+
+    DynamicType::Ptr mainSt = result.at("CompleteStruct");
+    EXPECT_TRUE(mainSt.get() != nullptr);
 }
 
 TEST (IDLParser, constants)
