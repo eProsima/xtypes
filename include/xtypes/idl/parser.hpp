@@ -76,6 +76,11 @@ struct Context
         return result;
     }
 
+    std::map<std::string, DynamicType::Ptr> get_all_scoped_types()
+    {
+        return get_all_types(true);
+    }
+
     Module& module()
     {
         return *module_;

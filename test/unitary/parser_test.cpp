@@ -465,7 +465,7 @@ TEST (IDLParser, module_scope_test)
         };
                    )");
 
-    std::map<std::string, DynamicType::Ptr> result = context.get_all_types(true);
+    std::map<std::string, DynamicType::Ptr> result = context.get_all_scoped_types();
     EXPECT_EQ(5, result.size());
 
     DynamicType::Ptr StA = result.at("A::StA");
