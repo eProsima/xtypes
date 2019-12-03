@@ -209,7 +209,7 @@ public:
         }
     }
 
-    class exception
+    class exception : public std::runtime_error
     {
     private:
         std::string message_;
@@ -218,17 +218,13 @@ public:
         exception(
                 const std::string& message,
                 const std::shared_ptr<peg::Ast> ast)
-            : message_(message)
+            : std::runtime_error(
+                  std::string("Parser exception (" + (ast->path.empty() ? "<no file>" : ast->path)
+                  + ":" + std::to_string(ast->line)
+                  + ":" + std::to_string(ast->column) + "): " + message))
+            , message_(message)
             , ast_(ast)
         {}
-
-        const std::string what() const noexcept
-        {
-            std::string output;
-            output = "Parser exception (" + ast_->path + ":" + std::to_string(ast_->line)
-                     + ":" + std::to_string(ast_->column) + "): " + message_;
-            return output;
-        }
 
         const std::string& message() const
         {
