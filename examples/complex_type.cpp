@@ -66,5 +66,26 @@ int main()
     DynamicData module_data(root["a"]["a"].structure("OuterType")); // ::a::a::OuterType
     module_data["om3"] = "This is a string.";
 
+    EnumerationType<uint32_t> my_enum("MyEnum");
+    my_enum.add_enumerator("A", 0);
+    my_enum.add_enumerator("B", 10);
+    my_enum.add_enumerator("C");
+
+    DynamicData enum_data(my_enum);
+    enum_data = my_enum.value("C");
+
+    uint32_t value = enum_data;
+    DynamicData enum_data2 = enum_data;
+    uint32_t value2 = enum_data2;
+
+    // uint64_t die = enum_data2; // This will assert
+
+    std::cout << "Enumeration::C: " << value << std::endl;
+    std::cout << "Enumeration2::C: " << value2 << std::endl;
+
+    // EnumerationType<uint64_t> my_long_enum("MyLongEnum"); // Static assert, uint64_t isn't allowed
+    // enum_data2 = static_cast<uint32_t>(2); // Asserts because 2 isn't a valid value (0, 10 and 11).
+
+
     return 0;
 }

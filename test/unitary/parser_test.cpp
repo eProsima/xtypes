@@ -293,7 +293,7 @@ TEST (IDLParser, name_collision)
         Context context;
         context.ignore_case = true;
         parse(R"(
-            struct MyStruct
+            struct Struct
             {
                 string STRUCT;
             };
@@ -302,6 +302,8 @@ TEST (IDLParser, name_collision)
             );
         std::map<std::string, DynamicType::Ptr> result = context.module().get_all_types();
         EXPECT_EQ(1, result.size());
+        const DynamicType* my_struct = result["Struct"].get();
+        EXPECT_EQ(my_struct->name(), "Struct");
     }
 
     {
@@ -925,6 +927,43 @@ TEST (IDLParser, real_world_parsing)
     context.ignore_redefinition = true;
     parse(idl_content, context);
     ASSERT_TRUE(context.success);
+}
+
+TEST (IDLParser, enumerations_test)
+{
+    {
+        Context context = parse(R"(
+            enum MyEnum
+            {
+                A,
+                B,
+                C
+            };
+
+            const uint32 D = B + C;
+
+            struct MyStruct
+            {
+                string my_str_array[B];
+                sequence<long, C> my_seq;
+                string<D> my_bounded_str;
+            };
+                       )");
+
+        std::map<std::string, DynamicType::Ptr> result = context.get_all_types();
+        EXPECT_EQ(1, result.size());
+
+        const DynamicType* my_struct = result["MyStruct"].get();
+        DynamicData data(*my_struct);
+        ASSERT_EQ(data["my_str_array"].bounds(), 1);
+        ASSERT_EQ(data["my_seq"].bounds(), 2);
+        ASSERT_EQ(data["my_bounded_str"].bounds(), 3);
+
+        EnumerationType<uint32_t>& my_enum = context.module().enum_32("MyEnum");
+        ASSERT_EQ(my_enum.value("A"), 0);
+        ASSERT_EQ(my_enum.value("B"), 1);
+        ASSERT_EQ(my_enum.value("C"), 2);
+    }
 }
 
 int main(int argc, char** argv)

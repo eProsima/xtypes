@@ -301,6 +301,54 @@ public:
         return false;
     }
 
+    EnumerationType<uint32_t>& enum_32(
+            const std::string& name)
+    {
+        // Solve scope
+        PairModuleSymbol module = resolve_scope(name);
+        if (module.first == nullptr)
+        {
+            // This will fail
+            return static_cast<EnumerationType<uint32_t>&>(const_cast<DynamicType&>(*enumerations_32_.end()->second));
+        }
+
+        auto it = module.first->enumerations_32_.find(module.second);
+        if (it != module.first->enumerations_32_.end())
+        {
+            return static_cast<EnumerationType<uint32_t>&>(const_cast<DynamicType&>(*it->second));
+        }
+        // This will fail
+        return static_cast<EnumerationType<uint32_t>&>(const_cast<DynamicType&>(*enumerations_32_.end()->second));
+    }
+
+    bool has_enum_32(
+            const std::string& name) const
+    {
+        return enumerations_32_.count(name) > 0;
+    }
+
+    bool enum_32(
+            EnumerationType<uint32_t>&& enumeration,
+            bool replace = false)
+    {
+        if (enumeration.name().find("::") != std::string::npos)
+        {
+            return false; // Cannot add a symbol with scoped name.
+        }
+
+        if (replace)
+        {
+            auto it = enumerations_32_.find(enumeration.name());
+            if (it != enumerations_32_.end())
+            {
+                enumerations_32_.erase(it);
+            }
+        }
+
+        auto result = enumerations_32_.emplace(enumeration.name(), std::move(enumeration));
+        return result.second;
+    }
+
     // Generic type retrieval.
     DynamicType::Ptr type(
             const std::string& name)
@@ -313,7 +361,10 @@ public:
         }
 
         // Check enums
-        // TODO
+        if (module.first->has_enum_32(module.second))
+        {
+            return module.first->enumerations_32_.at(module.second);
+        }
 
         // Check structs
         if (module.first->has_structure(module.second))
@@ -336,6 +387,7 @@ public:
 protected:
     std::map<std::string, DynamicType::Ptr> constants_types_;
     std::map<std::string, DynamicData> constants_;
+    std::map<std::string, DynamicType::Ptr> enumerations_32_;
     std::map<std::string, DynamicType::Ptr> structs_;
     //std::map<std::string, std::shared_ptr<AnnotationType>> annotations_;
     Module* outer_;

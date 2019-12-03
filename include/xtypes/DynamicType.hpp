@@ -74,6 +74,14 @@ public:
         return (kind_ & TypeKind::CONSTRUCTED_TYPE) != TypeKind::NO_TYPE;
     }
 
+    /// \brief check if this type is enumerated
+    /// (has the corresponding bit of TypeKind::ENUMERATED_TYPE in its kind).
+    /// \returns true if is enumerated
+    bool is_enumerated_type() const
+    {
+        return (kind_ & TypeKind::ENUMERATED_TYPE) != TypeKind::NO_TYPE;
+    }
+
     /// \brief check the compatibility with other DynamicType.
     /// returns The needed consistency required for the types can be compatibles.
     ///   TypeConsistency::EQUALS means that the types are identically.
@@ -184,18 +192,18 @@ public:
         /// \brief Creates a copy of a DynamicType that will be managed.
         /// The copy is avoid if DynamnicType is primitive.
         Ptr(const DynamicType& type)
-            : type_(type.is_primitive_type() ? &type : type.clone())
+            : type_(dont_clone_type(&type) ? &type : type.clone())
         {}
 
         /// \brief Copy constructor.
         /// Makes an internal copy of the managed DynamicType.
         /// The copy is avoid if DynamnicType is primitive.
         Ptr(const Ptr& ptr)
-            : type_((ptr.type_ == nullptr || ptr.type_->is_primitive_type()) ? ptr.type_ : ptr.type_->clone())
+            : type_(dont_clone_type(ptr.type_) ? ptr.type_ : ptr.type_->clone())
         {}
 
         Ptr(Ptr&& ptr)
-            : type_ (ptr.type_)
+            : type_(ptr.type_)
         {
             ptr.type_ = nullptr;
         }
@@ -209,7 +217,7 @@ public:
             }
 
             reset();
-            type_ = (ptr.type_ == nullptr || ptr.type_->is_primitive_type()) ? ptr.type_ : ptr.type_->clone();
+            type_ = dont_clone_type(ptr.type_) ? ptr.type_ : ptr.type_->clone();
             return *this;
         }
 
@@ -223,10 +231,7 @@ public:
 
             reset();
             type_ = ptr.type_;
-            if (ptr.type_ != nullptr && !ptr.type_->is_primitive_type())
-            {
-                ptr.type_ = nullptr;
-            }
+            ptr.type_ = nullptr;
             return *this;
         }
 
@@ -244,7 +249,7 @@ public:
         /// \brief Remove the managed DynamicType and points to nothing.
         void reset()
         {
-            if(type_ != nullptr && !type_->is_primitive_type())
+            if(!dont_clone_type(type_))
             {
                 delete type_;
             }
@@ -273,6 +278,14 @@ public:
 
     private:
         const DynamicType* type_;
+
+        static bool dont_clone_type(
+                const DynamicType* type)
+        {
+            return
+                type == nullptr ||
+                (type->is_primitive_type() && ((type->kind() & TypeKind::ENUMERATED_TYPE) == TypeKind::NO_TYPE));
+        }
     };
 };
 

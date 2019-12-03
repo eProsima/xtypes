@@ -1417,6 +1417,52 @@ TEST (Utilities, Modules)
     ASSERT_EQ(&my_struct, &same_struct); // Both access ways must be equivalent.
 }
 
+TEST(EnumerationType, enumeration_tests)
+{
+    // Creation and expected operation
+    {
+        EnumerationType<uint32_t> my_enum("MyEnum");
+        my_enum.add_enumerator("A", 0);
+        my_enum.add_enumerator("B", 10);
+        my_enum.add_enumerator("C");
+
+        DynamicData enum_data(my_enum);
+        enum_data = my_enum.value("C");
+
+        uint32_t value = enum_data;
+        DynamicData enum_data2 = enum_data;
+        uint32_t value2 = enum_data2;
+
+        EXPECT_EQ(value, 11);
+        EXPECT_EQ(value, my_enum.value("C"));
+        EXPECT_EQ(value, value2);
+
+        enum_data2 = static_cast<uint32_t>(10);
+        value2 = enum_data2;
+        EXPECT_EQ(10, value2);
+    }
+    // ASSERT_DEATHS
+    {
+        EnumerationType<uint32_t> my_enum("MyEnum");
+        my_enum.add_enumerator("A", 0);
+        my_enum.add_enumerator("B", 10);
+        my_enum.add_enumerator("C");
+
+        ASSERT_DEATH({my_enum.add_enumerator("D", 11);}, "next_value"); // Asserts because 11 == last added value
+        ASSERT_DEATH({my_enum.add_enumerator("E", 2);}, "next_value"); // Asserts because 2 < last added value
+        ASSERT_DEATH({my_enum.add_enumerator("A");}, "has_enumerator"); // Asserts because A already exists
+
+        DynamicData enum_data(my_enum);
+        enum_data = my_enum.value("C");
+
+        ASSERT_DEATH({uint64_t die = enum_data; (void) die;}, "memory_size"); // This will assert
+
+        // EnumerationType<uint64_t> my_long_enum("MyLongEnum"); // Static assert, uint64_t isn't allowed
+
+        ASSERT_DEATH({enum_data = static_cast<uint32_t>(2);}, "is_allowed_value"); // Asserts because 2 isn't a valid value (0, 10 and 11).
+    }
+}
+
 int main(int argc, char** argv)
 {
     testing::InitGoogleTest(&argc, argv);
