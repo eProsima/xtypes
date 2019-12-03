@@ -40,21 +40,12 @@ static const std::string INNER_SEQUENCE_STRING = "another_prick_in_the_wall";
 static const std::string SECOND_INNER_STRING = "paint_it_black";
 
 static const float STRUCTS_SIZE = 1E1;
-static const float CHECKS_NUMBER = 1E2;
 
 /**********************************
  *        StructType Tests        *
  **********************************/
 
-TEST (StructType , verify_constructor_and_size)
-{
-    StructType st("struct_name");
-    EXPECT_EQ("struct_name", st.name());
-    st.add_member(Member("int", primitive_type<int>()));
-    EXPECT_EQ(4, st.memory_size());
-}
-
-TEST (StructType, build_one_of_each_primitive_type)
+TEST (StructType, primitive_struct)
 {
     StructType st("struct_name");
     EXPECT_EQ("struct_name", st.name());
@@ -95,7 +86,7 @@ TEST (StructType, build_one_of_each_primitive_type)
     EXPECT_EQ(mem_size, st.memory_size());
 }
 
-TEST (StructType, cascade_add_member_and_copy)
+TEST (StructType, cascade_api_and_copy)
 {
     StructType st("struct_name");
     st.add_member(
@@ -247,10 +238,19 @@ TEST (StructType, type_verify_test)
 
 }
 
-DynamicData create_dynamic_data(long double pi, StructType& the_struct, StructType& inner_struct, StructType& second_inner_struct)
+TEST (StructType, empty_struct_data)
 {
-//    StructType inner_struct("inner_struct");
-//    StructType second_inner_struct("second_inner_struct");
+    StructType empty("empty_struct");
+    DynamicData empty_data(empty);
+    EXPECT_EQ(0, empty.memory_size());
+    ASSERT_DEATH(empty_data[0], "index < size()");
+}
+
+DynamicData create_dynamic_data(
+        StructType& the_struct,
+        StructType& inner_struct,
+        StructType& second_inner_struct)
+{
     second_inner_struct.add_member(
         Member("second_inner_string", StringType())).add_member(
         Member("second_inner_uint32_t", primitive_type<uint32_t>())).add_member(
@@ -289,7 +289,7 @@ DynamicData create_dynamic_data(long double pi, StructType& the_struct, StructTy
     the_data["float"].value<float>(FLOAT);
     the_data["double"].value<double>(DOUBLE);
 
-    the_data["long_double"].value<>(pi);
+    the_data["long_double"].value<>(LDOUBLE);
 
     for(int i = 0; i < STRUCTS_SIZE; ++i) // creating "sequence"
     {
@@ -325,14 +325,13 @@ DynamicData create_dynamic_data(long double pi, StructType& the_struct, StructTy
     return the_data;
 }
 
-TEST (StructType, cascade_construction)
+TEST (StructType, complex)
 {
-    long double pi = LDOUBLE;
     StructType the_struct("the_struct");
     StructType inner_struct("inner_struct");
     StructType second_inner_struct("second_inner_struct");
 
-    DynamicData the_data = create_dynamic_data(pi, the_struct, inner_struct, second_inner_struct);
+    DynamicData the_data = create_dynamic_data(the_struct, inner_struct, second_inner_struct);
 
     EXPECT_EQ(UINT32, the_data["uint32_t"].value<uint32_t>());
     EXPECT_EQ(INT32, the_data["int32_t"].value<int32_t>());
@@ -344,32 +343,41 @@ TEST (StructType, cascade_construction)
     EXPECT_EQ(UINT64, the_data["uint64_t"].value<uint64_t>());
     EXPECT_EQ(FLOAT, the_data["float"].value<float>());
     EXPECT_EQ(DOUBLE, the_data["double"].value<double>());
-    EXPECT_EQ(pi, the_data["long_double"].value<long double>());
+    EXPECT_EQ(LDOUBLE, the_data["long_double"].value<long double>());
 
-    srand48(time(0));
-
-    for (int i = 0; i < CHECKS_NUMBER; ++i)
+    for (size_t i = 0; i < STRUCTS_SIZE; ++i)
     {
-        size_t idx_4 = lrand48()%int(STRUCTS_SIZE);
-        EXPECT_EQ(INNER_STRING_VALUE, the_data["sequence"][idx_4]["inner_string"].value<std::string>());
-        EXPECT_EQ(FLOAT, the_data["sequence"][idx_4]["inner_float"].value<float>());
-        size_t idx_3 = lrand48()%int(STRUCTS_SIZE);
-        EXPECT_EQ(INNER_SEQUENCE_STRING, the_data["sequence"][idx_4]["inner_sequence_string"][idx_3].value<std::string>());
-        size_t idx_2 = lrand48()%int(STRUCTS_SIZE);
-        EXPECT_EQ(SECOND_INNER_STRING, the_data["sequence"][idx_4]["inner_sequence_struct"][idx_2]["second_inner_string"].value<string>());
-        EXPECT_EQ(UINT32, the_data["sequence"][idx_4]["inner_sequence_struct"][idx_2]["second_inner_uint32_t"].value<uint32_t>());
+        EXPECT_EQ(the_data["sequence"][i]["inner_string"].value<std::string>(), INNER_STRING_VALUE);
+        EXPECT_EQ(the_data["sequence"][i]["inner_float"].value<float>(), FLOAT);
+        for (size_t j = 0; j < STRUCTS_SIZE; ++j)
+        {
+            EXPECT_EQ(the_data["sequence"][i]["inner_sequence_string"][j].value<string>(), INNER_SEQUENCE_STRING);
+        }
 
-        size_t arr_idx_3 = lrand48()%int(STRUCTS_SIZE);
-        size_t arr_idx_2 = lrand48()%int(STRUCTS_SIZE);
-        size_t arr_idx_1 = lrand48()%int(STRUCTS_SIZE);
+        for (int j = 0; j < STRUCTS_SIZE; ++j)
+        {
+            EXPECT_EQ(
+                the_data["sequence"][i]["inner_sequence_struct"][j]["second_inner_string"].value<std::string>(),
+                SECOND_INNER_STRING);
+            EXPECT_EQ(
+                the_data["sequence"][i]["inner_sequence_struct"][j]["second_inner_uint32_t"].value<uint32_t>(),
+                UINT32);
+            for(int k = 0; k < STRUCTS_SIZE; ++k)
+            {
+                EXPECT_EQ(
+                    the_data["sequence"][i]["inner_sequence_struct"][j]["second_inner_array"][k].value<uint8_t>(),
+                    UINT8);
+            }
+        }
 
-        long double check_over = LDOUBLE;
-        EXPECT_EQ(check_over, the_data["array"][arr_idx_3][arr_idx_2].value<long double>());
-        EXPECT_EQ(UINT8, the_data["sequence"][idx_4]["inner_sequence_struct"][idx_2]["second_inner_array"][arr_idx_1].value<uint8_t>());
+        for(int j = 0; j < STRUCTS_SIZE; ++j)
+        {
+            EXPECT_EQ(the_data["array"][i][j].value<long double>(), LDOUBLE);
+        }
     }
 }
 
-TEST (StructType, sequence)
+TEST (StructType, simple_string_sequence_struct)
 {
     StructType st("st");
     st.add_member(

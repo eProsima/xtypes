@@ -30,10 +30,9 @@ TEST (Consistency, testing_is_compatible_string_no_bound)
     EXPECT_EQ(TypeConsistency::EQUALS, s.is_compatible(r) );
 }
 
-TEST (Consistency, testing_is_compatible_string_same_bound)
+TEST (Consistency, testing_is_compatible_short_string_same_bound)
 {
-    srand48(time(0));
-    size_t b = lrand48()%1000;
+    size_t b = 15;
     StringType s(b);
     StringType r(b);
 
@@ -41,6 +40,15 @@ TEST (Consistency, testing_is_compatible_string_same_bound)
     EXPECT_EQ(TypeConsistency::EQUALS, s.is_compatible(r) );
 }
 
+TEST (Consistency, testing_is_compatible_long_string_same_bound)
+{
+    size_t b = 1000;
+    StringType s(b);
+    StringType r(b);
+
+    EXPECT_EQ(TypeConsistency::EQUALS, r.is_compatible(s) );
+    EXPECT_EQ(TypeConsistency::EQUALS, s.is_compatible(r) );
+}
 
 TEST (Consistency, testing_is_compatible_string_different_bound)
 {
@@ -51,6 +59,14 @@ TEST (Consistency, testing_is_compatible_string_different_bound)
     EXPECT_NE(0, uint32_t(TypeConsistency::IGNORE_STRING_BOUNDS) & uint32_t(r.is_compatible(s)) );
 }
 
+TEST (Consistency, testing_is_compatible_string_bound_vs_no_bound)
+{
+    StringType s;
+    StringType r(30);
+
+    EXPECT_NE(0, uint32_t(TypeConsistency::IGNORE_STRING_BOUNDS) & uint32_t(s.is_compatible(r)) );
+    EXPECT_NE(0, uint32_t(TypeConsistency::IGNORE_STRING_BOUNDS) & uint32_t(r.is_compatible(s)) );
+}
 
 TEST (Consistency, testing_is_compatible_structure_of_string)
 {
@@ -75,6 +91,18 @@ TEST (Consistency, testing_is_compatible_structure_of_sequence_no_bound)
     EXPECT_EQ(TypeConsistency::EQUALS , other_str.is_compatible(the_str));
 }
 
+TEST (Consistency, testing_is_compatible_structure_of_sequence_bound_vs_no_bound)
+{
+    SequenceType s(primitive_type<uint32_t>());
+    SequenceType r(primitive_type<uint32_t>(),19);
+    StructType the_str("check");
+    the_str.add_member(Member("int", s));
+    StructType other_str("other_check");
+    other_str.add_member(Member("int", r));
+    EXPECT_EQ(TypeConsistency::IGNORE_SEQUENCE_BOUNDS, the_str.is_compatible(other_str));
+    EXPECT_EQ(TypeConsistency::IGNORE_SEQUENCE_BOUNDS , other_str.is_compatible(the_str));
+}
+
 TEST (Consistency, testing_is_compatible_structure_of_sequence_different_bound)
 {
     SequenceType s(primitive_type<uint32_t>(),15);
@@ -87,7 +115,7 @@ TEST (Consistency, testing_is_compatible_structure_of_sequence_different_bound)
     EXPECT_EQ(TypeConsistency::IGNORE_SEQUENCE_BOUNDS , other_str.is_compatible(the_str));
 }
 
-TEST (Consistency, testing_is_compatible_structure_of_sequence_same_bound)
+TEST (Consistency, testing_is_compatible_structure_of_sequence_small_bound)
 {
     SequenceType s(primitive_type<uint32_t>(),15);
     StructType the_str("check");
@@ -98,22 +126,13 @@ TEST (Consistency, testing_is_compatible_structure_of_sequence_same_bound)
     EXPECT_EQ(TypeConsistency::EQUALS , other_str.is_compatible(the_str));
 }
 
-TEST (Consistency, testing_is_compatible_structure_of_primitive_type_int)
+TEST (Consistency, testing_is_compatible_structure_of_sequence_large_bound)
 {
+    SequenceType s(primitive_type<uint32_t>(),15000);
     StructType the_str("check");
-    the_str.add_member(Member("int", primitive_type<uint32_t>()));
+    the_str.add_member(Member("int", s));
     StructType other_str("other_check");
-    other_str.add_member(Member("int", primitive_type<uint32_t>()));
-    EXPECT_EQ(TypeConsistency::EQUALS , the_str.is_compatible(other_str));
-    EXPECT_EQ(TypeConsistency::EQUALS , other_str.is_compatible(the_str));
-}
-
-TEST (Consistency, testing_is_compatible_structure_of_primitive_type_float)
-{
-    StructType the_str("check");
-    the_str.add_member(Member("int", primitive_type<long double>()));
-    StructType other_str("other_check");
-    other_str.add_member(Member("int", primitive_type<long double>()));
+    other_str.add_member(Member("int", s));
     EXPECT_EQ(TypeConsistency::EQUALS , the_str.is_compatible(other_str));
     EXPECT_EQ(TypeConsistency::EQUALS , other_str.is_compatible(the_str));
 }
@@ -165,10 +184,38 @@ TEST (Consistency, testing_is_compatible_structure_of_primitive_type_mixed_int)
               TypeConsistency::IGNORE_TYPE_SIGN, other_str.is_compatible(another_str));
 }
 
-TEST (Consistency, testing_is_compatible_structure_of_array_same_bound)
+TEST (Consistency, testing_is_compatible_structure_of_primitive_type_float)
+{
+    StructType the_str("check");
+    the_str.add_member(Member("int", primitive_type<long double>()));
+    StructType other_str("other_check");
+    other_str.add_member(Member("int", primitive_type<long double>()));
+    StructType another_str("another_check");
+    another_str.add_member(Member("int", primitive_type<float>()));
+    StructType another_more_str("another_more_check");
+    another_more_str.add_member(Member("int", primitive_type<double>()));
+    EXPECT_EQ(TypeConsistency::EQUALS , the_str.is_compatible(other_str));
+    EXPECT_EQ(TypeConsistency::EQUALS , other_str.is_compatible(the_str));
+    EXPECT_EQ(TypeConsistency::IGNORE_TYPE_WIDTH, the_str.is_compatible(another_str));
+    EXPECT_EQ(TypeConsistency::IGNORE_TYPE_WIDTH, the_str.is_compatible(another_more_str));
+    EXPECT_EQ(TypeConsistency::IGNORE_TYPE_WIDTH, another_str.is_compatible(another_more_str));
+}
+
+TEST (Consistency, testing_is_compatible_structure_of_array_small_bound)
 {
     StructType the_str("check");
     ArrayType the_array(primitive_type<uint32_t>(), 10);
+    the_str.add_member(Member("arr", the_array));
+    StructType other_str("other_check");
+    other_str.add_member(Member("arr", the_array));
+    EXPECT_EQ(TypeConsistency::EQUALS , the_str.is_compatible(other_str));
+    EXPECT_EQ(TypeConsistency::EQUALS , other_str.is_compatible(the_str));
+}
+
+TEST (Consistency, testing_is_compatible_structure_of_array_large_bound)
+{
+    StructType the_str("check");
+    ArrayType the_array(primitive_type<uint32_t>(), 15000);
     the_str.add_member(Member("arr", the_array));
     StructType other_str("other_check");
     other_str.add_member(Member("arr", the_array));
@@ -198,7 +245,7 @@ TEST (Consistency, testing_is_compatible_structure_of_array_different_bound_and_
     EXPECT_EQ(TypeConsistency::IGNORE_ARRAY_BOUNDS | TypeConsistency::IGNORE_TYPE_SIGN, another_str.is_compatible(other_str));
 }
 
-TEST (Consistency , wstring_and_wstring_struct)
+TEST (Consistency , wstring_and_string_struct)
 {
     WStringType wst;
     StringType st;
@@ -222,32 +269,17 @@ TEST (Consistency , wstring_and_wstring_struct)
     EXPECT_EQ( TypeConsistency::NONE, struc2.is_compatible(struc1) );
 }
 
-TEST (Consistency, Array_qos)
-{
-
-    ArrayType a_arr(primitive_type<uint8_t>(), 10);
-    ArrayType b_arr(primitive_type<int32_t>(), 11);
-
-    EXPECT_EQ(TypeConsistency::IGNORE_ARRAY_BOUNDS |
-              TypeConsistency::IGNORE_TYPE_WIDTH |
-              TypeConsistency::IGNORE_TYPE_SIGN , a_arr.is_compatible(b_arr));
-
-}
-
 TEST (Consistency, mixed_types)
 {
     StructType a("composition");
     StructType b("composition");
+    StructType c("composition");
     StringType a_string(10);
-    WStringType b_wstring(10);
+    StringType b_string(11);
     SequenceType a_seq(primitive_type<uint32_t>(), 10);
     SequenceType b_seq(primitive_type<int32_t>(), 11);
     ArrayType a_arr(primitive_type<uint16_t>(), 10);
     ArrayType b_arr(primitive_type<int32_t>(), 11);
-
-
-
-    //EXPECT_EQ(TypeConsistency::IGNORE_TYPE_WIDTH, a_string.is_compatible(b_wstring)); //This feature is not supported
 
     EXPECT_EQ(TypeConsistency::IGNORE_SEQUENCE_BOUNDS |
               TypeConsistency::IGNORE_TYPE_SIGN, a_seq.is_compatible(b_seq));
@@ -257,22 +289,35 @@ TEST (Consistency, mixed_types)
               TypeConsistency::IGNORE_TYPE_SIGN , a_arr.is_compatible(b_arr));
 
     a.add_member(
-            //Member("a_string", a_string)).add_member( //Not supported
+            Member("a_string", a_string)).add_member(
             Member("a_seq", a_seq)).add_member(
             Member("a_arr", a_arr)).add_member(
             Member("a_primitive", primitive_type<wchar_t>()));
 
     b.add_member(
-            //Member("b_wstring", b_wstring)).add_member( //Not supported
+            Member("b_string", b_string)).add_member(
             Member("b_seq", b_seq)).add_member(
             Member("b_arr", b_arr));
+
+    c.add_member(
+            Member("a_string", b_string)).add_member(
+            Member("a_seq", b_seq)).add_member(
+            Member("a_arr", b_arr)).add_member(
+            Member("a_primitive", primitive_type<wchar_t>()));
 
     EXPECT_EQ(TypeConsistency::IGNORE_MEMBER_NAMES|
               TypeConsistency::IGNORE_TYPE_SIGN |
               TypeConsistency::IGNORE_TYPE_WIDTH |
               TypeConsistency::IGNORE_SEQUENCE_BOUNDS |
               TypeConsistency::IGNORE_ARRAY_BOUNDS |
-              TypeConsistency::IGNORE_MEMBERS , a.is_compatible(b));
+              TypeConsistency::IGNORE_MEMBERS |
+              TypeConsistency::IGNORE_STRING_BOUNDS, a.is_compatible(b));
+
+    EXPECT_EQ(TypeConsistency::IGNORE_TYPE_SIGN |
+              TypeConsistency::IGNORE_TYPE_WIDTH |
+              TypeConsistency::IGNORE_SEQUENCE_BOUNDS |
+              TypeConsistency::IGNORE_ARRAY_BOUNDS |
+              TypeConsistency::IGNORE_STRING_BOUNDS, a.is_compatible(c));
 }
 
 TEST (Consistency, ignore_member)
