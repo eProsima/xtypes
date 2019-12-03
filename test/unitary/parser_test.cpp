@@ -911,6 +911,7 @@ TEST (IDLParser, real_world_parsing)
 
     Context context;
     context.allow_keyword_identifiers = true;
+    context.ignore_redefinition = true;
     parse(idl_content, context);
     ASSERT_TRUE(context.success);
 }
