@@ -115,7 +115,8 @@ inline std::string ReadableDynamicDataRef::to_string() const
 template<>
 inline std::string ReadableDynamicDataRef::cast<std::string>() const
 {
-    assert(type_.is_primitive_type());
+    xtypes_assert(type_.is_primitive_type(),
+        "Expected a primitive type but '" + type_.name() + "' received while casting data to 'std::string'.");
     switch (type_.kind())
     {
         case TypeKind::BOOLEAN_TYPE:
@@ -257,7 +258,7 @@ inline DynamicData DynamicData::operator - () const
         case TypeKind::FLOAT_128_TYPE:
             DYNAMIC_DATA_NEGATE(long double);
         default:
-            assert(false);
+            xtypes_assert(false, "operator-() isn't available for type '" + type_.name() + "'.");
             break;
     }
 
@@ -300,7 +301,8 @@ inline DynamicData DynamicData::operator * (const ReadableDynamicDataRef& other)
         case TypeKind::FLOAT_128_TYPE:
             DYNAMIC_DATA_OPERATOR_RESULT(long double, *);
         default:
-            assert(false);
+            xtypes_assert(false,
+                "operator*() isn't available for types '" + type_.name() + "' and '" + other.type().name() + "'.");
             return *this;
     }
 }
@@ -332,7 +334,8 @@ inline DynamicData DynamicData::operator / (const ReadableDynamicDataRef& other)
         case TypeKind::FLOAT_128_TYPE:
             DYNAMIC_DATA_OPERATOR_RESULT(long double, /);
         default:
-            assert(false);
+            xtypes_assert(false,
+                "operator/() isn't available for types '" + type_.name() + "' and '" + other.type().name() + "'.");
             return *this;
     }
 
@@ -359,7 +362,8 @@ inline DynamicData DynamicData::operator % (const ReadableDynamicDataRef& other)
         case TypeKind::UINT_64_TYPE:
             DYNAMIC_DATA_OPERATOR_RESULT(uint64_t, %);
         default:
-            assert(false);
+            xtypes_assert(false,
+                "operator%() isn't available for types '" + type_.name() + "' and '" + other.type().name() + "'.");
             return *this;
     }
 
@@ -392,7 +396,8 @@ inline DynamicData DynamicData::operator + (const ReadableDynamicDataRef& other)
         case TypeKind::FLOAT_128_TYPE:
             DYNAMIC_DATA_OPERATOR_RESULT(long double, +);
         default:
-            assert(false);
+            xtypes_assert(false,
+                "operator+() isn't available for types '" + type_.name() + "' and '" + other.type().name() + "'.");
             return *this;
     }
 
@@ -425,7 +430,8 @@ inline DynamicData DynamicData::operator - (const ReadableDynamicDataRef& other)
         case TypeKind::FLOAT_128_TYPE:
             DYNAMIC_DATA_OPERATOR_RESULT(long double, -);
         default:
-            assert(false);
+            xtypes_assert(false,
+                "operator-() isn't available for types '" + type_.name() + "' and '" + other.type().name() + "'.");
             return *this;
     }
 
@@ -452,7 +458,8 @@ inline DynamicData DynamicData::operator << (const ReadableDynamicDataRef& other
         case TypeKind::UINT_64_TYPE:
             DYNAMIC_DATA_OPERATOR_RESULT(uint64_t, <<);
         default:
-            assert(false);
+            xtypes_assert(false,
+                "operator<<() isn't available for types '" + type_.name() + "' and '" + other.type().name() + "'.");
             return *this;
     }
 
@@ -479,7 +486,8 @@ inline DynamicData DynamicData::operator >> (const ReadableDynamicDataRef& other
         case TypeKind::UINT_64_TYPE:
             DYNAMIC_DATA_OPERATOR_RESULT(uint64_t, >>);
         default:
-            assert(false);
+            xtypes_assert(false,
+                "operator>>() isn't available for types '" + type_.name() + "' and '" + other.type().name() + "'.");
             return *this;
     }
 
@@ -506,7 +514,8 @@ inline DynamicData DynamicData::operator & (const ReadableDynamicDataRef& other)
         case TypeKind::UINT_64_TYPE:
             DYNAMIC_DATA_OPERATOR_RESULT(uint64_t, &);
         default:
-            assert(false);
+            xtypes_assert(false,
+                "operator&() isn't available for types '" + type_.name() + "' and '" + other.type().name() + "'.");
             return *this;
     }
 
@@ -533,7 +542,8 @@ inline DynamicData DynamicData::operator ^ (const ReadableDynamicDataRef& other)
         case TypeKind::UINT_64_TYPE:
             DYNAMIC_DATA_OPERATOR_RESULT(uint64_t, ^);
         default:
-            assert(false);
+            xtypes_assert(false,
+                "operator^() isn't available for types '" + type_.name() + "' and '" + other.type().name() + "'.");
             return *this;
     }
 
@@ -560,7 +570,8 @@ inline DynamicData DynamicData::operator | (const ReadableDynamicDataRef& other)
         case TypeKind::UINT_64_TYPE:
             DYNAMIC_DATA_OPERATOR_RESULT(uint64_t, |);
         default:
-            assert(false);
+            xtypes_assert(false,
+                "operator|() isn't available for types '" + type_.name() + "' and '" + other.type().name() + "'.");
             return *this;
     }
 

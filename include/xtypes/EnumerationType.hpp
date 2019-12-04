@@ -33,7 +33,9 @@ public:
             const std::string& name,
             T value)
     {
-        assert(value >= next_value_); // New values must be always greater than the previous ones
+        // New values must be always greater than the previous ones
+        xtypes_assert(value >= next_value_,
+            "Expected a value greater than " + std::to_string(next_value_) + " but received " + std::to_string(value));
         EnumeratedType<T>::insert_enumerator(name, value);
         next_value_ = value + 1;
         return *this;

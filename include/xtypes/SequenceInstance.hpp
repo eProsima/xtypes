@@ -21,7 +21,6 @@
 
 #include <cstdint>
 #include <cstring>
-#include <cassert>
 
 namespace eprosima {
 namespace xtypes {
@@ -180,7 +179,8 @@ public:
     uint8_t* operator [] (
             uint32_t index) const
     {
-        assert(index < size_);
+        xtypes_assert(index < size_,
+            "operator [" + std::to_string(index) + "] is out of bounds.");
         return memory_ + index * block_size_;
     }
 

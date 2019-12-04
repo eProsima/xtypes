@@ -515,7 +515,7 @@ TEST (IDLParser, constants)
                     const string C_STRING = "Hola" + 55;
                                )");
             },
-            ".* Assertion .false. failed."
+            "Assertion failed"
         );
     }
     catch(const Parser::exception& /*exc*/)

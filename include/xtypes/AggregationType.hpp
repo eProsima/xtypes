@@ -24,7 +24,6 @@
 #include <string>
 #include <map>
 #include <vector>
-#include <cassert>
 
 namespace eprosima {
 namespace xtypes {
@@ -49,7 +48,8 @@ public:
     /// \returns A reference to the found member.
     const Member& member(size_t index) const
     {
-        assert(index < members().size());
+        xtypes_assert(index < members().size(),
+          "member(" + std::to_string(index) + ") is out of bounds.");
         return members_[index];
     }
 
@@ -59,7 +59,8 @@ public:
     /// \returns A reference to the found member.
     const Member& member(const std::string& name) const
     {
-        assert(has_member(name));
+        xtypes_assert(has_member(name),
+            "Type '" + this->name() + "' doesn't have a member named '" + name + "'.");
         return members_[indexes_.at(name)];
     }
 
@@ -76,7 +77,8 @@ protected:
     /// \returns A reference to the internal member.
     Member& insert_member(const Member& member)
     {
-        assert(!has_member(member.name()));
+        xtypes_assert(!has_member(member.name()),
+            "Type '" + name() + "' already have a member named '" + member.name() + "'.");
         indexes_.emplace(member.name(), members_.size());
         members_.emplace_back(member);
         return members_.back();
