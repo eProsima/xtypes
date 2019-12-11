@@ -1,0 +1,17 @@
+name: C/C++ CI
+
+on: [pull_request]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v1
+    - name: cmake debug
+      run: cmake . -DXTYPES_BUILD_TESTS=ON -DXTYPES_BUILD_EXAMPLES=ON -DCMAKE_BUILD_TYPE=Debug
+    - name: make
+      run: make
+    - name: action-gtest      
+      run: ./xtypes_test_unitary && ./xtypes_idl_parser_test_unitary
