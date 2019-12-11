@@ -20,6 +20,7 @@
 
 #include <execinfo.h>
 #include <iostream>
+#include <sstream>
 
 #if !defined(NDEBUG)
 
@@ -29,26 +30,24 @@
     {                                                                                                               \
         if (!(cond))                                                                                                \
         {                                                                                                           \
-            std::string msg__ = "[XTYPES]: ";                                                                       \
-            msg__.append(__FILE__ + std::string(":") + std::to_string(__LINE__) + std::string(" - "));              \
-            msg__.append(std::string("Assertion failed with message: "));                                           \
-            msg__.append(msg + std::string("\n"));                                                                  \
+            std::stringstream ss__;                                                                                 \
+            ss__ << "[XTYPES]: ";                                                                                   \
+            ss__ << __FILE__ << ":" << __LINE__ << " - ";                                                           \
+            ss__ << "Assertion failed with message: ";                                                              \
+            ss__ << msg << std::endl;                                                                            \
             if (bt)                                                                                                 \
             {                                                                                                       \
                 void* callstack[128];                                                                               \
                 int frames = backtrace(callstack, 128);                                                             \
                 char** symbols = backtrace_symbols(callstack, frames);                                              \
-                std::string bt__;                                                                                   \
+                ss__ << std::endl << "Backtrace:" << std::endl;                                                     \
                 for (int i = 0; i < frames; ++i)                                                                    \
                 {                                                                                                   \
-                    bt__ += std::string(symbols[i]);                                                                \
-                    bt__ += std::string("\n");                                                                      \
+                    ss__ << symbols[i] << std::endl;                                                                \
                 }                                                                                                   \
-                msg__.append(std::string("\nBacktrace:\n"));                                                        \
-                msg__.append(bt__);                                                                                 \
                 free(symbols);                                                                                      \
             }                                                                                                       \
-            std::cerr << msg__ << std::endl;                                                                        \
+            std::cerr << ss__.str() << std::endl;                                                                         \
             std::abort();                                                                                           \
         }                                                                                                           \
     }                                                                                                               \

@@ -85,7 +85,7 @@ public:
             const DynamicType& other) const override
     {
         xtypes_assert(other.kind() == TypeKind::SEQUENCE_TYPE,
-            "Cannot copy data from different types: From '" + other.name() + "' to '" + name() + "'.");
+            "Cannot copy data from different types: From '" << other.name() << "' to '" << name() << "'.");
         (void) other;
         new (target) SequenceInstance(*reinterpret_cast<const SequenceInstance*>(source), content_type(), bounds());
     }

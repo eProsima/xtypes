@@ -180,7 +180,7 @@ public:
             uint32_t index) const
     {
         xtypes_assert(index < size_,
-            "operator [" + std::to_string(index) + "] is out of bounds.");
+            "operator [" << index << "] is out of bounds.");
         return memory_ + index * block_size_;
     }
 

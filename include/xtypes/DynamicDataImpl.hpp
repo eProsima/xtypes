@@ -116,7 +116,7 @@ template<>
 inline std::string ReadableDynamicDataRef::cast<std::string>() const
 {
     xtypes_assert(type_.is_primitive_type(),
-        "Expected a primitive type but '" + type_.name() + "' received while casting data to 'std::string'.");
+        "Expected a primitive type but '" << type_.name() << "' received while casting data to 'std::string'.");
     switch (type_.kind())
     {
         case TypeKind::BOOLEAN_TYPE:
@@ -258,7 +258,7 @@ inline DynamicData DynamicData::operator - () const
         case TypeKind::FLOAT_128_TYPE:
             DYNAMIC_DATA_NEGATE(long double);
         default:
-            xtypes_assert(false, "operator-() isn't available for type '" + type_.name() + "'.");
+            xtypes_assert(false, "operator-() isn't available for type '" << type_.name() << "'.");
             break;
     }
 
@@ -302,7 +302,7 @@ inline DynamicData DynamicData::operator * (const ReadableDynamicDataRef& other)
             DYNAMIC_DATA_OPERATOR_RESULT(long double, *);
         default:
             xtypes_assert(false,
-                "operator*() isn't available for types '" + type_.name() + "' and '" + other.type().name() + "'.");
+                "operator*() isn't available for types '" << type_.name() << "' and '" << other.type().name() << "'.");
             return *this;
     }
 }
@@ -335,7 +335,7 @@ inline DynamicData DynamicData::operator / (const ReadableDynamicDataRef& other)
             DYNAMIC_DATA_OPERATOR_RESULT(long double, /);
         default:
             xtypes_assert(false,
-                "operator/() isn't available for types '" + type_.name() + "' and '" + other.type().name() + "'.");
+                "operator/() isn't available for types '" << type_.name() << "' and '" << other.type().name() << "'.");
             return *this;
     }
 
@@ -363,7 +363,7 @@ inline DynamicData DynamicData::operator % (const ReadableDynamicDataRef& other)
             DYNAMIC_DATA_OPERATOR_RESULT(uint64_t, %);
         default:
             xtypes_assert(false,
-                "operator%() isn't available for types '" + type_.name() + "' and '" + other.type().name() + "'.");
+                "operator%() isn't available for types '" << type_.name() << "' and '" << other.type().name() << "'.");
             return *this;
     }
 
@@ -397,7 +397,7 @@ inline DynamicData DynamicData::operator + (const ReadableDynamicDataRef& other)
             DYNAMIC_DATA_OPERATOR_RESULT(long double, +);
         default:
             xtypes_assert(false,
-                "operator+() isn't available for types '" + type_.name() + "' and '" + other.type().name() + "'.");
+                "operator<<() isn't available for types '" << type_.name() << "' and '" << other.type().name() << "'.");
             return *this;
     }
 
@@ -431,7 +431,7 @@ inline DynamicData DynamicData::operator - (const ReadableDynamicDataRef& other)
             DYNAMIC_DATA_OPERATOR_RESULT(long double, -);
         default:
             xtypes_assert(false,
-                "operator-() isn't available for types '" + type_.name() + "' and '" + other.type().name() + "'.");
+                "operator-() isn't available for types '" << type_.name() << "' and '" << other.type().name() << "'.");
             return *this;
     }
 
@@ -459,7 +459,7 @@ inline DynamicData DynamicData::operator << (const ReadableDynamicDataRef& other
             DYNAMIC_DATA_OPERATOR_RESULT(uint64_t, <<);
         default:
             xtypes_assert(false,
-                "operator<<() isn't available for types '" + type_.name() + "' and '" + other.type().name() + "'.");
+                "operator<<() isn't available for types '" << type_.name() << "' and '" << other.type().name() << "'.");
             return *this;
     }
 
@@ -487,7 +487,7 @@ inline DynamicData DynamicData::operator >> (const ReadableDynamicDataRef& other
             DYNAMIC_DATA_OPERATOR_RESULT(uint64_t, >>);
         default:
             xtypes_assert(false,
-                "operator>>() isn't available for types '" + type_.name() + "' and '" + other.type().name() + "'.");
+                "operator>>() isn't available for types '" << type_.name() << "' and '" << other.type().name() << "'.");
             return *this;
     }
 
@@ -515,7 +515,7 @@ inline DynamicData DynamicData::operator & (const ReadableDynamicDataRef& other)
             DYNAMIC_DATA_OPERATOR_RESULT(uint64_t, &);
         default:
             xtypes_assert(false,
-                "operator&() isn't available for types '" + type_.name() + "' and '" + other.type().name() + "'.");
+                "operator&() isn't available for types '" << type_.name() << "' and '" << other.type().name() << "'.");
             return *this;
     }
 
@@ -543,7 +543,7 @@ inline DynamicData DynamicData::operator ^ (const ReadableDynamicDataRef& other)
             DYNAMIC_DATA_OPERATOR_RESULT(uint64_t, ^);
         default:
             xtypes_assert(false,
-                "operator^() isn't available for types '" + type_.name() + "' and '" + other.type().name() + "'.");
+                "operator^() isn't available for types '" << type_.name() << "' and '" << other.type().name() << "'.");
             return *this;
     }
 
@@ -571,7 +571,7 @@ inline DynamicData DynamicData::operator | (const ReadableDynamicDataRef& other)
             DYNAMIC_DATA_OPERATOR_RESULT(uint64_t, |);
         default:
             xtypes_assert(false,
-                "operator|() isn't available for types '" + type_.name() + "' and '" + other.type().name() + "'.");
+                "operator|() isn't available for types '" << type_.name() << "' and '" << other.type().name() << "'.");
             return *this;
     }
 

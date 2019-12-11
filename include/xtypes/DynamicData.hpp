@@ -103,14 +103,14 @@ public:
             || (type_.kind() == TypeKind::WSTRING_TYPE && std::is_same<std::wstring, T>::value)
             || (type_.kind() == primitive_type<T>().kind())
             || (type_.is_enumerated_type()),
-            "Expected type '" + type_.name()
-            + "' but '" + std::string(PrimitiveTypeKindTrait<T>::name) + "' received while getting value.");
+            "Expected type '" << type_.name()
+            << "' but '" << PrimitiveTypeKindTrait<T>::name << "' received while getting value.");
 
         if (type_.is_enumerated_type())
         {
             xtypes_assert(type_.memory_size() == sizeof(T),
-                "Incompatible types: '" + type_.name() + "' and '"
-                + std::string(PrimitiveTypeKindTrait<T>::name) + "'.");
+                "Incompatible types: '" << type_.name() << "' and '"
+                << PrimitiveTypeKindTrait<T>::name << "'.");
         }
 
         return *reinterpret_cast<T*>(instance_);
@@ -125,10 +125,10 @@ public:
             const std::string& member_name) const
     {
         xtypes_assert(type_.is_aggregation_type(),
-            "operator [const std::string&] isn't available for type '" + type_.name() + "'.");
+            "operator [const std::string&] isn't available for type '" << type_.name() << "'.");
         const AggregationType& aggregation = static_cast<const AggregationType&>(type_);
         xtypes_assert(aggregation.has_member(member_name),
-            "Type '" + type_.name() + "' doesn't have a member named '" + member_name + "'.");
+            "Type '" << type_.name() << "' doesn't have a member named '" << member_name << "'.");
 
         const Member& member = aggregation.member(member_name);
         return ReadableDynamicDataRef(member.type(), instance_ + member.offset());
@@ -144,9 +144,9 @@ public:
             size_t index) const
     {
         xtypes_assert((type_.is_aggregation_type() || type_.is_collection_type()),
-            "operator [size_t] isn't available for type '" + type_.name() + "'.");
+            "operator [size_t] isn't available for type '" << type_.name() << "'.");
         xtypes_assert(index < size(),
-                      "operator [" + std::to_string(index) + "] is out of bounds.");
+            "operator [" << index << "] is out of bounds.");
         if(type_.is_collection_type())
         {
             const CollectionType& collection = static_cast<const CollectionType&>(type_);
@@ -166,7 +166,7 @@ public:
     size_t size() const
     {
         xtypes_assert(type_.is_collection_type() || type_.is_aggregation_type(),
-            "size() isn't available for type '" + type_.name() + "'.");
+            "size() isn't available for type '" << type_.name() << "'.");
         if(type_.is_collection_type())
         {
             const CollectionType& collection = static_cast<const CollectionType&>(type_);
@@ -187,7 +187,7 @@ public:
     size_t bounds() const
     {
         xtypes_assert(type_.is_collection_type(),
-            "bounds() isn't available for type '" + type_.name() + "'.");
+            "bounds() isn't available for type '" << type_.name() << "'.");
         if (type_.is_collection_type())
         {
             if (type_.kind() == TypeKind::ARRAY_TYPE)
@@ -208,12 +208,12 @@ public:
     {
         const CollectionType& collection = static_cast<const CollectionType&>(type_);
         xtypes_assert(type_.is_collection_type(),
-            "as_vector() isn't available for type '" + type_.name() + "'.");
+            "as_vector() isn't available for type '" << type_.name() << "'.");
         xtypes_assert((collection.content_type().kind() == TypeKind::STRING_TYPE && std::is_same<std::string, T>::value)
             || (collection.content_type().kind() == TypeKind::WSTRING_TYPE && std::is_same<std::wstring, T>::value)
             || (collection.content_type().kind() == primitive_type<T>().kind()),
-            "as_vector<" + std::string(PrimitiveTypeKindTrait<T>::name) + ">() isn't available for type '"
-            + type_.name() + "'.");
+            "as_vector<" << PrimitiveTypeKindTrait<T>::name << ">() isn't available for type '"
+            << type_.name() << "'.");
 
         const T* location = reinterpret_cast<T*>(collection.get_instance_at(instance_, 0));
         return std::vector<T>(location, location + size());
@@ -240,8 +240,8 @@ public:
         ReadableNode parent() const
         {
             xtypes_assert(has_parent(),
-                "Called 'parent()' from a ReadableNode without parent. Call 'has_parent()' to ensure that the \
-Node has parent.");
+                "Called 'parent()' from a ReadableNode without parent. Call 'has_parent()' to ensure that the "
+                << "Node has parent.");
             return ReadableNode(*internal_.parent);
         }
 
@@ -360,7 +360,7 @@ Node has parent.");
     Iterator begin() const
     {
         xtypes_assert(type_.is_collection_type(),
-            "begin() isn't available for type '" + type_.name() + "'.");
+            "begin() isn't available for type '" << type_.name() << "'.");
         return Iterator(*this, false);
     }
 
@@ -370,7 +370,7 @@ Node has parent.");
     Iterator end() const
     {
         xtypes_assert(type_.is_collection_type(),
-            "end() isn't available for type '" + type_.name() + "'.");
+            "end() isn't available for type '" << type_.name() << "'.");
         return Iterator(*this, true);
     }
 
@@ -439,14 +439,14 @@ Node has parent.");
         MemberIterator begin() const
         {
             xtypes_assert(type_.is_aggregation_type(),
-                "begin() isn't available for type '" + type_.name() + "'.");
+                "begin() isn't available for type '" << type_.name() << "'.");
             return MemberIterator(ref_, false);
         }
 
         MemberIterator end() const
         {
             xtypes_assert(type_.is_aggregation_type(),
-                "end() isn't available for type '" + type_.name() + "'.");
+                "end() isn't available for type '" << type_.name() << "'.");
             return MemberIterator(ref_, true);
         }
 
@@ -471,7 +471,7 @@ Node has parent.");
     MemberIterator items() const
     {
         xtypes_assert(type_.is_aggregation_type(),
-            "items() isn't available for type '" + type_.name() + "'.");
+            "items() isn't available for type '" << type_.name() << "'.");
         return MemberIterator(*this, false);
     }
 
@@ -495,7 +495,7 @@ protected:
     inline T _cast() const
     {
         xtypes_assert(type_.is_primitive_type(),
-            "Expected a primitive type but '" + PrimitiveTypeKindTrait<T>::name + "' received while casting data.");
+            "Expected a primitive type but '" << PrimitiveTypeKindTrait<T>::name << "' received while casting data.");
         switch (type_.kind())
         {
             case TypeKind::BOOLEAN_TYPE:
@@ -673,18 +673,18 @@ public:
             || (type_.kind() == TypeKind::WSTRING_TYPE && std::is_same<std::wstring, T>::value)
             || (type_.kind() == PrimitiveTypeKindTrait<T>::kind)
             || (type_.is_enumerated_type()),
-            "Expected type '" + type_.name()
-                + "' but '" + PrimitiveTypeKindTrait<T>::name + "' received while setting value.");
+            "Expected type '" << type_.name()
+                << "' but '" << PrimitiveTypeKindTrait<T>::name << "' received while setting value.");
 
 
         if (type_.is_enumerated_type())
         {
             xtypes_assert(type_.memory_size() == sizeof(T),
-                "Incompatible types: '" + type_.name() + "' and '"
-                + std::string(PrimitiveTypeKindTrait<T>::name) + "'.");
+                "Incompatible types: '" << type_.name() << "' and '"
+                << PrimitiveTypeKindTrait<T>::name << "'.");
             const EnumeratedType<T>& enum_type = static_cast<const EnumeratedType<T>&>(type_);
             xtypes_assert(enum_type.is_allowed_value(t),
-                "Trying to set an invalid value for enumerated type '" + type_.name() + "'.");
+                "Trying to set an invalid value for enumerated type '" << type_.name() << "'.");
         }
 
         type_.destroy_instance(instance_);
@@ -700,13 +700,13 @@ public:
     WritableDynamicDataRef& push(const T& t) // this = SequenceType
     {
         xtypes_assert(type_.kind() == TypeKind::SEQUENCE_TYPE,
-            "push() is only available for sequence types but called for '" + type_.name() + "'.");
+            "push() is only available for sequence types but called for '" << type_.name() << "'.");
         const SequenceType& sequence = static_cast<const SequenceType&>(type_);
         xtypes_assert((sequence.content_type().kind() == TypeKind::STRING_TYPE && std::is_same<std::string, T>::value)
             || (sequence.content_type().kind() == TypeKind::WSTRING_TYPE && std::is_same<std::wstring, T>::value)
             || (sequence.content_type().kind() == primitive_type<T>().kind()),
-            "Expected type '" + static_cast<const SequenceType&>(type_).content_type().name()
-                + "' but '" + PrimitiveTypeKindTrait<T>::name + "' received while pushing value.");
+            "Expected type '" << static_cast<const SequenceType&>(type_).content_type().name()
+                << "' but '" << PrimitiveTypeKindTrait<T>::name << "' received while pushing value.");
 
         uint8_t* element = sequence.push_instance(instance_, reinterpret_cast<const uint8_t*>(&t));
         xtypes_assert(element != nullptr, "Bound limit reached while pushing value."); (void) element;
@@ -721,7 +721,7 @@ public:
     WritableDynamicDataRef& push(const ReadableDynamicDataRef& data) // this = SequenceType
     {
         xtypes_assert(type_.kind() == TypeKind::SEQUENCE_TYPE,
-            "push() is only available for sequence types but called for '" + type_.name() + "'.");
+            "push() is only available for sequence types but called for '" << type_.name() << "'.");
         const SequenceType& sequence = static_cast<const SequenceType&>(type_);
 
         uint8_t* element = sequence.push_instance(instance_, p_instance(data));
@@ -738,7 +738,7 @@ public:
     WritableDynamicDataRef& resize(size_t size) // this = SequenceType
     {
         xtypes_assert(type_.kind() == TypeKind::SEQUENCE_TYPE,
-            "resize() is only available for sequence types but called for '" + type_.name() + "'.");
+            "resize() is only available for sequence types but called for '" << type_.name() << "'.");
         const SequenceType& sequence = static_cast<const SequenceType&>(type_);
 
         sequence.resize_instance(instance_, size);
@@ -910,7 +910,7 @@ public:
     MemberIterator items()
     {
         xtypes_assert(type_.is_aggregation_type(),
-            "items() isn't available for type '" + type_.name() + "'.");
+            "items() isn't available for type '" << type_.name() << "'.");
         return MemberIterator(*this, false);
     }
 
@@ -920,7 +920,7 @@ public:
     ReadableDynamicDataRef::MemberIterator citems()
     {
         xtypes_assert(type_.is_aggregation_type(),
-            "citems() isn't available for type '" + type_.name() + "'.");
+            "citems() isn't available for type '" << type_.name() << "'.");
         return ReadableDynamicDataRef::MemberIterator(*this, false);
     }
 
@@ -983,7 +983,7 @@ public:
     {
         xtypes_assert(type_.is_compatible(other.type()) != TypeConsistency::NONE,
             "Incompatible types in DynamicData(const ReadableDynamicDataRef&, const DynamicType&): '"
-            + type_.name() + "' isn't compatible with '" + other.type().name() + "'.");
+            << type_.name() << "' isn't compatible with '" << other.type().name() << "'.");
         type_.copy_instance_from_type(instance_, p_instance(other), other.type());
     }
 
@@ -1006,8 +1006,8 @@ public:
             const DynamicData& other)
     {
         xtypes_assert(type_.is_compatible(other.type()) == TypeConsistency::EQUALS,
-            "Cannot assign DynamicData of type '" + other.type().name() + "' to DynamicData of type '"
-            + type_.name() + "'.");
+            "Cannot assign DynamicData of type '" << other.type().name() << "' to DynamicData of type '"
+            << type_.name() << "'.");
         type_.destroy_instance(instance_);
         type_.copy_instance(instance_, p_instance(other));
         return *this;

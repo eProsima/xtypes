@@ -49,7 +49,7 @@ public:
     const Member& member(size_t index) const
     {
         xtypes_assert(index < members().size(),
-          "member(" + std::to_string(index) + ") is out of bounds.");
+            "member(" << index << ") is out of bounds.");
         return members_[index];
     }
 
@@ -60,7 +60,7 @@ public:
     const Member& member(const std::string& name) const
     {
         xtypes_assert(has_member(name),
-            "Type '" + this->name() + "' doesn't have a member named '" + name + "'.");
+            "Type '" << this->name() << "' doesn't have a member named '" << name << "'.");
         return members_[indexes_.at(name)];
     }
 
@@ -78,7 +78,7 @@ protected:
     Member& insert_member(const Member& member)
     {
         xtypes_assert(!has_member(member.name()),
-            "Type '" + name() + "' already have a member named '" + member.name() + "'.");
+            "Type '" << name() << "' already have a member named '" << member.name() << "'.");
         indexes_.emplace(member.name(), members_.size());
         members_.emplace_back(member);
         return members_.back();

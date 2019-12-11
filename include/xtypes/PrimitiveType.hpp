@@ -148,7 +148,7 @@ protected:
                 *reinterpret_cast<T*>(target) = *reinterpret_cast<const long double*>(source);
                 break;
             default:
-                xtypes_assert(false, "Primitive DynamicData of an unknown type: '" + name() + "'."); //Must not reached
+                xtypes_assert(false, "Primitive DynamicData of an unknown type: '" << name() << "'."); //Must not reached
         }
     }
 

@@ -71,7 +71,7 @@ public:
             const DynamicType& other) const override
     {
         xtypes_assert(other.kind() == KIND,
-            "Cannot copy data from different types: From '" + other.name() + "' to '" + name() + "'.");
+            "Cannot copy data from different types: From '" << other.name() << "' to '" << name() << "'.");
         (void) other;
         const std::basic_string<CHAR_T>& source_string = *reinterpret_cast<const std::basic_string<CHAR_T>*>(source);
         size_t max_size = bounds() > 0 ? size_t(bounds()) : std::basic_string<CHAR_T>::npos;
