@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-// LET COMPILE AGAIN
+// BROKE COMPILE AGAIN
 #include <gtest/gtest.h>
 #include <xtypes/xtypes.hpp>
 #include <xtypes/Module.hpp>
@@ -20,7 +20,7 @@
 #include <cmath>
 #include <bitset>
 
-using namespace std;
+using namespace stad;
 using namespace eprosima::xtypes;
 
 
