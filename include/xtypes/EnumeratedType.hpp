@@ -22,7 +22,6 @@
 
 #include <string>
 #include <map>
-#include <cassert>
 
 namespace eprosima {
 namespace xtypes {
@@ -44,11 +43,13 @@ public:
 
     /// \brief Get a enumerator value by name. O(log(n)).
     /// \param[in] name EnumMember name.
-    /// \pre has_member() == true
+    /// \pre has_enumerator() == true
     /// \returns A reference to the found enumerator.
     T value(const std::string& name) const
     {
-        assert(has_enumerator(name));
+        xtypes_assert(has_enumerator(name),
+            "Type '" + this->name() + "' doesn't have an enumerator named '" + name
+            + "'. Use 'has_enumerator' function to ensure the asked enumerator exists.");
         return values_.at(name);
     }
 
@@ -117,7 +118,8 @@ protected:
     /// \returns A reference to the EnumeratedType (this).
     EnumeratedType& insert_enumerator(const std::string& name, T value)
     {
-        assert(!has_enumerator(name));
+        xtypes_assert(!has_enumerator(name),
+            "Type '" + this->name() + "' already has an enumerator named '" + name + "'.");
         values_.emplace(name, value);
         return *this;
     }

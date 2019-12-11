@@ -20,7 +20,6 @@
 #include <xtypes/DynamicType.hpp>
 
 #include <cstring>
-#include <cassert>
 
 namespace eprosima {
 namespace xtypes {
@@ -104,7 +103,9 @@ protected:
             const uint8_t* source,
             const DynamicType& other) const override
     {
-        assert(other.is_primitive_type()); (void) other;
+        xtypes_assert(other.is_primitive_type(),
+            "Cannot copy data from type '" + other.name() + "' to type '" + name() + "'.");
+        (void) other;
         switch(other.kind())
         {
             case TypeKind::BOOLEAN_TYPE:
@@ -147,7 +148,7 @@ protected:
                 *reinterpret_cast<T*>(target) = *reinterpret_cast<const long double*>(source);
                 break;
             default:
-                assert(false); //Must not reached
+                xtypes_assert(false, "Primitive DynamicData of an unknown type: '" << name() << "'."); //Must not reached
         }
     }
 

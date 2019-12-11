@@ -22,7 +22,6 @@
 #include <xtypes/SequenceInstance.hpp>
 
 #include <vector>
-#include <cassert>
 
 namespace eprosima {
 namespace xtypes {
@@ -85,7 +84,9 @@ public:
             const uint8_t* source,
             const DynamicType& other) const override
     {
-        assert(other.kind() == TypeKind::SEQUENCE_TYPE); (void) other;
+        xtypes_assert(other.kind() == TypeKind::SEQUENCE_TYPE,
+            "Cannot copy data from different types: From '" << other.name() << "' to '" << name() << "'.");
+        (void) other;
         new (target) SequenceInstance(*reinterpret_cast<const SequenceInstance*>(source), content_type(), bounds());
     }
 

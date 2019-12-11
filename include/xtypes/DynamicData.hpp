@@ -23,8 +23,6 @@
 #include <xtypes/PrimitiveType.hpp>
 #include <xtypes/EnumerationType.hpp>
 
-#include <cassert>
-
 namespace eprosima {
 namespace xtypes {
 
@@ -101,14 +99,18 @@ public:
     template<typename T, class = PrimitiveOrString<T>>
     const T& value() const
     {
-        assert((type_.kind() == TypeKind::STRING_TYPE && std::is_same<std::string, T>::value)
+        xtypes_assert((type_.kind() == TypeKind::STRING_TYPE && std::is_same<std::string, T>::value)
             || (type_.kind() == TypeKind::WSTRING_TYPE && std::is_same<std::wstring, T>::value)
             || (type_.kind() == primitive_type<T>().kind())
-            || (type_.is_enumerated_type()));
+            || (type_.is_enumerated_type()),
+            "Expected type '" << type_.name()
+            << "' but '" << PrimitiveTypeKindTrait<T>::name << "' received while getting value.");
 
         if (type_.is_enumerated_type())
         {
-            assert(type_.memory_size() == sizeof(T));
+            xtypes_assert(type_.memory_size() == sizeof(T),
+                "Incompatible types: '" << type_.name() << "' and '"
+                << PrimitiveTypeKindTrait<T>::name << "'.");
         }
 
         return *reinterpret_cast<T*>(instance_);
@@ -122,9 +124,11 @@ public:
     ReadableDynamicDataRef operator [] (
             const std::string& member_name) const
     {
-        assert(type_.is_aggregation_type());
+        xtypes_assert(type_.is_aggregation_type(),
+            "operator [const std::string&] isn't available for type '" << type_.name() << "'.");
         const AggregationType& aggregation = static_cast<const AggregationType&>(type_);
-        assert(aggregation.has_member(member_name));
+        xtypes_assert(aggregation.has_member(member_name),
+            "Type '" << type_.name() << "' doesn't have a member named '" << member_name << "'.");
 
         const Member& member = aggregation.member(member_name);
         return ReadableDynamicDataRef(member.type(), instance_ + member.offset());
@@ -139,7 +143,10 @@ public:
     ReadableDynamicDataRef operator [] (
             size_t index) const
     {
-        assert((type_.is_aggregation_type() || type_.is_collection_type()) && index < size());
+        xtypes_assert((type_.is_aggregation_type() || type_.is_collection_type()),
+            "operator [size_t] isn't available for type '" << type_.name() << "'.");
+        xtypes_assert(index < size(),
+            "operator [" << index << "] is out of bounds.");
         if(type_.is_collection_type())
         {
             const CollectionType& collection = static_cast<const CollectionType&>(type_);
@@ -158,7 +165,8 @@ public:
     /// \returns Element size of the DynamicData.
     size_t size() const
     {
-        assert(type_.is_collection_type() || type_.is_aggregation_type());
+        xtypes_assert(type_.is_collection_type() || type_.is_aggregation_type(),
+            "size() isn't available for type '" << type_.name() << "'.");
         if(type_.is_collection_type())
         {
             const CollectionType& collection = static_cast<const CollectionType&>(type_);
@@ -178,7 +186,8 @@ public:
     /// If the DynamicData represents an Array, then bounds() == size()
     size_t bounds() const
     {
-        assert(type_.is_collection_type());
+        xtypes_assert(type_.is_collection_type(),
+            "bounds() isn't available for type '" << type_.name() << "'.");
         if (type_.is_collection_type())
         {
             if (type_.kind() == TypeKind::ARRAY_TYPE)
@@ -198,10 +207,13 @@ public:
     std::vector<T> as_vector() const
     {
         const CollectionType& collection = static_cast<const CollectionType&>(type_);
-        assert(type_.is_collection_type());
-        assert((collection.content_type().kind() == TypeKind::STRING_TYPE && std::is_same<std::string, T>::value)
+        xtypes_assert(type_.is_collection_type(),
+            "as_vector() isn't available for type '" << type_.name() << "'.");
+        xtypes_assert((collection.content_type().kind() == TypeKind::STRING_TYPE && std::is_same<std::string, T>::value)
             || (collection.content_type().kind() == TypeKind::WSTRING_TYPE && std::is_same<std::wstring, T>::value)
-            || (collection.content_type().kind() == primitive_type<T>().kind()));
+            || (collection.content_type().kind() == primitive_type<T>().kind()),
+            "as_vector<" << PrimitiveTypeKindTrait<T>::name << ">() isn't available for type '"
+            << type_.name() << "'.");
 
         const T* location = reinterpret_cast<T*>(collection.get_instance_at(instance_, 0));
         return std::vector<T>(location, location + size());
@@ -225,7 +237,13 @@ public:
 
         /// \brief Get the parent
         /// \returns A ReadableNode representing the parent in the DynamicData tree.
-        ReadableNode parent() const { assert(has_parent()); return ReadableNode(*internal_.parent); }
+        ReadableNode parent() const
+        {
+            xtypes_assert(has_parent(),
+                "Called 'parent()' from a ReadableNode without parent. Call 'has_parent()' to ensure that the "
+                << "Node has parent.");
+            return ReadableNode(*internal_.parent);
+        }
 
         /// \brief Get the associated data.
         /// \returns A readable reference of the data.
@@ -341,7 +359,8 @@ public:
     /// \returns The initial iterator.
     Iterator begin() const
     {
-        assert(type_.is_collection_type());
+        xtypes_assert(type_.is_collection_type(),
+            "begin() isn't available for type '" << type_.name() << "'.");
         return Iterator(*this, false);
     }
 
@@ -350,7 +369,8 @@ public:
     /// \returns The final iterator.
     Iterator end() const
     {
-        assert(type_.is_collection_type());
+        xtypes_assert(type_.is_collection_type(),
+            "end() isn't available for type '" << type_.name() << "'.");
         return Iterator(*this, true);
     }
 
@@ -418,13 +438,15 @@ public:
 
         MemberIterator begin() const
         {
-            assert(type_.is_aggregation_type());
+            xtypes_assert(type_.is_aggregation_type(),
+                "begin() isn't available for type '" << type_.name() << "'.");
             return MemberIterator(ref_, false);
         }
 
         MemberIterator end() const
         {
-            assert(type_.is_aggregation_type());
+            xtypes_assert(type_.is_aggregation_type(),
+                "end() isn't available for type '" << type_.name() << "'.");
             return MemberIterator(ref_, true);
         }
 
@@ -448,7 +470,8 @@ public:
     /// \returns An iterable representation of an aggregation dynamic data.
     MemberIterator items() const
     {
-        assert(type_.is_aggregation_type());
+        xtypes_assert(type_.is_aggregation_type(),
+            "items() isn't available for type '" << type_.name() << "'.");
         return MemberIterator(*this, false);
     }
 
@@ -471,7 +494,8 @@ protected:
     template<typename T, class = Primitive<T>>
     inline T _cast() const
     {
-        assert(type_.is_primitive_type());
+        xtypes_assert(type_.is_primitive_type(),
+            "Expected a primitive type but '" << PrimitiveTypeKindTrait<T>::name << "' received while casting data.");
         switch (type_.kind())
         {
             case TypeKind::BOOLEAN_TYPE:
@@ -645,16 +669,22 @@ public:
     template<typename T, class = PrimitiveOrString<T>>
     void value(const T& t)
     {
-        assert((type_.kind() == TypeKind::STRING_TYPE && std::is_same<std::string, T>::value)
+        xtypes_assert((type_.kind() == TypeKind::STRING_TYPE && std::is_same<std::string, T>::value)
             || (type_.kind() == TypeKind::WSTRING_TYPE && std::is_same<std::wstring, T>::value)
             || (type_.kind() == PrimitiveTypeKindTrait<T>::kind)
-            || (type_.is_enumerated_type()));
+            || (type_.is_enumerated_type()),
+            "Expected type '" << type_.name()
+                << "' but '" << PrimitiveTypeKindTrait<T>::name << "' received while setting value.");
+
 
         if (type_.is_enumerated_type())
         {
-            assert(type_.memory_size() == sizeof(T));
+            xtypes_assert(type_.memory_size() == sizeof(T),
+                "Incompatible types: '" << type_.name() << "' and '"
+                << PrimitiveTypeKindTrait<T>::name << "'.");
             const EnumeratedType<T>& enum_type = static_cast<const EnumeratedType<T>&>(type_);
-            assert(enum_type.is_allowed_value(t));
+            xtypes_assert(enum_type.is_allowed_value(t),
+                "Trying to set an invalid value for enumerated type '" << type_.name() << "'.");
         }
 
         type_.destroy_instance(instance_);
@@ -669,14 +699,17 @@ public:
     template<typename T, class = PrimitiveOrString<T>>
     WritableDynamicDataRef& push(const T& t) // this = SequenceType
     {
-        assert(type_.kind() == TypeKind::SEQUENCE_TYPE);
+        xtypes_assert(type_.kind() == TypeKind::SEQUENCE_TYPE,
+            "push() is only available for sequence types but called for '" << type_.name() << "'.");
         const SequenceType& sequence = static_cast<const SequenceType&>(type_);
-        assert((sequence.content_type().kind() == TypeKind::STRING_TYPE && std::is_same<std::string, T>::value)
+        xtypes_assert((sequence.content_type().kind() == TypeKind::STRING_TYPE && std::is_same<std::string, T>::value)
             || (sequence.content_type().kind() == TypeKind::WSTRING_TYPE && std::is_same<std::wstring, T>::value)
-            || (sequence.content_type().kind() == primitive_type<T>().kind()));
+            || (sequence.content_type().kind() == primitive_type<T>().kind()),
+            "Expected type '" << static_cast<const SequenceType&>(type_).content_type().name()
+                << "' but '" << PrimitiveTypeKindTrait<T>::name << "' received while pushing value.");
 
         uint8_t* element = sequence.push_instance(instance_, reinterpret_cast<const uint8_t*>(&t));
-        assert(element != nullptr); (void) element;
+        xtypes_assert(element != nullptr, "Bound limit reached while pushing value."); (void) element;
         return *this;
     }
 
@@ -687,11 +720,12 @@ public:
     /// \returns The writable reference to this DynamicData
     WritableDynamicDataRef& push(const ReadableDynamicDataRef& data) // this = SequenceType
     {
-        assert(type_.kind() == TypeKind::SEQUENCE_TYPE);
+        xtypes_assert(type_.kind() == TypeKind::SEQUENCE_TYPE,
+            "push() is only available for sequence types but called for '" << type_.name() << "'.");
         const SequenceType& sequence = static_cast<const SequenceType&>(type_);
 
         uint8_t* element = sequence.push_instance(instance_, p_instance(data));
-        assert(element != nullptr); (void) element;
+        xtypes_assert(element != nullptr, "Bound limit reached while pushing value."); (void) element;
         return *this;
     }
 
@@ -703,7 +737,8 @@ public:
     /// \returns The writable reference to this DynamicData
     WritableDynamicDataRef& resize(size_t size) // this = SequenceType
     {
-        assert(type_.kind() == TypeKind::SEQUENCE_TYPE);
+        xtypes_assert(type_.kind() == TypeKind::SEQUENCE_TYPE,
+            "resize() is only available for sequence types but called for '" << type_.name() << "'.");
         const SequenceType& sequence = static_cast<const SequenceType&>(type_);
 
         sequence.resize_instance(instance_, size);
@@ -874,6 +909,8 @@ public:
     /// \returns An iterable representation of an aggregation dynamic data.
     MemberIterator items()
     {
+        xtypes_assert(type_.is_aggregation_type(),
+            "items() isn't available for type '" << type_.name() << "'.");
         return MemberIterator(*this, false);
     }
 
@@ -882,7 +919,8 @@ public:
     /// \returns An iterable representation of an aggregation dynamic data.
     ReadableDynamicDataRef::MemberIterator citems()
     {
-        assert(type_.is_aggregation_type());
+        xtypes_assert(type_.is_aggregation_type(),
+            "citems() isn't available for type '" << type_.name() << "'.");
         return ReadableDynamicDataRef::MemberIterator(*this, false);
     }
 
@@ -943,7 +981,9 @@ public:
             const DynamicType& type)
         : WritableDynamicDataRef(type, new uint8_t[type.memory_size()])
     {
-        assert(type_.is_compatible(other.type()) != TypeConsistency::NONE);
+        xtypes_assert(type_.is_compatible(other.type()) != TypeConsistency::NONE,
+            "Incompatible types in DynamicData(const ReadableDynamicDataRef&, const DynamicType&): '"
+            << type_.name() << "' isn't compatible with '" << other.type().name() << "'.");
         type_.copy_instance_from_type(instance_, p_instance(other), other.type());
     }
 
@@ -951,7 +991,6 @@ public:
     DynamicData(const DynamicData& other)
         : WritableDynamicDataRef(other.type_, new uint8_t[other.type_.memory_size()])
     {
-        assert(type_.is_compatible(other.type()) == TypeConsistency::EQUALS);
         type_.copy_instance(instance_, p_instance(other));
     }
 
@@ -959,7 +998,6 @@ public:
     DynamicData(DynamicData&& other)
         : WritableDynamicDataRef(other.type_, new uint8_t[other.type_.memory_size()])
     {
-        assert(type_.is_compatible(other.type()) == TypeConsistency::EQUALS);
         type_.move_instance(instance_, p_instance(other));
     }
 
@@ -967,7 +1005,9 @@ public:
     DynamicData& operator = (
             const DynamicData& other)
     {
-        assert(type_.is_compatible(other.type()) == TypeConsistency::EQUALS);
+        xtypes_assert(type_.is_compatible(other.type()) == TypeConsistency::EQUALS,
+            "Cannot assign DynamicData of type '" << other.type().name() << "' to DynamicData of type '"
+            << type_.name() << "'.");
         type_.destroy_instance(instance_);
         type_.copy_instance(instance_, p_instance(other));
         return *this;

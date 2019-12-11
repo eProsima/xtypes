@@ -52,7 +52,9 @@ public:
     /// \returns The parent StructType.
     const StructType& parent() const
     {
-        assert(has_parent());
+        xtypes_assert(has_parent(),
+            "Called 'parent()' from a StructType without parent. Call 'has_parent()' to ensure that the "
+            << "StructType has parent.");
         return static_cast<const StructType&>(*parent_);
     }
 
@@ -123,7 +125,8 @@ public:
             const uint8_t* source,
             const DynamicType& other) const override
     {
-        assert(other.kind() == TypeKind::STRUCTURE_TYPE);
+        xtypes_assert(other.kind() == TypeKind::STRUCTURE_TYPE,
+            "Cannot copy data from different types: From '" << other.name() << "' to '" << name() << "'.");
         const StructType& other_struct = static_cast<const StructType&>(other);
 
         auto other_member = other_struct.members().begin();

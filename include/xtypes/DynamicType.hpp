@@ -18,12 +18,12 @@
 #ifndef EPROSIMA_XTYPES_DYNAMIC_TYPE_HPP_
 #define EPROSIMA_XTYPES_DYNAMIC_TYPE_HPP_
 
+#include <xtypes/Assert.hpp>
 #include <xtypes/Instanceable.hpp>
 #include <xtypes/TypeKind.hpp>
 #include <xtypes/TypeConsistency.hpp>
 
 #include <string>
-#include <cassert>
 
 namespace eprosima {
 namespace xtypes {

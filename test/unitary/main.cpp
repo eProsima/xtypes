@@ -1448,18 +1448,18 @@ TEST(EnumerationType, enumeration_tests)
         my_enum.add_enumerator("B", 10);
         my_enum.add_enumerator("C");
 
-        ASSERT_DEATH({my_enum.add_enumerator("D", 11);}, "next_value"); // Asserts because 11 == last added value
-        ASSERT_DEATH({my_enum.add_enumerator("E", 2);}, "next_value"); // Asserts because 2 < last added value
-        ASSERT_DEATH({my_enum.add_enumerator("A");}, "has_enumerator"); // Asserts because A already exists
+        ASSERT_DEATH({my_enum.add_enumerator("D", 11);}, "greater than"); // Asserts because 11 == last added value
+        ASSERT_DEATH({my_enum.add_enumerator("E", 2);}, "greater than"); // Asserts because 2 < last added value
+        ASSERT_DEATH({my_enum.add_enumerator("A");}, "already has an enumerator"); // Asserts because A already exists
 
         DynamicData enum_data(my_enum);
         enum_data = my_enum.value("C");
 
-        ASSERT_DEATH({uint64_t die = enum_data; (void) die;}, "memory_size"); // This will assert
+        ASSERT_DEATH({uint64_t die = enum_data; (void) die;}, "Incompatible"); // This will assert
 
         // EnumerationType<uint64_t> my_long_enum("MyLongEnum"); // Static assert, uint64_t isn't allowed
 
-        ASSERT_DEATH({enum_data = static_cast<uint32_t>(2);}, "is_allowed_value"); // Asserts because 2 isn't a valid value (0, 10 and 11).
+        ASSERT_DEATH({enum_data = static_cast<uint32_t>(2);}, "invalid value"); // Asserts because 2 isn't a valid value (0, 10 and 11).
     }
 }
 
