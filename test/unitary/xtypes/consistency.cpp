@@ -288,22 +288,19 @@ TEST (Consistency, mixed_types)
               TypeConsistency::IGNORE_TYPE_WIDTH |
               TypeConsistency::IGNORE_TYPE_SIGN , a_arr.is_compatible(b_arr));
 
-    a.add_member(
-            Member("a_string", a_string)).add_member(
-            Member("a_seq", a_seq)).add_member(
-            Member("a_arr", a_arr)).add_member(
-            Member("a_primitive", primitive_type<wchar_t>()));
+    a.add_member("a_string", a_string);
+    a.add_member("a_seq", a_seq);
+    a.add_member("a_arr", a_arr);
+    a.add_member("a_primitive", primitive_type<wchar_t>());
 
-    b.add_member(
-            Member("b_string", b_string)).add_member(
-            Member("b_seq", b_seq)).add_member(
-            Member("b_arr", b_arr));
+    b.add_member("b_string", b_string);
+    b.add_member("b_seq", b_seq);
+    b.add_member("b_arr", b_arr);
 
-    c.add_member(
-            Member("a_string", b_string)).add_member(
-            Member("a_seq", b_seq)).add_member(
-            Member("a_arr", b_arr)).add_member(
-            Member("a_primitive", primitive_type<wchar_t>()));
+    c.add_member("a_string", b_string);
+    c.add_member("a_seq", b_seq);
+    c.add_member("a_arr", b_arr);
+    c.add_member("a_primitive", primitive_type<wchar_t>());
 
     EXPECT_EQ(TypeConsistency::IGNORE_MEMBER_NAMES|
               TypeConsistency::IGNORE_TYPE_SIGN |
@@ -329,16 +326,14 @@ TEST (Consistency, ignore_member)
     SequenceType seq(primitive_type<int>(), 10);
     ArrayType arr(primitive_type<float>(), 10.0);
 
-    a.add_member(
-            Member("string", string)).add_member(
-            Member("seq", seq)).add_member(
-            Member("arr", arr)).add_member(
-            Member("flying_element", primitive_type<int>()));
+    a.add_member("string", string);
+    a.add_member("seq", seq);
+    a.add_member("arr", arr);
+    a.add_member("flying_element", primitive_type<int>());
 
-    b.add_member(
-            Member("string", string)).add_member(
-            Member("seq", seq)).add_member(
-            Member("arr", arr));
+    b.add_member("string", string);
+    b.add_member("seq", seq);
+    b.add_member("arr", arr);
 
     EXPECT_EQ(TypeConsistency::IGNORE_MEMBERS , a.is_compatible(b));
 }
@@ -347,12 +342,10 @@ TEST (Consistency, ignore_member_simple_primitive)
 {
     StructType a("composition");
     StructType b("composition");
-    a.add_member(
-            Member("x", primitive_type<char>())).add_member(
-            Member("y", primitive_type<char>()));
+    a.add_member("x", primitive_type<char>());
+    a.add_member("y", primitive_type<char>());
 
-    b.add_member(
-            Member("x", primitive_type<char>()));
+    b.add_member("x", primitive_type<char>());
 
     EXPECT_EQ(TypeConsistency::IGNORE_MEMBERS , a.is_compatible(b));
 
