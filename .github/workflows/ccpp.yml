@@ -13,3 +13,6 @@ jobs:
       run: cmake . -DXTYPES_BUILD_TESTS=ON -DXTYPES_BUILD_EXAMPLES=ON -DCMAKE_BUILD_TYPE=Debug
     - name: make
       run: make
+    - name: action-gtest
+      uses: CyberZHG/github-action-gtest@0.0.1
+      run: ./xtypes_test_unitary && ./xtypes_idl_parser_test_unitary
