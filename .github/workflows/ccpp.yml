@@ -9,7 +9,6 @@ jobs:
     
     steps:
     - uses: actions/checkout@v1
-    - uses: CyberZHG/github-action-gtest@0.0.1
     - name: cmake debug
       run: cmake . -DXTYPES_BUILD_TESTS=ON -DXTYPES_BUILD_EXAMPLES=ON -DCMAKE_BUILD_TYPE=Debug
     - name: make
