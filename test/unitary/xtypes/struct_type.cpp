@@ -255,7 +255,7 @@ TEST (StructType, empty_struct_data)
     StructType empty("empty_struct");
     DynamicData empty_data(empty);
     EXPECT_EQ(0, empty.memory_size());
-    ASSERT_DEATH(empty_data[0], "index < size()");
+    ASSERT_DEATH(empty_data[0], "out of bounds");
 }
 
 template<typename T>

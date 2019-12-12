@@ -248,7 +248,7 @@ TEST (CollectionTypes, resize_sequence)
     }
 
     // Cannot grow over the bounds
-    ASSERT_DEATH({d.resize(101);}, "bounds()");
+    ASSERT_DEATH({d.resize(101);}, "is bigger than maximum allowed");
 }
 
 TEST (CollectionTypes, multi_sequence)
@@ -371,7 +371,7 @@ TEST (CollectionTypes, string)
     DynamicData du(u);
     du = "123456789012345678901234567890";
 
-    ASSERT_DEATH(dt = du, "TypeConsistency::EQUALS");
+    ASSERT_DEATH(dt = du, "Cannot assign DynamicData of type");
 
     dt = "01234567890123456789";
     EXPECT_EQ(dt.value<std::string>(), "0123456789");
@@ -404,7 +404,7 @@ TEST (CollectionTypes, wstring)
     DynamicData du(u);
     du = L"123456789012345678901234567890";
 
-    ASSERT_DEATH(dt = du, "TypeConsistency::EQUALS");
+    ASSERT_DEATH(dt = du, "Cannot assign DynamicData of type");
 
     dt = L"01234567890123456789";
     EXPECT_EQ(dt.value<std::wstring>(), L"0123456789");
