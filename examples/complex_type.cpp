@@ -15,8 +15,8 @@ int main()
         };
     )";
 
-    std::map<std::string, DynamicType::Ptr> from_idl = idl::parse(idl_spec).get_all_types();
-    const StructType& inner = static_cast<const StructType&>(*from_idl.at("InnerType"));
+    idl::Context context = idl::parse(idl_spec);
+    const StructType& inner = context.module().structure("InnerType");
 
     StructType outer("OuterType");
     outer.add_member(Member("om1", primitive_type<double>()).id(2));
