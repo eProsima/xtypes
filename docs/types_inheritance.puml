@@ -12,9 +12,14 @@ StringType -up-|> MutableCollectionType
 WStringType -up-|> MutableCollectionType
 SequenceType -up-|> MutableCollectionType
 
+EnumeratedType -up-|> PrimitiveType
+EnumerationType -up-|> EnumeratedType
+
 abstract DynamicType
 abstract AggregationType
 abstract CollectionType
 abstract MutableCollectionType
 class PrimitiveType<T>
+abstract EnumeratedType<T>
+class EnumerationType<T>
 @enduml
