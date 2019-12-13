@@ -47,8 +47,8 @@ TEST (IDLParser, simple_struct_test)
     std::map<std::string, DynamicType::Ptr> result = context.module().get_all_types();
     EXPECT_EQ(1, result.size());
 
-    const DynamicType* my_struct = result["SimpleStruct"].get();
-    DynamicData data(*my_struct);
+    const StructType& my_struct = context.module().structure("SimpleStruct");
+    DynamicData data(my_struct);
 
     data["my_bool"] = true;
     //data["my_int8"] = 'c';

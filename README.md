@@ -28,9 +28,9 @@ outer.add_member("c", inner);
 
 or by parsing the IDL:
 ```c++
-std::map<std::string, DynamicType::Ptr> from_idl = idl::parse(my_idl);
-const StructType& inner = static_cast<const StructType&>(*from_idl.at("Inner"));
-const StructType& outer = static_cast<const StructType&>(*from_idl.at("Outer"));
+idl::Context context = idl::parse(my_idl);
+const StructType& inner = context.module().structure("Inner");
+const StructType& outer = context.module().structure("Outer");
 ```
 
 Once these types have been defined, you can instatiate them and access their data:
