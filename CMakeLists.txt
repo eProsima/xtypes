@@ -10,6 +10,14 @@ project(xtypes
 
 option(XTYPES_BUILD_TESTS "Build tests." OFF)
 option(XTYPES_BUILD_EXAMPLES "Build examples." OFF)
+option(XTYPES_EXCEPTIONS "Enable xtypes exceptions in release (which are asserts in debug)." OFF)
+
+if(XTYPES_EXCEPTIONS)
+    #add_compile_definitions(XTYPES_EXCEPTIONS) #CMake 3.16
+    add_definitions(-DXTYPES_EXCEPTIONS)
+else()
+    remove_definitions(-DXTYPES_EXCEPTIONS)
+endif()
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)

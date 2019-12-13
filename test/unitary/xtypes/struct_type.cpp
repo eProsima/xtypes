@@ -19,6 +19,38 @@
 #include <cmath>
 #include <bitset>
 
+#if defined(XTYPES_EXCEPTIONS)
+#define ASSERT_OR_EXCEPTION(exp, msg)                                                                       \
+{                                                                                                           \
+            try                                                                                             \
+            {                                                                                               \
+                { exp }                                                                                     \
+                FAIL() << "Exception wasn't throw!";                                                        \
+            }                                                                                               \
+            catch(const std::runtime_error& exc)                                                            \
+            {                                                                                               \
+                if (std::string(exc.what()).find(msg) == std::string::npos)                                 \
+                {                                                                                           \
+                    FAIL() << "Unexpected exception: " << exc.what();                                       \
+                }                                                                                           \
+            }                                                                                               \
+}
+#else
+#if !defined(NDEBUG)
+#define ASSERT_OR_EXCEPTION(exp, msg)                                                                       \
+{                                                                                                           \
+        ASSERT_DEATH(                                                                                       \
+            {                                                                                               \
+                exp                                                                                         \
+            },                                                                                              \
+            msg                                                                                             \
+        );                                                                                                  \
+}
+#else
+#define ASSERT_OR_EXCEPTION(exp, msg)
+#endif
+#endif
+
 using namespace std;
 using namespace eprosima::xtypes;
 
@@ -255,7 +287,7 @@ TEST (StructType, empty_struct_data)
     StructType empty("empty_struct");
     DynamicData empty_data(empty);
     EXPECT_EQ(0, empty.memory_size());
-    ASSERT_DEATH(empty_data[0], "out of bounds");
+    ASSERT_OR_EXCEPTION(empty_data[0];, "out of bounds");
 }
 
 template<typename T>

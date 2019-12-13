@@ -19,6 +19,38 @@
 #include <cmath>
 #include <bitset>
 
+#if defined(XTYPES_EXCEPTIONS)
+#define ASSERT_OR_EXCEPTION(exp, msg)                                                                       \
+{                                                                                                           \
+            try                                                                                             \
+            {                                                                                               \
+                { exp }                                                                                     \
+                FAIL() << "Exception wasn't throw!";                                                        \
+            }                                                                                               \
+            catch(const std::runtime_error& exc)                                                            \
+            {                                                                                               \
+                if (std::string(exc.what()).find(msg) == std::string::npos)                                 \
+                {                                                                                           \
+                    FAIL() << "Unexpected exception: " << exc.what();                                       \
+                }                                                                                           \
+            }                                                                                               \
+}
+#else
+#if !defined(NDEBUG)
+#define ASSERT_OR_EXCEPTION(exp, msg)                                                                       \
+{                                                                                                           \
+        ASSERT_DEATH(                                                                                       \
+            {                                                                                               \
+                exp                                                                                         \
+            },                                                                                              \
+            msg                                                                                             \
+        );                                                                                                  \
+}
+#else
+#define ASSERT_OR_EXCEPTION(exp, msg)
+#endif
+#endif
+
 using namespace eprosima::xtypes;
 
 /**********************************************
@@ -248,7 +280,7 @@ TEST (CollectionTypes, resize_sequence)
     }
 
     // Cannot grow over the bounds
-    ASSERT_DEATH({d.resize(101);}, "is bigger than maximum allowed");
+    ASSERT_OR_EXCEPTION({d.resize(101);}, "is bigger than maximum allowed");
 }
 
 TEST (CollectionTypes, multi_sequence)
@@ -371,7 +403,7 @@ TEST (CollectionTypes, string)
     DynamicData du(u);
     du = "123456789012345678901234567890";
 
-    ASSERT_DEATH(dt = du, "Cannot assign DynamicData of type");
+    ASSERT_OR_EXCEPTION(dt = du;, "Cannot assign DynamicData of type");
 
     dt = "01234567890123456789";
     EXPECT_EQ(dt.value<std::string>(), "0123456789");
@@ -404,7 +436,7 @@ TEST (CollectionTypes, wstring)
     DynamicData du(u);
     du = L"123456789012345678901234567890";
 
-    ASSERT_DEATH(dt = du, "Cannot assign DynamicData of type");
+    ASSERT_OR_EXCEPTION(dt = du;, "Cannot assign DynamicData of type");
 
     dt = L"01234567890123456789";
     EXPECT_EQ(dt.value<std::wstring>(), L"0123456789");

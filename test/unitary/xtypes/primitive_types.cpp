@@ -15,6 +15,38 @@
 #include <gtest/gtest.h>
 #include <xtypes/xtypes.hpp>
 
+#if defined(XTYPES_EXCEPTIONS)
+#define ASSERT_OR_EXCEPTION(exp, msg)                                                                       \
+{                                                                                                           \
+            try                                                                                             \
+            {                                                                                               \
+                { exp }                                                                                     \
+                FAIL() << "Exception wasn't throw!";                                                        \
+            }                                                                                               \
+            catch(const std::runtime_error& exc)                                                            \
+            {                                                                                               \
+                if (std::string(exc.what()).find(msg) == std::string::npos)                                 \
+                {                                                                                           \
+                    FAIL() << "Unexpected exception: " << exc.what();                                       \
+                }                                                                                           \
+            }                                                                                               \
+}
+#else
+#if !defined(NDEBUG)
+#define ASSERT_OR_EXCEPTION(exp, msg)                                                                       \
+{                                                                                                           \
+        ASSERT_DEATH(                                                                                       \
+            {                                                                                               \
+                exp                                                                                         \
+            },                                                                                              \
+            msg                                                                                             \
+        );                                                                                                  \
+}
+#else
+#define ASSERT_OR_EXCEPTION(exp, msg)
+#endif
+#endif
+
 using namespace eprosima::xtypes;
 
 static const uint8_t UINT8          = 250;
@@ -220,17 +252,17 @@ TEST(EnumerationType, enumeration_tests)
         my_enum.add_enumerator("B", 10);
         my_enum.add_enumerator("C");
 
-        ASSERT_DEATH({my_enum.add_enumerator("D", 11);}, "greater than"); // Asserts because 11 == last added value
-        ASSERT_DEATH({my_enum.add_enumerator("E", 2);}, "greater than"); // Asserts because 2 < last added value
-        ASSERT_DEATH({my_enum.add_enumerator("A");}, "already has an enumerator"); // Asserts because A already exists
+        ASSERT_OR_EXCEPTION({my_enum.add_enumerator("D", 11);}, "greater than"); // Asserts because 11 == last added value
+        ASSERT_OR_EXCEPTION({my_enum.add_enumerator("E", 2);}, "greater than"); // Asserts because 2 < last added value
+        ASSERT_OR_EXCEPTION({my_enum.add_enumerator("A");}, "already has an enumerator"); // Asserts because A already exists
 
         DynamicData enum_data(my_enum);
         enum_data = my_enum.value("C");
 
-        ASSERT_DEATH({uint64_t die = enum_data; (void) die;}, "Incompatible"); // This will assert
+        ASSERT_OR_EXCEPTION({uint64_t die = enum_data; (void) die;}, "Incompatible"); // This will assert
 
         // EnumerationType<uint64_t> my_long_enum("MyLongEnum"); // Static assert, uint64_t isn't allowed
 
-        ASSERT_DEATH({enum_data = static_cast<uint32_t>(2);}, "invalid value"); // Asserts because 2 isn't a valid value (0, 10 and 11).
+        ASSERT_OR_EXCEPTION({enum_data = static_cast<uint32_t>(2);}, "invalid value"); // Asserts because 2 isn't a valid value (0, 10 and 11).
     }
 }
