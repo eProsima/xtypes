@@ -178,7 +178,7 @@ Note: once a `DynamicType` is added to an struct, a copy is performed.
 This allows modifications to `DynamicType` to be performed without side effects.
 It also and facilitates the user's memory management duties.
 
-#### `is_compatible` function of `DynamicType`
+#### Type Consistency (QoS policies)
 Any pair of `DynamicType`s can be checked for their mutual compatibility.
 ```c++
 TypeConsistency consistency = tested_type.is_compatible(other_type);
