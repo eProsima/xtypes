@@ -15,8 +15,8 @@ int main()
         };
     )";
 
-    std::map<std::string, DynamicType::Ptr> from_idl = idl::parse(idl_spec).get_all_types();
-    const StructType& inner = static_cast<const StructType&>(*from_idl.at("InnerType"));
+    idl::Context context = idl::parse(idl_spec);
+    const StructType& inner = context.module().structure("InnerType");
 
     StructType outer("OuterType");
     outer.add_member("om1", StringType());
@@ -25,17 +25,33 @@ int main()
     Module& submod_a = root.create_submodule("a");
     Module& submod_b = root.create_submodule("b");
     Module& submod_aa = submod_a.create_submodule("a");
-    root.structure(inner);
     submod_aa.structure(outer);
+    submod_b.structure(inner);
+
+    /*
+    root
+        \_a
+           \_ a _ OuterType
+
+        \_b _ InnerType
+    */
 
     std::cout << std::boolalpha;
     std::cout << "Does a::a::OuterType exists?: " << root.has_structure("a::a::OuterType") << std::endl;
     std::cout << "Does ::InnerType exists?: " << root.has_structure("::InnerType") << std::endl;
     std::cout << "Does InnerType exists?: " << root.has_structure("InnerType") << std::endl;
     std::cout << "Does OuterType exists?: " << root.has_structure("OuterType") << std::endl;
+    std::cout << "Does ::b::InnerType exists?: " << root.has_structure("::b::InnerType") << std::endl;
+    std::cout << "Does b::InnerType exists?: " << root.has_structure("b::InnerType") << std::endl;
 
-    DynamicData module_data(root["a"]["a"].structure("OuterType")); // ::a::a::OuterType
-    module_data["om1"] = "This is a string.";
+    DynamicData outer_data(root["a"]["a"].structure("OuterType")); // ::a::a::OuterType
+    outer_data["om1"] = "This is a string.";
+
+    std::string scope_b = submod_b.scope();
+    std::string scope_inner_type = scope_b + "::" + inner.name(); // b::InnerType
+    DynamicData inner_data(root.structure(scope_inner_type));
+    inner_data["im1"] = 32u;
+    inner_data["im2"] = 3.14159265f;
 
     return 0;
 }
