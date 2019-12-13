@@ -743,11 +743,6 @@ public:
         xtypes_assert(bounds() >= size,
             "The desired size (" << size << ") is bigger than maximum allowed size for the type '"
             << type_.name() << "' (" << bounds() << ").");
-        if (bounds() < size)
-        {
-            // Release protection (do nothing).
-            return *this;
-        }
         const SequenceType& sequence = static_cast<const SequenceType&>(type_);
 
         sequence.resize_instance(instance_, size);
