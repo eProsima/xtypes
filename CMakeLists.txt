@@ -69,6 +69,8 @@ endmacro()
 
 if(XTYPES_BUILD_EXAMPLES)
     compile_example(${PROJECT_NAME}_example_complex_type SOURCE examples/complex_type.cpp)
+    compile_example(${PROJECT_NAME}_example_module SOURCE examples/module.cpp)
+    compile_example(${PROJECT_NAME}_example_iterators SOURCE examples/iterators.cpp)
     # ...
 endif()
 
