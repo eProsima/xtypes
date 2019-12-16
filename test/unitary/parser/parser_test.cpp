@@ -17,40 +17,10 @@
 #include <xtypes/DynamicData.hpp>
 #include <iostream>
 
+#include "../utils.hpp"
+
 using namespace eprosima::xtypes;
 using namespace eprosima::xtypes::idl;
-
-#if defined(XTYPES_EXCEPTIONS)
-#define ASSERT_OR_EXCEPTION(exp, msg)                                                                       \
-{                                                                                                           \
-            try                                                                                             \
-            {                                                                                               \
-                { exp }                                                                                     \
-                FAIL() << "Exception wasn't throw!";                                                        \
-            }                                                                                               \
-            catch(const std::runtime_error& exc)                                                            \
-            {                                                                                               \
-                if (std::string(exc.what()).find(msg) == std::string::npos)                                 \
-                {                                                                                           \
-                    FAIL() << "Unexpected exception: " << exc.what();                                       \
-                }                                                                                           \
-            }                                                                                               \
-}
-#else
-#if !defined(NDEBUG)
-#define ASSERT_OR_EXCEPTION(exp, msg)                                                                       \
-{                                                                                                           \
-        ASSERT_DEATH(                                                                                       \
-            {                                                                                               \
-                exp                                                                                         \
-            },                                                                                              \
-            msg                                                                                             \
-        );                                                                                                  \
-}
-#else
-#define ASSERT_OR_EXCEPTION(exp, msg)
-#endif
-#endif
 
 TEST (IDLParser, simple_struct_test)
 {
