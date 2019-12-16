@@ -32,6 +32,7 @@ idl::Context context = idl::parse(my_idl);
 const StructType& inner = context.module().structure("Inner");
 const StructType& outer = context.module().structure("Outer");
 ```
+More details about the parser usage can be found at [the parser section](#parser).
 
 Once these types have been defined, you can instatiate them and access their data:
 ```c++
@@ -436,6 +437,63 @@ DynamicData data(outer);
 ```
 In this case, two allocations will be needed: one for the sequence, and a second one for the string:
 ![](docs/outer-memory.png)
+
+## Parser
+As part of xtypes it is included a runtime IDL parser.
+This parser is able to translate an IDL 4.2 (most used features already implemented and growing!) file into xtypes.
+The parser allows a path to a file or a raw IDL string as input.
+To ease the parser's usage, there exist accessible functions from the idl namespace.
+```c++
+std::string idl = R"~~~(
+    struct Inner
+    {
+        uint32_t my_uint32;
+    };
+
+    struct Outer
+    {
+        Inner my_inner;
+    };
+)~~~";
+// Parse a raw string.
+idl::Context context = idl::parse(my_idl);
+const StructType& inner = context.module().structure("Inner");
+const StructType& outer = context.module().structure("Outer");
+//Parse an IDL file.
+idl::Context context_file = idl::parse_file(my_idl_file);
+```
+In both cases, an `idl::Context` object can be used to configure and retrieve the parser results.
+
+The available configuration options are:
+- **ignore_case** When enabled, the parser isn't case sensitive (default `false`).
+- **clear** When enabled, following calls to `parse` will clean up previous results (default `true`).
+- **preprocess** When enabled, the preprocessor will be called before start parsing (default `true`).
+- **allow_keyword_identifiers** When enabled, the parser will allow identifiers to be named as keywords
+(default `false`) for example: `Struct Struct { ... };`.
+- **ignore_redefinition** When enabled, the parser will ignore type redefinitions (default `false`).
+- **CharType char_translation** Tells the parser how to interpret the keyword `char`.
+Possible values are: `CHAR`, `UINT8`, and `INT8` (default `CHAR`).
+- **preprocessor_exec** Specifies the preprocessor executable to launch (default "cpp"`).
+- **include_paths** List of paths where the preprocessor should look for included idl files.
+
+The results of the parsing are mainly two:
+- **success** Boolean value with the result of the parsing.
+- **module** Access to the root module of the parsed IDL. It will contain defined types and submodules.
+    - **name**: Retrieves the name of the module. It is empty for the root module.
+    - **scope**: Retrieves the full scope of the module. It is empty for the root module.
+    - **submodule**: Allows access to a submodule by name. `operator[]` is available for the same purpose.
+    - **has_submodule**: Checks the existence of a module by name.
+    - **structure**: Allows access to a defined structure by name.
+    - **has_structure**: Checks for the existence of a structure by name.
+    - **constant**: Allows access to a defined constant by name.
+    - **has_constant**: Checks for the existence of a constant by name.
+    - **enum_32**: Allows access to a defined enumeration by name (only 32 bits enumeration is supported currently).
+    - **has_enum_32**: Check for the existence of a numeration by name.
+    - **get_all_types**: Retrieves a map with all the defined types.
+    - **fill_all_types**: Fills a map with all the defined types.
+It has, two helper functions to ease the retrieval of all types:
+- **get_all_types**: Retrieves a map with all the defined types.
+- **get_all_scoped_types**: Retrieves a map with all the defined types, whose key is with the scoped name.
 
 ## Debugging DynamicData
 As a `DynamicData` is fully built at runtime, no static checks can ensure its correct behaviour.
