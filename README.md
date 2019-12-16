@@ -448,3 +448,22 @@ Following the same line of thoughts, in order to improve the performance the fin
 
 Reminder: `assert` function from `std` emit an *abort* signal.
 If you need more information about why a concrete `assert` was reached, the *stacktrace* is really useful.
+
+### Exceptions
+If this approach doesn't meet the security expectations, runtime exceptions (std::runtime_error) can be enabled
+by defining the preprocessor variable `XTYPES_EXCEPTIONS` at compile time.
+Take into account that throwing exceptions adds a small performance penalty.
+```c++
+StructType outer("Outer");
+outer.add_member("m_inner", inner);
+DynamicData data(outer);
+try
+{
+    data["invalid_name"] = 55; // data doesn't have a member named so, a runtime_error will be throw.
+}
+catch(const std::runtime_error& e)
+{
+    std::cout << "Exception: " << e.what() << std::endl;
+}
+```
+The exceptions will be thrown both in *debug mode* and in *release mode*.

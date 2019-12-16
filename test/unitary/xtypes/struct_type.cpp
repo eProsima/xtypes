@@ -19,6 +19,8 @@
 #include <cmath>
 #include <bitset>
 
+#include "../utils.hpp"
+
 using namespace std;
 using namespace eprosima::xtypes;
 
@@ -255,7 +257,7 @@ TEST (StructType, empty_struct_data)
     StructType empty("empty_struct");
     DynamicData empty_data(empty);
     EXPECT_EQ(0, empty.memory_size());
-    ASSERT_DEATH(empty_data[0], "out of bounds");
+    ASSERT_OR_EXCEPTION(empty_data[0];, "out of bounds");
 }
 
 template<typename T>

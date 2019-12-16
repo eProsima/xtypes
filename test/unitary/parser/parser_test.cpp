@@ -17,9 +17,10 @@
 #include <xtypes/DynamicData.hpp>
 #include <iostream>
 
+#include "../utils.hpp"
+
 using namespace eprosima::xtypes;
 using namespace eprosima::xtypes::idl;
-
 
 TEST (IDLParser, simple_struct_test)
 {
@@ -183,7 +184,7 @@ TEST (IDLParser, array_sequence_struct_test)
         }
         else
         {
-            ASSERT_DEATH(data["my_char6_seq"][i].push(static_cast<char>(i)), "Assertion");
+            ASSERT_OR_EXCEPTION(data["my_char6_seq"][i].push(static_cast<char>(i));, "out of bounds");
         }
     }
     for (int32_t i = 0; i < 7; ++i)
@@ -194,7 +195,7 @@ TEST (IDLParser, array_sequence_struct_test)
         }
         else
         {
-            ASSERT_DEATH(data["my_char6_seq"][i], "Assertion");
+            ASSERT_OR_EXCEPTION(data["my_char6_seq"][i];, "out of bounds");
         }
     }
     EXPECT_EQ(data["my_char6_seq"].size(), 6);
@@ -507,27 +508,13 @@ TEST (IDLParser, constants)
         FAIL() << exc.what() << std::endl;
     }
 
-    try
-    {
-        ASSERT_DEATH(
-            {
-                Context context = parse(R"(
-                    const string C_STRING = "Hola" + 55;
-                               )");
-            },
-            "Assertion failed"
-        );
-    }
-    catch(const Parser::exception& /*exc*/)
-    {
-        /* TODO?
-        std::string msg = exc.what();
-        if (msg.find("Expected a STRING_LITERAL") == std::string::npos)
+    ASSERT_OR_EXCEPTION(
         {
-            FAIL() << "Unexpected exception";
-        }
-        */
-    }
+            Context context = parse(R"(
+                const string C_STRING = "Hola" + 55;
+            )");
+        },
+        "Assertion failed");
 
     try
     {
