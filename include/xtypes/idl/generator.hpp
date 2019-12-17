@@ -105,7 +105,6 @@ inline std::string type_name(const DynamicType& type)
     }
     else
     {
-        //return "[[unsupported]]";
         return type.name();
     }
 }
