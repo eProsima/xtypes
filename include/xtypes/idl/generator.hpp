@@ -73,7 +73,7 @@ inline std::string type_name(const DynamicType& type)
         { TypeKind::CHAR_16_TYPE, "wchar" },
         { TypeKind::INT_8_TYPE, "int8" },
         { TypeKind::UINT_8_TYPE, "uint8" },
-        { TypeKind::INT_16_TYPE, "short" },
+        { TypeKind::INT_16_TYPE, "int16" },
         { TypeKind::UINT_16_TYPE, "uint16" },
         { TypeKind::INT_32_TYPE, "int32" },
         { TypeKind::UINT_32_TYPE, "uint32" },
