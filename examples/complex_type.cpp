@@ -83,6 +83,14 @@ int main()
     std::cout << "Enumeration::C: " << value << std::endl;
     std::cout << "Enumeration2::C: " << value2 << std::endl;
 
+    std::cout << "-----------------------" << std::endl;
+    submod_b.enum_32(std::move(my_enum));
+     root.create_constant("MyConstEnum", enum_data); // TODO: cast enumerations
+    DynamicData my_const(primitive_type<uint64_t>());
+    my_const = 555ul;
+    root.create_constant("MyConst", my_const);
+    std::cout << idl::generate(root) << std::endl;
+
     // EnumerationType<uint64_t> my_long_enum("MyLongEnum"); // Static assert, uint64_t isn't allowed
     // enum_data2 = static_cast<uint32_t>(2); // Asserts because 2 isn't a valid value (0, 10 and 11).
 

@@ -117,7 +117,8 @@ inline std::string ReadableDynamicDataRef::cast<std::string>() const
 {
     xtypes_assert(type_.is_primitive_type() ||
            type_.kind() == TypeKind::STRING_TYPE ||
-           type_.kind() == TypeKind::WSTRING_TYPE,
+           type_.kind() == TypeKind::WSTRING_TYPE ||
+           type_.is_enumerated_type(),
         "Expected a primitive or string type but '" << type_.name() << "' received while casting data to 'std::string'.");
     switch (type_.kind())
     {

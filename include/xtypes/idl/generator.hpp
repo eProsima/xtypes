@@ -22,6 +22,8 @@
 #include <xtypes/ArrayType.hpp>
 #include <xtypes/MutableCollectionType.hpp>
 #include <xtypes/SequenceType.hpp>
+#include <xtypes/EnumerationType.hpp>
+//#include <xtypes/Module.hpp>
 
 #include <sstream>
 
@@ -73,11 +75,11 @@ inline std::string type_name(const DynamicType& type)
         { TypeKind::INT_8_TYPE, "int8" },
         { TypeKind::UINT_8_TYPE, "uint8" },
         { TypeKind::INT_16_TYPE, "short" },
-        { TypeKind::UINT_16_TYPE, "unsigned short" },
-        { TypeKind::INT_32_TYPE, "long" },
-        { TypeKind::UINT_32_TYPE, "unsigned long" },
-        { TypeKind::INT_64_TYPE, "long long" },
-        { TypeKind::UINT_64_TYPE, "unsigned long long" },
+        { TypeKind::UINT_16_TYPE, "uint16" },
+        { TypeKind::INT_32_TYPE, "int32" },
+        { TypeKind::UINT_32_TYPE, "uint32" },
+        { TypeKind::INT_64_TYPE, "int64" },
+        { TypeKind::UINT_64_TYPE, "uint64" },
         { TypeKind::FLOAT_32_TYPE, "float" },
         { TypeKind::FLOAT_64_TYPE, "double" },
         { TypeKind::FLOAT_128_TYPE, "long double" },
@@ -104,8 +106,120 @@ inline std::string type_name(const DynamicType& type)
     }
     else
     {
-        return "[[unsupported]]";
+        //return "[[unsupported]]";
+        return type.name();
     }
+}
+
+inline std::string structure(const StructType& type, size_t tabs = 0)
+{
+    std::stringstream ss;
+    ss << std::string(tabs * 4, ' ') << "struct " << type.name() << std::endl;
+    ss << std::string(tabs * 4, ' ') << "{" << std::endl;
+
+    for(const Member& member: type.members())
+    {
+        ss << std::string((tabs + 1) * 4, ' ');
+        if(member.type().kind() == TypeKind::ARRAY_TYPE)
+        {
+            ss << generator::array_member(member); //Spetial member syntax
+        }
+        else
+        {
+            ss << generator::type_name(member.type()) << " " << member.name() << ";";
+        }
+        ss << std::endl;
+    }
+    ss << std::string(tabs * 4, ' ') << "};" << std::endl;
+    return ss.str();
+}
+
+inline std::string enumeration32(const EnumerationType<uint32_t>& enumeration, size_t tabs = 0)
+{
+    std::stringstream ss;
+    // We must add them in order
+    using map_pair = std::pair<std::string, uint32_t>;
+    std::map<std::string, uint32_t> enumerators = enumeration.enumerators();
+    ss << std::string(tabs * 4, ' ') << "enum " << enumeration.name() << std::endl;
+    ss << std::string(tabs * 4, ' ') << "{" << std::endl;
+    // Copy to a vector
+    std::vector<map_pair> ids(enumerators.begin(), enumerators.end());
+    // Sort the vector
+    std::sort(ids.begin(), ids.end(),
+              [](const map_pair& a, const map_pair& b)
+              {
+                  return a.second < b.second;
+              });
+    // Print the ordered values
+    for (size_t i = 0; i < ids.size(); ++i)
+    {
+        const auto& value = ids[i];
+        ss << std::string((tabs + 1) * 4, ' ') << value.first;
+        if (i + 1 < ids.size())
+        {
+            ss << ",";
+        }
+        ss << std::endl;
+    }
+    ss << std::string(tabs * 4, ' ') << "};" << std::endl;
+    return ss.str();
+}
+
+// TODO: module_contents (and maybe module) should generate a dependency tree and resolve them in the generated IDL,
+// including maybe the need of forward declarations.
+inline std::string module_contents(const Module& module_, size_t tabs = 0)
+{
+    std::stringstream ss;
+
+    // Enums
+    for (const auto& pair : module_.enumerations_32_)
+    {
+        const EnumerationType<uint32_t>& enum_type = static_cast<const EnumerationType<uint32_t>&>(*pair.second);
+        ss << enumeration32(enum_type, tabs);
+    }
+    // Consts
+    for (auto pair : module_.constants_)
+    {
+        ss << std::string(tabs * 4, ' ') << "const " << type_name(pair.second.type()) << " " << pair.first
+           << " = " << pair.second.cast<std::string>() << ";" << std::endl;
+    }
+    // Structs
+    for (auto pair : module_.structs_)
+    {
+        const StructType& struct_type = static_cast<const StructType&>(*pair.second);
+        ss << structure(struct_type, tabs);
+    }
+    // Submodules
+    for (auto pair : module_.inner_)
+    {
+        const Module& inner_module = *pair.second;
+        ss << std::string(tabs * 4, ' ') << "module " << inner_module.name() << std::endl;
+        ss << std::string(tabs * 4, ' ') << "{" << std::endl;
+        ss << module_contents(inner_module, tabs + 1);
+        ss << std::string(tabs * 4, ' ') << "};" << std::endl;
+    }
+
+    return ss.str();
+}
+
+inline std::string module(const Module& module, size_t tabs = 0)
+{
+    std::stringstream ss;
+
+    // Check if it is root
+    if (module.name().empty())
+    {
+        ss << module_contents(module);
+    }
+    else
+    {
+        ss << std::string(tabs * 4, ' ') << "module " << module.name() << std::endl;
+        ss << std::string(tabs * 4, ' ') << "{" << std::endl;
+        ss << module_contents(module, tabs + 1);
+        ss << std::string(tabs * 4, ' ') << "};" << std::endl;
+    }
+
+    return ss.str();
 }
 
 } //namespace generator

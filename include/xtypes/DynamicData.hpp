@@ -494,7 +494,7 @@ protected:
     template<typename T, class = Primitive<T>>
     inline T _cast() const
     {
-        xtypes_assert(type_.is_primitive_type(),
+        xtypes_assert(type_.is_primitive_type() || type_.is_enumerated_type(),
             "Expected a primitive type but '" << PrimitiveTypeKindTrait<T>::name << "' received while casting data.");
         switch (type_.kind())
         {
