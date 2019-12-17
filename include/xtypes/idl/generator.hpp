@@ -144,7 +144,7 @@ inline std::string enumeration32(const EnumerationType<uint32_t>& enumeration, s
     std::vector<map_pair> ids(enumerators.begin(), enumerators.end());
     // Sort the vector
     std::sort(ids.begin(), ids.end(),
-              [](const map_pair& a, const map_pair& b)
+        [](const map_pair& a, const map_pair& b)
               {
                   return a.second < b.second;
               });
