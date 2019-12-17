@@ -23,7 +23,6 @@
 #include <xtypes/MutableCollectionType.hpp>
 #include <xtypes/SequenceType.hpp>
 #include <xtypes/EnumerationType.hpp>
-//#include <xtypes/Module.hpp>
 
 #include <sstream>
 
