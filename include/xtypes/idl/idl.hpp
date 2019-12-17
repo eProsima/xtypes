@@ -77,25 +77,15 @@ inline std::string preprocess(
 /// \return An IDL that represents the StructType given.
 inline std::string generate(const StructType& type)
 {
-    std::stringstream ss;
-    ss << "struct " << type.name() << std::endl;
-    ss << "{" << std::endl;
+    return generator::structure(type);
+}
 
-    for(const Member& member: type.members())
-    {
-        ss << std::string(4, ' ');
-        if(member.type().kind() == TypeKind::ARRAY_TYPE)
-        {
-            ss << generator::array_member(member); //Spetial member syntax
-        }
-        else
-        {
-            ss << generator::type_name(member.type()) << " " << member.name() << ";";
-        }
-        ss << std::endl;
-    }
-    ss << "}" << std::endl;
-    return ss.str();
+/// \brief Generates the IDL that represents a Module
+/// \param[in] module Module to represent into IDL
+/// \return An IDL that represents the Module given.
+inline std::string generate(const Module& module)
+{
+    return generator::module(module);
 }
 
 } //namespace idl

@@ -23,6 +23,14 @@
 namespace eprosima {
 namespace xtypes {
 
+class Module;
+
+namespace idl {
+namespace generator {
+std::string module_contents(const Module& module, size_t tabs);
+}
+}
+
 class Module
 {
 protected:
@@ -385,6 +393,8 @@ public:
     }
 
 protected:
+    friend std::string idl::generator::module_contents(const Module& module, size_t tabs);
+
     std::map<std::string, DynamicType::Ptr> constants_types_;
     std::map<std::string, DynamicData> constants_;
     std::map<std::string, DynamicType::Ptr> enumerations_32_;
