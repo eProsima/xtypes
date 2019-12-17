@@ -488,7 +488,7 @@ The results of the parsing are mainly two:
     - `enum_32`: Allows access to a defined enumeration by name (only 32 bits enumeration is supported currently).
     - `has_enum_32`: Check for the existence of a numeration by name.
     - `get_all_types`: Retrieves a map with all the defined types.
-    - `fill_all_types`: Fills a map with all the defined types.
+    - `fill_all_types`: Fills an existant map with all the defined types.
 
 It has, two helper functions to ease the retrieval of all types:
 - `get_all_types`: Retrieves a map with all the defined types.
