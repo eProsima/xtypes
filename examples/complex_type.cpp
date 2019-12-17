@@ -85,7 +85,7 @@ int main()
 
     std::cout << "-----------------------" << std::endl;
     submod_b.enum_32(std::move(my_enum));
-     root.create_constant("MyConstEnum", enum_data); // TODO: cast enumerations
+    root.create_constant("MyConstEnum", enum_data);
     DynamicData my_const(primitive_type<uint64_t>());
     my_const = 555ul;
     root.create_constant("MyConst", my_const);
