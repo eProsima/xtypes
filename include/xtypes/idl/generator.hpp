@@ -163,6 +163,38 @@ inline std::string enumeration32(const EnumerationType<uint32_t>& enumeration, s
     return ss.str();
 }
 
+inline std::string get_const_value(ReadableDynamicDataRef data)
+{
+    std::stringstream ss;
+    std::string prefix = "";
+    std::string suffix = "";
+
+    if (data.type().kind() == TypeKind::STRING_TYPE)
+    {
+        prefix = "\"";
+        suffix = "\"";
+    }
+    else if (data.type().kind() == TypeKind::WSTRING_TYPE)
+    {
+        prefix = "L\"";
+        suffix = "\"";
+    }
+    else if (data.type().kind() == TypeKind::CHAR_8_TYPE)
+    {
+        prefix = "'";
+        suffix = "'";
+    }
+    else if (data.type().kind() == TypeKind::CHAR_16_TYPE)
+    {
+        prefix = "L'";
+        suffix = "'";
+    }
+
+    ss << prefix << data.cast<std::string>() << suffix;
+
+    return ss.str();
+}
+
 // TODO: module_contents (and maybe module) should generate a dependency tree and resolve them in the generated IDL,
 // including maybe the need of forward declarations.
 inline std::string module_contents(const Module& module_, size_t tabs = 0)
@@ -178,8 +210,11 @@ inline std::string module_contents(const Module& module_, size_t tabs = 0)
     // Consts
     for (auto pair : module_.constants_)
     {
-        ss << std::string(tabs * 4, ' ') << "const " << type_name(pair.second.type()) << " " << pair.first
-           << " = " << pair.second.cast<std::string>() << ";" << std::endl;
+        if (!module_.is_const_from_enum(pair.first)) // Don't add as const the "fake" enumeration consts.
+        {
+            ss << std::string(tabs * 4, ' ') << "const " << type_name(pair.second.type()) << " " << pair.first
+               << " = " << get_const_value(pair.second) << ";" << std::endl;
+        }
     }
     // Structs
     for (auto pair : module_.structs_)

@@ -122,6 +122,7 @@ if(XTYPES_BUILD_TESTS)
         )
 
     compile_test(${PROJECT_NAME}_idl_parser_test_unitary SOURCE test/unitary/parser/parser_test.cpp)
+    compile_test(${PROJECT_NAME}_idl_parser_roundtrip SOURCE test/unitary/parser/roundtrip.cpp)
     # ...
 
     # Copy IDL files

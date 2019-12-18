@@ -58,7 +58,7 @@ public:
 
 
     bool has_submodule(
-            const std::string& submodule)
+            const std::string& submodule) const
     {
         return inner_.count(submodule) > 0;
     }
@@ -107,8 +107,12 @@ public:
             const std::string& ident,
             bool extend = true) const
     {
-        size_t n_elems = structs_.count(ident); // + constants_.count(ident) + members.count(ident) + types.count(ident);
-        if (n_elems > 0)
+        bool has_it = structs_.count(ident) > 0
+            || constants_.count(ident) > 0
+            || enumerations_32_.count(ident) > 0
+            || inner_.count(ident) > 0;
+
+        if (has_it)
         {
             return true;
         }
@@ -278,10 +282,17 @@ public:
         return false;
     }
 
+    bool is_const_from_enum(
+            const std::string& name) const
+    {
+        return std::find(from_enum_.begin(), from_enum_.end(), name) != from_enum_.end();
+    }
+
     bool create_constant(
             const std::string& name,
             const DynamicData& value,
-            bool replace = false)
+            bool replace = false,
+            bool from_enumeration = false)
     {
         if (name.find("::") != std::string::npos)
         {
@@ -304,6 +315,10 @@ public:
             DynamicData temp(*(inserted.first->second));
             temp = value;
             auto result = constants_.emplace(name, temp);
+            if (result.second && from_enumeration)
+            {
+                from_enum_.push_back(name);
+            }
             return result.second;
         }
         return false;
@@ -333,6 +348,26 @@ public:
             const std::string& name) const
     {
         return enumerations_32_.count(name) > 0;
+    }
+
+    const EnumerationType<uint32_t>& enum_32(
+            const std::string& name) const
+    {
+        // Solve scope
+        PairModuleSymbol module = resolve_scope(name);
+        if (module.first == nullptr)
+        {
+            // This will fail
+            return static_cast<const EnumerationType<uint32_t>&>(*enumerations_32_.end()->second);
+        }
+
+        auto it = module.first->enumerations_32_.find(module.second);
+        if (it != module.first->enumerations_32_.end())
+        {
+            return static_cast<const EnumerationType<uint32_t>&>(*it->second);
+        }
+        // This will fail
+        return static_cast<const EnumerationType<uint32_t>&>(*enumerations_32_.end()->second);
     }
 
     bool enum_32(
@@ -397,6 +432,7 @@ protected:
 
     std::map<std::string, DynamicType::Ptr> constants_types_;
     std::map<std::string, DynamicData> constants_;
+    std::vector<std::string> from_enum_;
     std::map<std::string, DynamicType::Ptr> enumerations_32_;
     std::map<std::string, DynamicType::Ptr> structs_;
     //std::map<std::string, std::shared_ptr<AnnotationType>> annotations_;
@@ -488,7 +524,21 @@ protected:
             }
         }
 
-        return std::make_pair<const Module*, std::string>(this, std::move(name));
+        if (has_symbol(name, false))
+        {
+            return std::make_pair<const Module*, std::string>(this, std::move(name));
+        }
+
+        if (outer_ != nullptr)
+        {
+            return outer_->resolve_scope(original_name, original_name, true);
+        }
+
+        // Failed, not found
+        PairModuleSymbol pair;
+        pair.first = nullptr;
+        pair.second = original_name;
+        return pair;
     }
 
 };
