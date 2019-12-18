@@ -531,7 +531,7 @@ protected:
 
         if (outer_ != nullptr)
         {
-            return outer_->resolve_scope(original_name, original_name, true);
+            return outer_->resolve_scope(symbol_name, original_name, true);
         }
 
         // Failed, not found
