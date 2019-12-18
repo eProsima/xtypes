@@ -437,7 +437,8 @@ DynamicData data(outer);
 In this case, two allocations will be needed: one for the sequence, and a second one for the string:
 ![](docs/outer-memory.png)
 
-## Parser
+## IDL module
+### Parser
 xtypes comes with a runtime IDL parser.
 This parser is able to translate an IDL 4.2 (most used features already implemented and growing!) file into xtypes.
 The parser allows a path to a file or a raw IDL string as input.
@@ -493,6 +494,13 @@ The results of the parsing are mainly two:
 It has, two helper functions to ease the retrieval of all types:
 - `get_all_types`: Retrieves a map with all the defined types.
 - `get_all_scoped_types`: Retrieves a map with all the defined types, whose key is with the scoped name.
+
+### Generator
+Analogous but in the opposite direction of the `parse()` method, you can generate IDL content from your defined types.
+Exists two methods to archive this.
+- `generator(const StructType& type)`, that generates the corresponding IDL for the given structure
+  (and all its dependencies).
+- `generator(const Module& module)`, that generates the corresponding IDL of the entire module.
 
 ## Debugging DynamicData
 As a `DynamicData` is fully built at runtime, no static checks can ensure its correct behaviour.
