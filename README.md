@@ -496,7 +496,7 @@ It has, two helper functions to ease the retrieval of all types:
 - `get_all_scoped_types`: Retrieves a map with all the defined types, whose key is with the scoped name.
 
 ### Generator
-Analogous but in opossite direction of `parse()` method, you can generate idl content from ypur defined types.
+Analogous but in the opposite direction of the `parse()` method, you can generate IDL content from your defined types.
 Exists two methods to archive this.
 - `generator(const StructType& type)`, that generates the corresponding IDL for the given structure
   (and all its dependencies).
