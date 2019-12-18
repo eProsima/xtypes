@@ -30,7 +30,16 @@ namespace idl {
 /// \brief Generates the DynamicTypes related to an idl specification.
 /// It supports IDL4.2
 /// \param[in] idl A IDL specification to parse into DynamicType.
-/// \return A map with the DynamicTypes parsed from the idl.
+/// \return A Context with the data related to the parse output.
+inline Context parse(
+        const std::string& idl)
+{
+    Parser* parser = Parser::instance();
+    return parser->parse(idl);
+}
+
+/// \brief Same as parse() but it receives an existant context.
+/// \param[in/out] context Data related with the parse output.
 inline Context& parse(
         const std::string& idl,
         Context& context)
@@ -40,14 +49,17 @@ inline Context& parse(
     return context;
 }
 
-inline Context parse(
-        const std::string& idl)
+/// \brief Same as parse() but it receives a path file where the IDL is located.
+/// \param[in] idl_file Path to the idl file.
+inline Context parse_file(
+        const std::string& idl_file)
 {
     Parser* parser = Parser::instance();
-    return parser->parse(idl);
+    return parser->parse_file(idl_file);
 }
 
-/// \brief Same as parse() but it receives a path file where the IDL is located.
+/// \brief Same as parse() but it receives a path file where the IDL is located,
+/// and an existant context.
 inline Context& parse_file(
         const std::string& idl_file,
         Context& context)
@@ -57,14 +69,7 @@ inline Context& parse_file(
     return context;
 }
 
-inline Context parse_file(
-        const std::string& idl_file)
-{
-    Parser* parser = Parser::instance();
-    return parser->parse_file(idl_file);
-}
-
-/// \brief Preprocess the file and returns the preprocessed content.
+/// \brief Preprocess the file and returns the preprocessed idl content.
 inline std::string preprocess(
         const std::string& idl_file,
         const std::vector<std::string>& includes)
@@ -73,7 +78,7 @@ inline std::string preprocess(
 }
 
 /// \brief Generates the IDL that represents an StructType
-/// \param[in] type Type to represent into IDL
+/// \param[in] type StructType to represent into IDL
 /// \return An IDL that represents the StructType given.
 inline std::string generate(const StructType& type)
 {
