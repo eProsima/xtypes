@@ -500,7 +500,7 @@ Analogous but in opossite direction of `parse()` method, you can generate idl co
 Exists two methods to archive this.
 - `generator(const StructType& type)`, that generates the corresponding IDL for the given structure
   (and all its dependencies).
-- `genetator(const Module& module)`, that generates the correspondig IDL of the entire module.
+- `generator(const Module& module)`, that generates the corresponding IDL of the entire module.
 
 ## Debugging DynamicData
 As a `DynamicData` is fully built at runtime, no static checks can ensure its correct behaviour.
