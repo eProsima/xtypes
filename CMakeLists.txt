@@ -103,7 +103,7 @@ macro(compile_test)
             libgtest
         )
 
-    add_test(NAME ${TEST_NAME} COMMAND test)
+    add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
 endmacro()
 
 if(XTYPES_BUILD_TESTS)
