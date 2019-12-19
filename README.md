@@ -475,6 +475,8 @@ Possible values are: `CHAR`, `UINT8`, and `INT8` (default `CHAR`).
 - `preprocessor_exec` Specifies the preprocessor executable to launch (default "cpp"`).
 - `include_paths` List of paths where the preprocessor should look for included idl files.
 
+Other `Log` related options are explained in the [Log section](#Log).
+
 The results of the parsing are mainly two:
 - `success` Boolean value with the result of the parsing.
 - `module` Access to the root module of the parsed IDL. It will contain defined types and submodules.
@@ -494,6 +496,19 @@ The results of the parsing are mainly two:
 It has, two helper functions to ease the retrieval of all types:
 - `get_all_types`: Retrieves a map with all the defined types.
 - `get_all_scoped_types`: Retrieves a map with all the defined types, whose key is with the scoped name.
+
+#### Log
+The parser comes with a `Log` utility. The parser will log automatically different kind of events happened while
+parsing an IDL. Using the `Context` the user can customize the `Log` behavior and retrieve its results:
+
+- `log_level(LogLevel)` This method sets up the verbosity level (or severity) of the log.
+The available options are `DEBUG`, `INFO`, `WARNING`, and `ERROR` (by default `WARNING`).
+- `log_level()` Retrieves the current verbosity level.
+- `print_log(enable)` When enabled, it prints each log event to the standard output when parsing.
+- `log()` Retrieves the complete list of LogEvent created during the parsing.
+- `log(LogLevel, strict)` Retrieves a subset of LogEvent created during the parsing filtering by LogLevel.
+If strict is set to true, then it will return **only** LogEvents with the same LogLevel. Else (default),
+it will return LogEvents with the same or higher severity.
 
 ### Generator
 Analogous but in the opposite direction of the `parse()` method, you can generate IDL content from your defined types.
