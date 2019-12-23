@@ -710,9 +710,7 @@ private:
             type = get_array_type(dimensions, type);
         }
 
-        context_->log(log::LogLevel::WARNING, "DECLARATION",
-            "Found \"typedef " + name + " for type " + type->name() + "\" but typedefs aren't supported. Ignoring.",
-            ast);
+        outer->create_alias(std::move(*type), name);
     }
 
     void const_dcl(
@@ -1480,6 +1478,10 @@ private:
                 DynamicType::Ptr type = outer->type(node->token);
                 if (type.get() == nullptr)
                 {
+                    if (outer->has_alias(node->token))
+                    {
+                        return outer->alias(node->token);
+                    }
                     context_->log(log::LogLevel::ERROR, "EXCEPTION",
                         "Member type " + node->token + " is unknown",
                         node);

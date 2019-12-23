@@ -24,5 +24,6 @@
 #include <xtypes/StringType.hpp>
 #include <xtypes/DynamicData.hpp>
 #include <xtypes/idl/idl.hpp>
+#include <xtypes/AliasType.hpp>
 
 #endif //EPROSIMA_XTYPES_XTYPES_HPP_
