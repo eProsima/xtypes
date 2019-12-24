@@ -117,7 +117,7 @@ public:
 	explicit operator const T& () const
 	{
 		std::stringstream err;
-		err << "Alias [" << aliased_->name() << "] cannot be cast to the specified type: ["
+		err << "Alias [" << name() << "] cannot be cast to the specified type: ["
 			<< typeid(T).name() << "].";
 		const T* t =  dynamic_cast<const T*>(aliased_.get());
 		xtypes_assert(t != nullptr, err.str());

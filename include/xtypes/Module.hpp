@@ -397,6 +397,12 @@ public:
         return aliases_.emplace(name, std::move(type)).second;
     }
 
+    bool create_alias(
+            const AliasType& alias)
+    {
+        return aliases_.emplace(alias.name(), DynamicType::Ptr(alias.get())).second;
+    }
+
     // Generic type retrieval.
     DynamicType::Ptr type(
             const std::string& name)
