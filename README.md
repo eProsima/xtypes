@@ -434,7 +434,7 @@ outer.add_member("m_string", StringType());
 
 DynamicData data(outer);
 ```
-In this case, two allocations will be needed: one for the sequence, and a second one for the string:
+In this case, two more allocations will be needed: one for the sequence, and a second one for the string:
 ![](docs/outer-memory.png)
 
 ## IDL module
