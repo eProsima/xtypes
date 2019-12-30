@@ -357,7 +357,7 @@ public:
         return result.second;
     }
 
-    AliasType alias(
+    AliasType& alias(
             const std::string& name)
     {
         // Solve scope
@@ -365,10 +365,10 @@ public:
         if (module.first == nullptr)
         {
             // This will fail
-            return AliasType(module.first->aliases_.at(module.second), name);
+            return static_cast<AliasType&>(const_cast<DynamicType&>(*module.first->aliases_.at(module.second)));
         }
 
-        return AliasType(module.first->aliases_.at(module.second), name);
+        return static_cast<AliasType&>(const_cast<DynamicType&>(*module.first->aliases_.at(module.second)));
     }
 
     bool has_alias(
@@ -386,7 +386,7 @@ public:
     }
 
     bool create_alias(
-            const DynamicType&& type,
+            const DynamicType::Ptr&& type,
             const std::string& name)
     {
         if (name.find("::") != std::string::npos || has_alias(name))
@@ -394,13 +394,19 @@ public:
             return false; // Cannot define alias with scoped name (or already defined).
         }
 
-        return aliases_.emplace(name, std::move(type)).second;
+        return aliases_.emplace(name, AliasType(type, name)).second;
     }
 
-    bool create_alias(
+    bool add_alias(
             const AliasType& alias)
     {
-        return aliases_.emplace(alias.name(), DynamicType::Ptr(alias.get())).second;
+        return aliases_.emplace(alias.name(), AliasType(alias)).second;
+    }
+
+    bool add_alias(
+            const AliasType&& alias)
+    {
+        return aliases_.emplace(alias.name(), std::move(alias)).second;
     }
 
     // Generic type retrieval.

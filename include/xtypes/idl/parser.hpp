@@ -710,7 +710,7 @@ private:
             type = get_array_type(dimensions, type);
         }
 
-        outer->create_alias(std::move(*type), name);
+        outer->create_alias(std::move(type), name);
     }
 
     void const_dcl(
@@ -973,12 +973,6 @@ private:
                 data = value;
                 break;
             }
-            /*
-            case TypeKind::ALIAS_TYPE:
-            {
-                break;
-            }
-            */
             default:
                 context_->log(log::LogLevel::ERROR, "UNEXPECTED_LITERAL_TYPE",
                     "Unknown literal type: " + data.type().name() + " (" + literal + ")",
@@ -1480,7 +1474,7 @@ private:
                 {
                     if (outer->has_alias(node->token))
                     {
-                        return outer->alias(node->token);
+                        return AliasType(outer->alias(node->token));
                     }
                     context_->log(log::LogLevel::ERROR, "EXCEPTION",
                         "Member type " + node->token + " is unknown",

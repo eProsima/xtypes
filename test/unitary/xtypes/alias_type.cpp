@@ -65,7 +65,7 @@ TEST (AliasType, alias_idl_generate)
     stdata.add_member("st1", primitive_type<int>());
 
     Module m;
-    m.create_alias(at);
+    m.add_alias(at);
     m.structure(stdata);
 
     std::string gen_idl = idl::generate(m);

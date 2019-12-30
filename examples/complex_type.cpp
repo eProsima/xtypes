@@ -92,7 +92,7 @@ int main()
     DynamicData my_const(primitive_type<uint64_t>());
     my_const = 555ul;
     root.create_constant("MyConst", my_const);
-    root.create_alias(abool);
+    root.add_alias(abool);
     std::cout << idl::generate(root) << std::endl;
 
     // EnumerationType<uint64_t> my_long_enum("MyLongEnum"); // Static assert, uint64_t isn't allowed

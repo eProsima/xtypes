@@ -185,7 +185,7 @@ inline std::string module_contents(const Module& module_, size_t tabs = 0)
     // Aliases
     for (const auto& alias : module_.aliases_)
     {
-        ss << aliase(*alias.second, alias.first);
+        ss << aliase(static_cast<const AliasType&>(*alias.second).get(), alias.first);
     }
     // Enums
     for (const auto& pair : module_.enumerations_32_)
