@@ -113,6 +113,31 @@ public:
         return *aliased_;
     }
 
+    const DynamicType& get()
+    {
+        return *aliased_;
+    }
+
+    const DynamicType* operator -> () const
+    {
+        return aliased_.get();
+    }
+
+    const DynamicType* operator -> ()
+    {
+        return aliased_.get();
+    }
+
+    const DynamicType& operator * () const
+    {
+        return *aliased_;
+    }
+
+    const DynamicType& operator * ()
+    {
+        return *aliased_;
+    }
+
     template <typename T>
     operator const T& () const
     {
@@ -123,6 +148,7 @@ public:
         xtypes_assert(t != nullptr, err.str());
         return *t;
     }
+
 
 protected:
     virtual DynamicType* clone() const override

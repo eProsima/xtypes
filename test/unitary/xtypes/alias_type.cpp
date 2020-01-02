@@ -29,16 +29,15 @@ TEST (AliasType, alias_name)
 
     EXPECT_EQ("wstr50", at.name());
     EXPECT_EQ(TypeKind::ALIAS_TYPE, at.kind());
-    EXPECT_EQ(TypeKind::WSTRING_TYPE, at.get().kind());
+    EXPECT_EQ(TypeKind::WSTRING_TYPE, at->kind());
 }
 
 TEST (AliasType, alias_casting)
 {
     AliasType at(StringType(100), "str100");
 
-    static_cast<const StringType&>(at); // This should work OK
     ASSERT_DEATH({ static_cast<const StructType&>(at); },
-        XTYPES_ASSERT_ERRMSG("Alias \\[" + at.name() + "\\] cannot be cast to the specified type"));        
+        XTYPES_ASSERT_ERRMSG("Alias \\[" + at.name() + "\\] cannot be cast to the specified type"));
 }
 
 TEST (AliasType, dynamic_alias_data)

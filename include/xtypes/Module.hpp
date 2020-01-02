@@ -357,7 +357,7 @@ public:
         return result.second;
     }
 
-    AliasType& alias(
+    const AliasType& alias(
             const std::string& name)
     {
         // Solve scope
@@ -365,10 +365,10 @@ public:
         if (module.first == nullptr)
         {
             // This will fail
-            return static_cast<AliasType&>(const_cast<DynamicType&>(*module.first->aliases_.at(module.second)));
+            return static_cast<const AliasType&>(static_cast<const DynamicType&>(*module.first->aliases_.at(module.second)));
         }
 
-        return static_cast<AliasType&>(const_cast<DynamicType&>(*module.first->aliases_.at(module.second)));
+        return static_cast<const AliasType&>(static_cast<const DynamicType&>(*module.first->aliases_.at(module.second)));
     }
 
     bool has_alias(
