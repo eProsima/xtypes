@@ -182,7 +182,7 @@ public:
 
     /// \brief Shortcut for ((MutableCollectionType)type()).bounds()
     /// \pre The DynamicData must represent a CollectionType.
-    /// \returns Bound (max size) of the type. If zero, means the collecition is unbound.
+    /// \returns Bound (max size) of the type. If zero, means the collection is unbound.
     /// If the DynamicData represents an Array, then bounds() == size()
     size_t bounds() const
     {
@@ -740,7 +740,8 @@ public:
     {
         xtypes_assert(type_.kind() == TypeKind::SEQUENCE_TYPE,
             "resize() is only available for sequence types but called for '" << type_.name() << "'.");
-        xtypes_assert(bounds() >= size,
+        size_t bound = bounds();
+        xtypes_assert(!bound || bound >= size,
             "The desired size (" << size << ") is bigger than maximum allowed size for the type '"
             << type_.name() << "' (" << bounds() << ").");
         const SequenceType& sequence = static_cast<const SequenceType&>(type_);
