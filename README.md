@@ -507,7 +507,7 @@ The available options are `DEBUG`, `INFO`, `WARNING`, and `ERROR` (by default `W
 - `print_log(enable)` When enabled, it prints each log event to the standard output when parsing.
 - `log()` Retrieves the complete list of LogEvent created during the parsing.
 - `log(LogLevel, strict)` Retrieves a subset of LogEvent created during the parsing filtering by LogLevel.
-If strict is set to true, then it will return **only** LogEvents with the same LogLevel. Else (default),
+If `strict` is set to true, then it will return **only** LogEvents with the same LogLevel. Else (default),
 it will return LogEvents with the same or higher severity.
 
 ### Generator
