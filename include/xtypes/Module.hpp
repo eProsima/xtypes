@@ -358,17 +358,23 @@ public:
     }
 
     const AliasType& alias(
+            const std::string& name) const
+    {
+        // Solve scope
+        PairModuleSymbol module = resolve_scope(name);
+        xtypes_assert(module.first != nullptr, "Cannot solve scope for alias '" + name + "'.");
+
+        return static_cast<const AliasType&>(*module.first->aliases_.at(module.second));
+    }
+
+    AliasType& alias(
             const std::string& name)
     {
         // Solve scope
         PairModuleSymbol module = resolve_scope(name);
-        if (module.first == nullptr)
-        {
-            // This will fail
-            return static_cast<const AliasType&>(static_cast<const DynamicType&>(*module.first->aliases_.at(module.second)));
-        }
+        xtypes_assert(module.first != nullptr, "Cannot solve scope for alias '" + name + "'.");
 
-        return static_cast<const AliasType&>(static_cast<const DynamicType&>(*module.first->aliases_.at(module.second)));
+        return static_cast<AliasType&>(const_cast<DynamicType&>(*module.first->aliases_.at(module.second)));
     }
 
     bool has_alias(

@@ -480,7 +480,7 @@ protected:
     ReadableDynamicDataRef(
             const DynamicType& type,
             uint8_t* source)
-        : type_(type.kind() == TypeKind::ALIAS_TYPE ? static_cast<const AliasType&>(type).get() : type)
+        : type_(type.kind() == TypeKind::ALIAS_TYPE ? static_cast<const AliasType&>(type).rget() : type)
         , instance_(source)
     {}
 

@@ -29,15 +29,22 @@ public:
     AliasType(
             const DynamicType::Ptr& aliased,
             const std::string& name)
-    : DynamicType(TypeKind::ALIAS_TYPE, name)
-    , aliased_(aliased)
+        : DynamicType(TypeKind::ALIAS_TYPE, name)
+        , aliased_(aliased)
     {}
 
     AliasType(
             const DynamicType::Ptr&& aliased,
             const std::string& name)
-    : DynamicType(TypeKind::ALIAS_TYPE, name)
-    , aliased_(std::move(aliased))
+        : DynamicType(TypeKind::ALIAS_TYPE, name)
+        , aliased_(std::move(aliased))
+    {}
+
+    AliasType(
+            const AliasType& aliased,
+            const std::string& name)
+        : DynamicType(TypeKind::ALIAS_TYPE, name)
+        , aliased_(aliased)
     {}
 
     AliasType(const AliasType& other) = default;
@@ -113,17 +120,7 @@ public:
         return *aliased_;
     }
 
-    const DynamicType& get()
-    {
-        return *aliased_;
-    }
-
     const DynamicType* operator -> () const
-    {
-        return aliased_.get();
-    }
-
-    const DynamicType* operator -> ()
     {
         return aliased_.get();
     }
@@ -133,8 +130,12 @@ public:
         return *aliased_;
     }
 
-    const DynamicType& operator * ()
+    const DynamicType& rget() const
     {
+        if (aliased_->kind() == TypeKind::ALIAS_TYPE)
+        {
+            return static_cast<const AliasType&>(*aliased_).rget();
+        }
         return *aliased_;
     }
 
@@ -148,7 +149,6 @@ public:
         xtypes_assert(t != nullptr, err.str());
         return *t;
     }
-
 
 protected:
     virtual DynamicType* clone() const override

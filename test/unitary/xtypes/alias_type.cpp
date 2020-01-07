@@ -56,50 +56,61 @@ TEST (AliasType, dynamic_alias_data)
         XTYPES_ASSERT_ERRMSG("Expected type 'float'"));
 }
 
+TEST (AliasType, recursive_dynamic_alias_data)
+{
+    AliasType at(primitive_type<uint32_t>(), "seconds");
+    AliasType at1(at, "secs");
+    AliasType at2(at1, "s");
+    ASSERT_EQ(at.kind(), TypeKind::ALIAS_TYPE);
+    ASSERT_EQ(at1.kind(), TypeKind::ALIAS_TYPE);
+    ASSERT_EQ(at2.kind(), TypeKind::ALIAS_TYPE);
+    ASSERT_EQ(at->kind(), TypeKind::UINT_32_TYPE);
+    ASSERT_EQ(at1->kind(), TypeKind::ALIAS_TYPE);
+    ASSERT_EQ(at2->kind(), TypeKind::ALIAS_TYPE);
+    ASSERT_EQ(at1.rget().kind(), TypeKind::UINT_32_TYPE);
+    ASSERT_EQ(at2.rget().kind(), TypeKind::UINT_32_TYPE);
+
+    StructType stdata("StructData");
+    stdata.add_member("st0", at);
+    stdata.add_member("st1", at1);
+    stdata.add_member("st2", at2);
+
+    DynamicData data(stdata);
+    data["st0"] = 20u;
+    data["st1"] = 30u;
+    data["st2"] = 40u;
+
+    const DynamicType& dt0 = data["st0"].type();
+    const DynamicType& dt1 = data["st1"].type();
+    const DynamicType& dt2 = data["st2"].type();
+    ASSERT_EQ(dt0.kind(), TypeKind::UINT_32_TYPE);
+    ASSERT_EQ(dt1.kind(), TypeKind::UINT_32_TYPE);
+    ASSERT_EQ(dt2.kind(), TypeKind::UINT_32_TYPE);
+}
+
 TEST (AliasType, alias_idl_generate)
 {
     AliasType at(WStringType(), "utf8string");
+    AliasType at1(at, "u8str");
     StructType stdata("StructData");
     stdata.add_member("st0", at);
     stdata.add_member("st1", primitive_type<int>());
+    stdata.add_member("st2", at1);
 
     Module m;
     m.add_alias(at);
+    m.add_alias(at1);
     m.structure(stdata);
 
     std::string gen_idl = idl::generate(m);
     std::stringstream expected_idl;
+    expected_idl << "typedef utf8string u8str;" << std::endl;
     expected_idl << "typedef wstring utf8string;" << std::endl;
     expected_idl << "struct StructData" << std::endl;
     expected_idl << "{" << std::endl;
     expected_idl << "    utf8string st0;" << std::endl;
     expected_idl << "    int32 st1;" << std::endl;
+    expected_idl << "    u8str st2;" << std::endl;
     expected_idl << "};" << std::endl;
     ASSERT_EQ(gen_idl, expected_idl.str());
-}
-
-TEST (AliasType, alias_idl_parse)
-{
-    std::string idl_spec = R"(
-        typedef uint32 u32;
-        typedef double longfloat;
-        struct StructData
-        {
-            u32 st0;
-            longfloat st1;
-        };
-    )";
-
-    idl::Context context = idl::parse(idl_spec);
-    Module& m_context = context.module();
-    EXPECT_TRUE(m_context.has_alias("u32"));
-    EXPECT_TRUE(m_context.has_alias("longfloat"));
-
-    const StructType& st = m_context.structure("StructData");
-    const DynamicType& dst0 = st.member("st0").type();
-    const DynamicType& dst1 = st.member("st1").type();
-    EXPECT_EQ(dst0.kind(), TypeKind::ALIAS_TYPE);
-    EXPECT_EQ(dst1.kind(), TypeKind::ALIAS_TYPE);
-    EXPECT_EQ(static_cast<const AliasType&>(dst0).get().kind(), TypeKind::UINT_32_TYPE);
-    EXPECT_EQ(static_cast<const AliasType&>(dst1).get().kind(), TypeKind::FLOAT_64_TYPE);
 }
