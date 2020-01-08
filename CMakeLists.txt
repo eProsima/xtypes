@@ -115,6 +115,7 @@ if(XTYPES_BUILD_TESTS)
         test/unitary/xtypes/primitive_types.cpp
         test/unitary/xtypes/collection_types.cpp
         test/unitary/xtypes/struct_type.cpp
+        test/unitary/xtypes/union_type.cpp
         test/unitary/xtypes/iterators.cpp
         test/unitary/xtypes/module.cpp
         test/unitary/xtypes/consistency.cpp
