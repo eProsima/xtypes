@@ -26,12 +26,14 @@ namespace eprosima {
 namespace xtypes {
 
 class StructType;
+class UnionType;
 
 /// \brief Class that represent a member.
 /// A member can be added to any AggregationType.
 class Member
 {
     friend StructType;
+    friend UnionType;
 
 public:
     /// \brief Construct a member.

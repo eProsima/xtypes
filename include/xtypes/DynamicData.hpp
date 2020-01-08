@@ -18,6 +18,7 @@
 #define EPROSIMA_XTYPES_DYNAMIC_DATA_HPP_
 
 #include <xtypes/StructType.hpp>
+#include <xtypes/UnionType.hpp>
 #include <xtypes/CollectionType.hpp>
 #include <xtypes/SequenceType.hpp>
 #include <xtypes/PrimitiveType.hpp>
@@ -131,6 +132,15 @@ public:
         xtypes_assert(aggregation.has_member(member_name),
             "Type '" << type_.name() << "' doesn't have a member named '" << member_name << "'.");
 
+        if (type_.kind() == TypeKind::UNION_TYPE)
+        {
+            if (member_name != UNION_DISCRIMINATOR)
+            {
+                UnionType& union_type = const_cast<UnionType&>(static_cast<const UnionType&>(aggregation));
+                union_type.select_case(instance_, member_name);
+            }
+        }
+
         const Member& member = aggregation.member(member_name);
         return ReadableDynamicDataRef(member.type(), instance_ + member.offset());
     }
@@ -138,7 +148,7 @@ public:
     /// \brief index access operator by name.
     /// Depends of the underlying DynamicType, the index can be represent the member or element position.
     /// \param[in] index Index requested.
-    /// \pre The DynamicData must represent an AggregationType or a CollectionType.
+    /// \pre The DynamicData must represent an AggregationType (except an UnionType) or a CollectionType.
     /// \pre index < size()
     /// \returns A readable reference of the DynamicData accessed.
     ReadableDynamicDataRef operator [] (
@@ -154,8 +164,18 @@ public:
             return ReadableDynamicDataRef(collection.content_type(), collection.get_instance_at(instance_, index));
         }
 
+        xtypes_assert(type_.kind() != TypeKind::UNION_TYPE, "Members of UnionType cannot be accessed by index.");
+
         const AggregationType& aggregation = static_cast<const StructType&>(type_);
         const Member& member = aggregation.member(index);
+        return ReadableDynamicDataRef(member.type(), instance_ + member.offset());
+    }
+
+    ReadableDynamicDataRef discriminator() const
+    {
+        xtypes_assert(type_.kind() == TypeKind::UNION_TYPE, "discriminator is only available for UnionType.");
+        const UnionType& aggregation = static_cast<const UnionType&>(type_);
+        const Member& member = aggregation.member(0);
         return ReadableDynamicDataRef(member.type(), instance_ + member.offset());
     }
 
@@ -601,6 +621,7 @@ class WritableDynamicDataRef : public ReadableDynamicDataRef
 public:
     using ReadableDynamicDataRef::operator [];
     using ReadableDynamicDataRef::value;
+    using ReadableDynamicDataRef::discriminator;
 
     /// \brief Assignment operator.
     WritableDynamicDataRef& operator = (
@@ -662,6 +683,11 @@ public:
             size_t index) //
     {
         return ReadableDynamicDataRef::operator[](index);
+    }
+
+    WritableDynamicDataRef discriminator()
+    {
+        return ReadableDynamicDataRef::discriminator();
     }
 
     /// \brief Set a primitive or string value into the DynamicData

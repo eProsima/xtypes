@@ -61,7 +61,7 @@ enum class TypeKind
     WSTRING_TYPE     = CONSTRUCTED_TYPE | COLLECTION_TYPE | 0x0007, ///< Represents a WStringType
     MAP_TYPE         = CONSTRUCTED_TYPE | COLLECTION_TYPE | 0x0008, ///< Not supported
 
-    UNION_TYPE                = CONSTRUCTED_TYPE | AGGREGATION_TYPE | 0x0009, ///< Not supported
+    UNION_TYPE                = CONSTRUCTED_TYPE | AGGREGATION_TYPE | 0x0009, ///< Represents an UnionType
     STRUCTURE_TYPE            = CONSTRUCTED_TYPE | AGGREGATION_TYPE | 0x000A, ///< Represents a StructType
     UNION_FWD_DECL_TYPE       = CONSTRUCTED_TYPE | AGGREGATION_TYPE | 0x000B, ///< Not supported
     STRUCTURE_FWD_DECL_TYPE   = CONSTRUCTED_TYPE | AGGREGATION_TYPE | 0x000C ///< Not supported
