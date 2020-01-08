@@ -260,7 +260,6 @@ public:
         : parser_(idl_grammar())
         , context_(nullptr)
     {
-        using namespace std::placeholders;
         parser_.enable_ast();
         parser_.log = std::bind(&Parser::parser_log_cb_, this, std::placeholders::_1,
             std::placeholders::_2, std::placeholders::_3);
