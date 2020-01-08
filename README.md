@@ -189,10 +189,10 @@ AliasType my_alias(primitive_type<uint32_t>(), "unsigned32"); // As in C "typede
 AliasType my_alias2(my_alias, "u32"); // As in C "typedef unsigned32 u32;"
 StructType my_struct("MyStruct");
 my_struct.add_member("m_al", my_alias);
-my_struct.add_member("m_al2", my_alias2);
 DynamicData struct_data(my_struct);
 struct_data["m_al"] = 20u; // Internal uint32_t primitive type is accessed
-struct_data["m_al2"] = 30u; // Internal uint32_t primitive type is accessed
+DynamicData alias_data(my_alias2);
+alias_data = 30u; // Internal uint32_t primitive type is accessed
 ```
 
 #### Type Consistency (QoS policies)
