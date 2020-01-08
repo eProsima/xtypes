@@ -171,12 +171,29 @@ my_struct.add_member(Member("m_a", primitive_type<int32_t>()));
 my_struct.add_member(Member("m_b", StringType()));
 my_struct.add_member(Member("m_c", primitive_type<double>().key().id(42))); //with annotations
 my_struct.add_member("m_d", ArrayType(25)); //shortcut version
-my_struct.add_member("m_e", other_struct)); //member of structs
-my_struct.add_member("m_f", SequenceType(other_struct))); //member of sequence of structs
+my_struct.add_member("m_e", other_struct); //member of structs
+my_struct.add_member("m_f", SequenceType(other_struct)); //member of sequence of structs
 ```
 Note: once a `DynamicType` is added to an struct, a copy is performed.
 This allows modifications to `DynamicType` to be performed without side effects.
 It also and facilitates the user's memory management duties.
+
+#### AliasType
+Acts as a *C-like typedef*, allowing to specify a custom name for an already existing type. They can be
+used as any other *DynamicType*. Recursive aliasing is supported, meaning you can assign a new alias to
+an already existing alias.
+When a DynamicData is created using an AliasType as its type specificator, the inner type pointed by
+the alias is retrieved and used to create the DynamicData field.
+```c++
+AliasType my_alias(primitive_type<uint32_t>(), "unsigned32"); // As in C "typedef uint32_t unsigned32;"
+AliasType my_alias2(my_alias, "u32"); // As in C "typedef unsigned32 u32;"
+StructType my_struct("MyStruct");
+my_struct.add_member("m_al", my_alias);
+DynamicData struct_data(my_struct);
+struct_data["m_al"] = 20u; // Internal uint32_t primitive type is accessed
+DynamicData alias_data(my_alias2);
+alias_data = 30u; // Internal uint32_t primitive type is accessed
+```
 
 #### Type Consistency (QoS policies)
 Any pair of `DynamicType`s can be checked for their mutual compatibility.
@@ -490,6 +507,8 @@ The results of the parsing are mainly two:
     - `has_constant`: Checks for the existence of a constant by name.
     - `enum_32`: Allows access to a defined enumeration by name (only 32 bits enumeration is supported currently).
     - `has_enum_32`: Check for the existence of a numeration by name.
+    - `alias`: Allows access to a defined alias by name.
+    - `has_alias`: Checks for the existence of an alias by name.
     - `get_all_types`: Retrieves a map with all the defined types.
     - `fill_all_types`: Fills an existant map with all the defined types.
 

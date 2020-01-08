@@ -1152,6 +1152,48 @@ TEST (IDLParser, severity_logging)
     EXPECTED_LOG_RESULTS_FILTERED(DEBUG, 7, ASSERT_EQ, false);
 }
 
+TEST(IDLParser, alias_test)
+{
+    std::string idl_spec = R"(
+        typedef uint32 u32;
+        typedef double longfloat;
+        typedef longfloat lfloat;
+        typedef lfloat lflt;
+        struct StructData
+        {
+            u32 st0;
+            longfloat st1;
+            lfloat st2;
+            lflt st3;
+        };
+    )";
+
+    Context context = parse(idl_spec);
+    ASSERT_TRUE(context.success);
+
+    Module& m_context = context.module();
+    EXPECT_TRUE(m_context.has_alias("u32"));
+    EXPECT_TRUE(m_context.has_alias("longfloat"));
+    EXPECT_TRUE(m_context.has_alias("lfloat"));
+    EXPECT_TRUE(m_context.has_alias("lflt"));
+
+    const StructType& st = m_context.structure("StructData");
+    const DynamicType& dst0 = st.member("st0").type();
+    const DynamicType& dst1 = st.member("st1").type();
+    const DynamicType& dst2 = st.member("st2").type();
+    const DynamicType& dst3 = st.member("st3").type();
+    EXPECT_EQ(dst0.kind(), TypeKind::ALIAS_TYPE);
+    EXPECT_EQ(dst1.kind(), TypeKind::ALIAS_TYPE);
+    EXPECT_EQ(dst2.kind(), TypeKind::ALIAS_TYPE);
+    EXPECT_EQ(dst3.kind(), TypeKind::ALIAS_TYPE);
+    EXPECT_EQ(static_cast<const AliasType&>(dst0).get().kind(), TypeKind::UINT_32_TYPE);
+    EXPECT_EQ(static_cast<const AliasType&>(dst1).get().kind(), TypeKind::FLOAT_64_TYPE);
+    EXPECT_EQ(static_cast<const AliasType&>(dst2).get().kind(), TypeKind::ALIAS_TYPE);
+    EXPECT_EQ(static_cast<const AliasType&>(dst2).rget().kind(), TypeKind::FLOAT_64_TYPE);
+    EXPECT_EQ(static_cast<const AliasType&>(dst3).get().kind(), TypeKind::ALIAS_TYPE);
+    EXPECT_EQ(static_cast<const AliasType&>(dst3).rget().kind(), TypeKind::FLOAT_64_TYPE);
+}
+
 int main(int argc, char** argv)
 {
     testing::InitGoogleTest(&argc, argv);

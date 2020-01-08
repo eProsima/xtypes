@@ -22,6 +22,7 @@
 #include <xtypes/SequenceType.hpp>
 #include <xtypes/PrimitiveType.hpp>
 #include <xtypes/EnumerationType.hpp>
+#include <xtypes/AliasType.hpp>
 
 namespace eprosima {
 namespace xtypes {
@@ -479,7 +480,7 @@ protected:
     ReadableDynamicDataRef(
             const DynamicType& type,
             uint8_t* source)
-        : type_(type)
+        : type_(type.kind() == TypeKind::ALIAS_TYPE ? static_cast<const AliasType&>(type).rget() : type)
         , instance_(source)
     {}
 

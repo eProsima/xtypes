@@ -119,6 +119,7 @@ if(XTYPES_BUILD_TESTS)
         test/unitary/xtypes/module.cpp
         test/unitary/xtypes/consistency.cpp
         test/unitary/xtypes/integration.cpp
+        test/unitary/xtypes/alias_type.cpp
         )
 
     compile_test(${PROJECT_NAME}_idl_parser_test_unitary SOURCE test/unitary/parser/parser_test.cpp)

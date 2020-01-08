@@ -52,7 +52,7 @@ enum class TypeKind
 
     ENUMERATION_TYPE = CONSTRUCTED_TYPE | ENUMERATED_TYPE | 0x0001,
     BITSET_TYPE      = CONSTRUCTED_TYPE | 0x0002, ///< Not supported
-    ALIAS_TYPE       = CONSTRUCTED_TYPE | 0x0003, ///< Not supported
+    ALIAS_TYPE       = CONSTRUCTED_TYPE | 0x0003, ///< Represents an AliasType
     BITMASK_TYPE     = CONSTRUCTED_TYPE | ENUMERATED_TYPE | 0x0004, ///< Not supported
 
     ARRAY_TYPE       = CONSTRUCTED_TYPE | COLLECTION_TYPE | 0x0004, ///< Reprensets an ArrayType

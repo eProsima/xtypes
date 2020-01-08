@@ -357,6 +357,64 @@ public:
         return result.second;
     }
 
+    const AliasType& alias(
+            const std::string& name) const
+    {
+        // Solve scope
+        PairModuleSymbol module = resolve_scope(name);
+        xtypes_assert(module.first != nullptr, "Cannot solve scope for alias '" + name + "'.");
+
+        return static_cast<const AliasType&>(*module.first->aliases_.at(module.second));
+    }
+
+    AliasType& alias(
+            const std::string& name)
+    {
+        // Solve scope
+        PairModuleSymbol module = resolve_scope(name);
+        xtypes_assert(module.first != nullptr, "Cannot solve scope for alias '" + name + "'.");
+
+        return static_cast<AliasType&>(const_cast<DynamicType&>(*module.first->aliases_.at(module.second)));
+    }
+
+    bool has_alias(
+            const std::string& name)
+    {
+        // Solve scope
+        PairModuleSymbol module = resolve_scope(name);
+        if (module.first == nullptr)
+        {
+            return false;
+        }
+
+        auto it = module.first->aliases_.find(module.second);
+        return it != module.first->aliases_.end();
+    }
+
+    bool create_alias(
+            const DynamicType::Ptr&& type,
+            const std::string& name)
+    {
+        if (name.find("::") != std::string::npos || has_alias(name))
+        {
+            return false; // Cannot define alias with scoped name (or already defined).
+        }
+
+        return aliases_.emplace(name, AliasType(type, name)).second;
+    }
+
+    bool add_alias(
+            const AliasType& alias)
+    {
+        return aliases_.emplace(alias.name(), AliasType(alias)).second;
+    }
+
+    bool add_alias(
+            const AliasType&& alias)
+    {
+        return aliases_.emplace(alias.name(), std::move(alias)).second;
+    }
+
     // Generic type retrieval.
     DynamicType::Ptr type(
             const std::string& name)
@@ -395,6 +453,7 @@ public:
 protected:
     friend std::string idl::generator::module_contents(const Module& module, size_t tabs);
 
+    std::map<std::string, DynamicType::Ptr> aliases_;
     std::map<std::string, DynamicType::Ptr> constants_types_;
     std::map<std::string, DynamicData> constants_;
     std::map<std::string, DynamicType::Ptr> enumerations_32_;
