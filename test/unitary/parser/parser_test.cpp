@@ -953,6 +953,205 @@ TEST (IDLParser, enumerations_test)
     }
 }
 
+TEST (IDLParser, bad_idl_logging)
+{
+    Context context;
+    context.log_level(log::LogLevel::DEBUG);
+    // context.print_log(true); // Useful for debbuging
+    context.preprocess = false;
+    parse(R"~~(
+        // This is not a well formed IDL file
+        struct Str
+        {
+            323241 std_string;
+        };
+        )~~", context);
+
+    std::vector<log::LogEntry> log = context.log();
+    ASSERT_GT(log.size(), 0);
+
+    uint32_t log_peglib_error = 0;
+    uint32_t log_result = 0;
+
+    for (const log::LogEntry& entry : log)
+    {
+        if (entry.category == "PEGLIB_PARSER")
+        {
+            if (entry.message.find("syntax error") != std::string::npos)
+            {
+                ++log_peglib_error;
+            }
+            else
+            {
+                FAIL() << "Unexpected log entry: " << entry.to_string();
+            }
+        }
+        else if (entry.category == "RESULT")
+        {
+            if (entry.message.find("found errors") != std::string::npos)
+            {
+                ++log_result;
+            }
+            else
+            {
+                FAIL() << "Unexpected log entry: " << entry.to_string();
+            }
+        }
+        else
+        {
+            FAIL() << "Unexpected log entry: " << entry.to_string();
+        }
+    }
+
+    ASSERT_EQ(log_peglib_error, 1);
+    ASSERT_EQ(log_result, 1);
+}
+
+TEST (IDLParser, logging)
+{
+    Context context;
+    context.log_level(log::LogLevel::INFO);
+    // context.print_log(true); // Useful for debbuging
+    context.preprocess = false;
+    context.allow_keyword_identifiers = true;
+    context.ignore_redefinition = true;
+    parse(R"~~(
+        struct Struct
+        {
+            int32 int32;
+        };
+        struct Struct
+        {
+            int64 int64;
+        };
+        )~~", context);
+
+    std::vector<log::LogEntry> log = context.log();
+    ASSERT_GT(log.size(), 0);
+
+    // Expected logs are:
+    // INFO - 'Struct' reserved word x 2
+    // INFO - 'int32' reserved word
+    // INFO - 'Struct' already used
+    // INFO - 'int64' reserved word
+    // INFO - 'Struct' redefinition
+    uint32_t log_struct_reserved = 0;
+    uint32_t log_int32_reserved = 0;
+    uint32_t log_int64_reserved = 0;
+    uint32_t log_struct_already_used = 0;
+    uint32_t log_struct_redefinition = 0;
+
+    for (const log::LogEntry& entry : log)
+    {
+        if (entry.category == "RESERVED_WORD")
+        {
+            if (entry.message.find("Struct") != std::string::npos)
+            {
+                ++log_struct_reserved;
+            }
+            else if (entry.message.find("int32") != std::string::npos)
+            {
+                ++log_int32_reserved;
+            }
+            else if (entry.message.find("int64") != std::string::npos)
+            {
+                ++log_int64_reserved;
+            }
+            else
+            {
+                FAIL() << "Unexpected log entry: " << entry.to_string();
+            }
+        }
+        else if (entry.category == "ALREADY_USED")
+        {
+            if (entry.message.find("Struct") != std::string::npos)
+            {
+                ++log_struct_already_used;
+            }
+            else
+            {
+                FAIL() << "Unexpected log entry: " << entry.to_string();
+            }
+        }
+        else if (entry.category == "REDEFINITION")
+        {
+            if (entry.message.find("Struct") != std::string::npos)
+            {
+                ++log_struct_redefinition;
+            }
+            else
+            {
+                FAIL() << "Unexpected log entry: " << entry.to_string();
+            }
+        }
+        else
+        {
+            FAIL() << "Unexpected log entry: " << entry.to_string();
+        }
+    }
+
+    ASSERT_EQ(log_struct_reserved, 2);
+    ASSERT_EQ(log_int32_reserved, 1);
+    ASSERT_EQ(log_int64_reserved, 1);
+    ASSERT_EQ(log_struct_already_used, 1);
+    ASSERT_EQ(log_struct_redefinition, 1);
+}
+
+#define EXPECTED_LOG_RESULTS(LOG_LEVEL, N_ENTRIES, ASSERT, PRINT)                                                   \
+{                                                                                                                   \
+    Context context;                                                                                                \
+    context.log_level(log::LogLevel::LOG_LEVEL);                                                                    \
+    if(PRINT)                                                                                                       \
+    {                                                                                                               \
+        context.print_log(true);                                                                                    \
+    }                                                                                                               \
+    context.preprocess = false;                                                                                     \
+    context.allow_keyword_identifiers = true;                                                                       \
+    parse(idl_str, context);                                                                                        \
+                                                                                                                    \
+    std::vector<log::LogEntry> log = context.log();                                                                 \
+    ASSERT(log.size(), N_ENTRIES);                                                                                  \
+}
+
+#define EXPECTED_LOG_RESULTS_FILTERED(LOG_LEVEL, N_ENTRIES, ASSERT, PRINT)                                          \
+{                                                                                                                   \
+    Context context;                                                                                                \
+    context.log_level(log::LogLevel::DEBUG);                                                                        \
+    if(PRINT)                                                                                                       \
+    {                                                                                                               \
+        context.print_log(true);                                                                                    \
+    }                                                                                                               \
+    context.preprocess = false;                                                                                     \
+    context.allow_keyword_identifiers = true;                                                                       \
+    parse(idl_str, context);                                                                                        \
+                                                                                                                    \
+    std::vector<log::LogEntry> log = context.log(log::LogLevel::LOG_LEVEL, true);                                   \
+    ASSERT(log.size(), N_ENTRIES);                                                                                  \
+}
+
+TEST (IDLParser, severity_logging)
+{
+    const std::string idl_str = R"~~(
+        struct MyStruct // DEBUG
+        {
+            int32 int32; // DEBUG + INFO
+        }; // DEBUG + DEBUG
+
+        const MyStruct NOT_VALID = 666; // DEBUG + ERROR
+
+        const boolean BAD_LITERAL = 55; // DEBUG + WARNING + WARNING + DEBUG (result)
+        )~~";
+
+    EXPECTED_LOG_RESULTS(ERROR, 1, ASSERT_EQ, false);
+    EXPECTED_LOG_RESULTS(WARNING, 3, ASSERT_EQ, false);
+    EXPECTED_LOG_RESULTS(INFO, 4, ASSERT_EQ, false);
+    EXPECTED_LOG_RESULTS(DEBUG, 11, ASSERT_EQ, false);
+    EXPECTED_LOG_RESULTS_FILTERED(ERROR, 1, ASSERT_EQ, false);
+    EXPECTED_LOG_RESULTS_FILTERED(WARNING, 2, ASSERT_EQ, false);
+    EXPECTED_LOG_RESULTS_FILTERED(INFO, 1, ASSERT_EQ, false);
+    EXPECTED_LOG_RESULTS_FILTERED(DEBUG, 7, ASSERT_EQ, false);
+}
+
 int main(int argc, char** argv)
 {
     testing::InitGoogleTest(&argc, argv);
