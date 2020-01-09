@@ -20,6 +20,7 @@
 
 #include <xtypes/AggregationType.hpp>
 #include <xtypes/AliasType.hpp>
+#include <xtypes/EnumerationType.hpp>
 
 #include <string>
 #include <map>
@@ -28,23 +29,30 @@
 namespace eprosima {
 namespace xtypes {
 
+class DynamicData;
+class ReadableDynamicDataRef;
+class WritableDynamicDataRef;
+
 static const std::string UNION_DISCRIMINATOR("discriminator");
+static const size_t DEFAULT_UNION_LABEL = SIZE_MAX;
+static const size_t INVALID_UNION_LABEL = SIZE_MAX - 1;
 
 /// \brief DynamicType representing an union.
 /// A UnionType represents a TypeKind::UNION_TYPE.
 class UnionType : public AggregationType
 {
 public:
-    //static const std::string DISCRIMINATOR("discriminator");
-
     /// \brief Construct a UnionType given a name.
     /// \param[in] name Name of the union.
     UnionType(
             const std::string& name,
             const DynamicType& discriminator)
         : AggregationType(TypeKind::UNION_TYPE, name)
-        , default_(nullptr)
         , memory_size_(0)
+        , default_(INVALID_UNION_LABEL)
+        , disc_(nullptr)
+        , active_member_(nullptr)
+        , maximum_case_member_memory_(0)
     {
         xtypes_assert(
             check_discriminator(discriminator),
@@ -66,29 +74,56 @@ public:
             const Member& member,
             bool is_default = false)
     {
-        xtypes_assert(!labels.empty(), "Cannot add a case member without labels.");
+        xtypes_assert(is_default || !labels.empty(), "Cannot add a non default case member without labels.");
+        xtypes_assert(UNION_DISCRIMINATOR != member.name(), "Case member name 'discriminator' is reserved.");
         // Check labels
         for (T label : labels)
         {
+            size_t l = static_cast<size_t>(label);
+            check_label_value(l);
             xtypes_assert(
-                labels_.count(static_cast<size_t>(label)) == 0,
+                labels_.count(l) == 0,
                 "Label with value '" << label << "' already in use while adding case member '" << member.name()
                     << "' to UnionType '" << name() << "'.");
         }
 
         Member& inner = insert_member(member);
-        inner.offset_ = memory_size_;
-        memory_size_ += inner.type().memory_size();
+        // Update disc_
+        disc_ = &const_cast<Member&>(AggregationType::member(0));
+
+        // In an Union, all members share the memory just after the discriminator.
+        inner.offset_ = disc_->type().memory_size();
+
+        // And the memory_size_ is the size of the biggest member plus the size of the discriminator.
+        if (inner.type().memory_size() > maximum_case_member_memory_)
+        {
+            maximum_case_member_memory_ = inner.type().memory_size();
+            memory_size_ = disc_->type().memory_size() + maximum_case_member_memory_;
+        }
 
         // Add labels
+        size_t first_label = DEFAULT_UNION_LABEL;
         for (T label : labels)
         {
-            labels_[static_cast<size_t>(label)] = &inner;
+            size_t l = static_cast<size_t>(label);
+            if (l != DEFAULT_UNION_LABEL)
+            {
+                labels_[l] = inner.name();
+                if (first_label == DEFAULT_UNION_LABEL)
+                {
+                    first_label = l;
+                }
+            }
         }
 
         if (is_default)
         {
-            default_ = &inner;
+            xtypes_assert(default_ == INVALID_UNION_LABEL, "Cannot set more than one case member as default.");
+            default_ = first_label;
+            if (default_ == DEFAULT_UNION_LABEL)
+            {
+                labels_[default_] = inner.name(); // If this default has no other labels, must be added now.
+            }
         }
 
         return *this;
@@ -125,32 +160,6 @@ public:
         return add_case_member(labels, Member(name, type), is_default);
     }
 
-    bool select_case(
-            uint8_t* instance,
-            const std::string& case_member_name)
-    {
-        const Member& disc = member(UNION_DISCRIMINATOR);
-        size_t disc_value = current_label(disc.type(), instance);
-        for (const auto& pair : labels_)
-        {
-            const Member* member = pair.second;
-            if (member->name() == case_member_name)
-            {
-                disc_value = pair.first;
-                return true;
-            }
-        }
-        return false;
-    }
-
-    Member* get_current_selection(
-            uint8_t* instance)
-    {
-        const Member& disc = member(UNION_DISCRIMINATOR);
-        size_t disc_value = current_label(disc.type(), instance);
-        return labels_[disc_value];
-    }
-
     virtual size_t memory_size() const override
     {
         return memory_size_;
@@ -159,20 +168,43 @@ public:
     virtual void construct_instance(
             uint8_t* instance) const override
     {
+        // Discriminator must be built.
+        disc_->type().construct_instance(instance);
+
+        // If a default exists, built it too. And set it as active.
+        if (default_ != INVALID_UNION_LABEL)
+        {
+            const Member& def = member(labels_.at(default_));
+            def.type().construct_instance(instance + def.offset());
+            active_member_ = &const_cast<Member&>(def);
+            select_disc(instance, default_);
+        }
+
+        /*
         for(auto&& member: members())
         {
             member.type().construct_instance(instance + member.offset());
         }
+        */
     }
 
     virtual void copy_instance(
             uint8_t* target,
             const uint8_t* source) const override
     {
+        disc_->type().copy_instance(target, source);
+
+        if (active_member_ != nullptr)
+        {
+            active_member_->type().copy_instance(target + active_member_->offset(), source + active_member_->offset());
+        }
+
+        /*
         for(auto&& member: members())
         {
             member.type().copy_instance(target + member.offset(), source + member.offset());
         }
+        */
     }
 
     virtual void copy_instance_from_type(
@@ -184,8 +216,26 @@ public:
             "Cannot copy data from different types: From '" << other.name() << "' to '" << name() << "'.");
         const UnionType& other_union = static_cast<const UnionType&>(other);
 
+        disc_->type().copy_instance_from_type(target, source, other_union.disc_->type());
+
+        if (active_member_ != nullptr)
+        {
+            if (other_union.active_member_ != nullptr)
+            {
+                active_member_->type().copy_instance_from_type(
+                    target + active_member_->offset(),
+                    source + other_union.active_member_->offset(),
+                    other_union.active_member_->type());
+            }
+            else
+            {
+                active_member_->type().construct_instance(target + active_member_->offset());
+            }
+        }
+
+        /*
         auto other_member = other_union.members().begin();
-        for(auto&& member: members())
+        for(auto&& member : members())
         {
             if(other_member != other_union.members().end())
             {
@@ -200,45 +250,73 @@ public:
             }
             other_member++;
         }
+        */
     }
 
     virtual void move_instance(
             uint8_t* target,
             uint8_t* source) const override
     {
+        disc_->type().move_instance(target, source);
+
+        if (active_member_ != nullptr)
+        {
+            active_member_->type().move_instance(target + active_member_->offset(), source + active_member_->offset());
+        }
+
+        /*
         for(auto&& member: members())
         {
             member.type().move_instance(target + member.offset(), source + member.offset());
         }
+        */
     }
 
     virtual void destroy_instance(
             uint8_t* instance) const override
     {
+        disc_->type().destroy_instance(instance);
+
+        if (active_member_ != nullptr)
+        {
+            active_member_->type().destroy_instance(instance + active_member_->offset());
+        }
+
+        /*
         for (auto&& member = members().rbegin(); member != members().rend(); ++member)
         {
             member->type().destroy_instance(instance + member->offset());
         }
+        */
     }
 
     virtual bool compare_instance(
             const uint8_t* instance,
             const uint8_t* other_instance) const override
     {
+        bool result = disc_->type().compare_instance(instance, other_instance);
+
+        if (result)
+        {
+            // Compare active members
+            if (active_member_ != nullptr)
+            {
+                result =
+                    result
+                    && active_member_->type().compare_instance(instance + active_member_->offset(),
+                                                               other_instance + active_member_->offset());
+            }
+        }
+
+        return result;
+
+        /*
         for(auto&& member: members())
         {
             if(!member.type().compare_instance(instance + member.offset(), other_instance + member.offset()))
             {
                 return false;
             }
-        }
-        return true;
-        /*
-        Member* current = labels_[current_];
-        xtypes_assert(current != nullptr, "UnionType '" << name() << "' doesn't have a case member selected.");
-        if(!current->type().compare_instance(instance + current->offset(), other_instance + current->offset()))
-        {
-            return false;
         }
         return true;
         */
@@ -290,14 +368,16 @@ public:
             const InstanceNode& node,
             InstanceVisitor visitor) const override
     {
-        const Member& disc = member(UNION_DISCRIMINATOR);
-        size_t disc_value = current_label(disc.type(), node.instance);
+        size_t disc_value = current_label(disc_->type(), node.instance);
 
-        Member* current = labels_.at(disc_value);
-        xtypes_assert(current != nullptr, "UnionType '" << name() << "' doesn't have a case member selected.");
+        xtypes_assert(active_member_ != nullptr, "UnionType '" << name() << "' doesn't have a case member selected.");
         visitor(node);
-        InstanceNode child(node, current->type(), node.instance + current->offset(), disc_value, current);
-        current->type().for_each_instance(child, visitor);
+        InstanceNode child(
+            node,
+            active_member_->type(),
+            node.instance + active_member_->offset(),
+            disc_value, active_member_);
+        active_member_->type().for_each_instance(child, visitor);
     }
 
     virtual void for_each_type(
@@ -314,6 +394,10 @@ public:
     }
 
 protected:
+    friend DynamicData;
+    friend ReadableDynamicDataRef;
+    friend WritableDynamicDataRef;
+
     virtual DynamicType* clone() const override
     {
         return new UnionType(*this);
@@ -323,8 +407,9 @@ protected:
             const Member& member)
     {
         Member& inner = insert_member(member);
-        inner.offset_ = memory_size_;
+        inner.offset_ = 0;
         memory_size_ += inner.type().memory_size();
+        disc_ = &const_cast<Member&>(AggregationType::member(0));
         return *this;
     }
 
@@ -346,16 +431,36 @@ protected:
         return result;
     }
 
+    void check_label_value(
+            size_t label)
+    {
+        xtypes_assert(label != DEFAULT_UNION_LABEL, "Label '" << label << "' is reserved.");
+        DynamicType* type = &const_cast<DynamicType&>(disc_->type());
+
+        if (type->kind() == TypeKind::ALIAS_TYPE)
+        {
+            AliasType* alias = static_cast<AliasType*>(type);
+            type = &const_cast<DynamicType&>(alias->rget());
+        }
+
+        if (type->kind() == TypeKind::ENUMERATION_TYPE)
+        {
+            EnumerationType<uint32_t>* enum_type = static_cast<EnumerationType<uint32_t>*>(type);
+            xtypes_assert(
+                enum_type->is_allowed_value(label),
+                "Value '" << label << "' isn't allowed by the discriminator enumeration '" << type->name() << "'");
+        }
+    }
+
     void current_label(
             const DynamicType& type,
             uint8_t* instance,
             uint8_t* label_instance)
     {
-        const Member& disc = member(UNION_DISCRIMINATOR);
         xtypes_assert(
-            disc.type().kind() == type.kind(),
+            disc_->type().kind() == type.kind(),
             "Cannot set label value of type '" << type.name() << "' to the UnionType '" << name()
-                << "' with discriminator type '" << disc.type().name() << "'.");
+                << "' with discriminator type '" << disc_->type().name() << "'.");
         // Direct instance memory hack to avoid using DynamicData
         // NOTE: THe discriminator offset is always 0.
         switch (type.kind())
@@ -363,86 +468,86 @@ protected:
             case TypeKind::BOOLEAN_TYPE:
                 {
                     bool lvalue = *reinterpret_cast<bool*>(label_instance);
-                    bool& value = *reinterpret_cast<bool*>(instance);
-                    value = static_cast<size_t>(lvalue);
+                    size_t new_value = static_cast<size_t>(lvalue);
+                    current_label(instance, new_value);
                 }
                 break;
             case TypeKind::INT_8_TYPE:
                 {
                     int8_t lvalue = *reinterpret_cast<int8_t*>(label_instance);
-                    int8_t& value = *reinterpret_cast<int8_t*>(instance);
-                    value = static_cast<size_t>(lvalue);
+                    size_t new_value = static_cast<size_t>(lvalue);
+                    current_label(instance, new_value);
                 }
                 break;
             case TypeKind::UINT_8_TYPE:
                 {
                     uint8_t lvalue = *reinterpret_cast<uint8_t*>(label_instance);
-                    uint8_t& value = *reinterpret_cast<uint8_t*>(instance);
-                    value = static_cast<size_t>(lvalue);
+                    size_t new_value = static_cast<size_t>(lvalue);
+                    current_label(instance, new_value);
                 }
                 break;
             case TypeKind::INT_16_TYPE:
                 {
                     int16_t lvalue = *reinterpret_cast<int16_t*>(label_instance);
-                    int16_t& value = *reinterpret_cast<int16_t*>(instance);
-                    value = static_cast<size_t>(lvalue);
+                    size_t new_value = static_cast<size_t>(lvalue);
+                    current_label(instance, new_value);
                 }
                 break;
             case TypeKind::UINT_16_TYPE:
                 {
                     uint16_t lvalue = *reinterpret_cast<uint16_t*>(label_instance);
-                    uint16_t& value = *reinterpret_cast<uint16_t*>(instance);
-                    value = static_cast<size_t>(lvalue);
+                    size_t new_value = static_cast<size_t>(lvalue);
+                    current_label(instance, new_value);
                 }
                 break;
             case TypeKind::INT_32_TYPE:
                 {
                     int32_t lvalue = *reinterpret_cast<int32_t*>(label_instance);
-                    int32_t& value = *reinterpret_cast<int32_t*>(instance);
-                    value = static_cast<size_t>(lvalue);
+                    size_t new_value = static_cast<size_t>(lvalue);
+                    current_label(instance, new_value);
                 }
                 break;
             case TypeKind::UINT_32_TYPE:
                 {
                     uint32_t lvalue = *reinterpret_cast<uint32_t*>(label_instance);
-                    uint32_t& value = *reinterpret_cast<uint32_t*>(instance);
-                    value = static_cast<size_t>(lvalue);
+                    size_t new_value = static_cast<size_t>(lvalue);
+                    current_label(instance, new_value);
                 }
                 break;
             case TypeKind::INT_64_TYPE:
                 {
                     int64_t lvalue = *reinterpret_cast<int64_t*>(label_instance);
-                    int64_t& value = *reinterpret_cast<int64_t*>(instance);
-                    value = static_cast<size_t>(lvalue);
+                    size_t new_value = static_cast<size_t>(lvalue);
+                    current_label(instance, new_value);
                 }
                 break;
             case TypeKind::UINT_64_TYPE:
                 {
                     uint64_t lvalue = *reinterpret_cast<uint64_t*>(label_instance);
-                    uint64_t& value = *reinterpret_cast<uint64_t*>(instance);
-                    value = static_cast<size_t>(lvalue);
+                    size_t new_value = static_cast<size_t>(lvalue);
+                    current_label(instance, new_value);
                 }
                 break;
             case TypeKind::CHAR_8_TYPE:
                 {
                     char lvalue = *reinterpret_cast<char*>(label_instance);
-                    char& value = *reinterpret_cast<char*>(instance);
-                    value = static_cast<size_t>(lvalue);
+                    size_t new_value = static_cast<size_t>(lvalue);
+                    current_label(instance, new_value);
                 }
                 break;
             case TypeKind::CHAR_16_TYPE:
                 {
                     wchar_t lvalue = *reinterpret_cast<wchar_t*>(label_instance);
-                    wchar_t& value = *reinterpret_cast<wchar_t*>(instance);
-                    value = static_cast<size_t>(lvalue);
+                    size_t new_value = static_cast<size_t>(lvalue);
+                    current_label(instance, new_value);
                 }
                 break;
             case TypeKind::ENUMERATION_TYPE:
                 {
                     // TODO: If other enumeration types are added, switch again.
                     uint32_t lvalue = *reinterpret_cast<uint32_t*>(label_instance);
-                    uint32_t& value = *reinterpret_cast<uint32_t*>(instance);
-                    value = static_cast<size_t>(lvalue);
+                    size_t new_value = static_cast<size_t>(lvalue);
+                    current_label(instance, new_value);
                 }
                 break;
             case TypeKind::ALIAS_TYPE:
@@ -453,6 +558,115 @@ protected:
                 break;
             default:
                 xtypes_assert(false, "Unsupported discriminator type: " << type.name());
+        }
+    }
+
+    void current_label(
+            uint8_t* instance,
+            size_t new_value) const
+    {
+        TypeKind kind = disc_->type().kind();
+        if (kind == TypeKind::ALIAS_TYPE)
+        {
+            const AliasType& alias = static_cast<const AliasType&>(disc_->type());
+            kind = alias.rget().kind();
+        }
+        // Direct instance memory hack to avoid using DynamicData
+        // NOTE: THe discriminator offset is always 0.
+        switch (kind)
+        {
+            case TypeKind::BOOLEAN_TYPE:
+                {
+                    bool lvalue = static_cast<bool>(new_value);
+                    bool& value = *reinterpret_cast<bool*>(instance);
+                    value = lvalue;
+                }
+                break;
+            case TypeKind::INT_8_TYPE:
+                {
+                    int8_t lvalue = static_cast<int8_t>(new_value);
+                    int8_t& value = *reinterpret_cast<int8_t*>(instance);
+                    value = lvalue;
+                }
+                break;
+            case TypeKind::UINT_8_TYPE:
+                {
+                    uint8_t lvalue = static_cast<uint8_t>(new_value);
+                    uint8_t& value = *reinterpret_cast<uint8_t*>(instance);
+                    value = lvalue;
+                }
+                break;
+            case TypeKind::INT_16_TYPE:
+                {
+                    int16_t lvalue = static_cast<int16_t>(new_value);
+                    int16_t& value = *reinterpret_cast<int16_t*>(instance);
+                    value = lvalue;
+                }
+                break;
+            case TypeKind::UINT_16_TYPE:
+                {
+                    uint16_t lvalue = static_cast<uint16_t>(new_value);
+                    uint16_t& value = *reinterpret_cast<uint16_t*>(instance);
+                    value = lvalue;
+                }
+                break;
+            case TypeKind::INT_32_TYPE:
+                {
+                    int32_t lvalue = static_cast<int32_t>(new_value);
+                    int32_t& value = *reinterpret_cast<int32_t*>(instance);
+                    value = lvalue;
+                }
+                break;
+            case TypeKind::UINT_32_TYPE:
+                {
+                    uint32_t lvalue = static_cast<uint32_t>(new_value);
+                    uint32_t& value = *reinterpret_cast<uint32_t*>(instance);
+                    value = lvalue;
+                }
+                break;
+            case TypeKind::INT_64_TYPE:
+                {
+                    int64_t lvalue = static_cast<int64_t>(new_value);
+                    int64_t& value = *reinterpret_cast<int64_t*>(instance);
+                    value = lvalue;
+                }
+                break;
+            case TypeKind::UINT_64_TYPE:
+                {
+                    uint64_t lvalue = static_cast<uint64_t>(new_value);
+                    uint64_t& value = *reinterpret_cast<uint64_t*>(instance);
+                    value = lvalue;
+                }
+                break;
+            case TypeKind::CHAR_8_TYPE:
+                {
+                    char lvalue = static_cast<char>(new_value);
+                    char& value = *reinterpret_cast<char*>(instance);
+                    value = lvalue;
+                }
+                break;
+            case TypeKind::CHAR_16_TYPE:
+                {
+                    wchar_t lvalue = static_cast<wchar_t>(new_value);
+                    wchar_t& value = *reinterpret_cast<wchar_t*>(instance);
+                    value = lvalue;
+                }
+                break;
+            case TypeKind::ENUMERATION_TYPE:
+                {
+                    // TODO: If other enumeration types are added, switch again.
+                    uint32_t lvalue = static_cast<uint32_t>(new_value);
+                    uint32_t& value = *reinterpret_cast<uint32_t*>(instance);
+                    value = lvalue;
+                }
+                break;
+            case TypeKind::ALIAS_TYPE:
+                {
+                    xtypes_assert(false, "Internal and ugly error: " << disc_->type().name());
+                }
+                break;
+            default:
+                xtypes_assert(false, "Unsupported discriminator type: " << disc_->type().name());
         }
     }
 
@@ -550,10 +764,103 @@ protected:
         return disc_value;
     }
 
+    bool select_disc(
+            const DynamicType& type,
+            uint8_t* instance,
+            uint8_t* label_instance)
+    {
+        size_t new_value = current_label(type, label_instance);
+        return select_disc(instance, new_value);
+    }
+
+    bool select_disc(
+            uint8_t* instance,
+            size_t value) const
+    {
+        if (labels_.count(value) == 0)
+        {
+            if (default_ != INVALID_UNION_LABEL)
+            {
+                Member* def = &const_cast<Member&>(member(labels_.at(default_)));
+                xtypes_assert(def == active_member_, "Cannot switch member using direct discriminator value.");
+                return def == active_member_;
+            }
+            return false;
+        }
+
+        const Member* member = &AggregationType::member(labels_.at(value));
+
+        xtypes_assert(member == active_member_, "Cannot switch member using direct disciminator value.");
+        if (member == active_member_)
+        {
+            current_label(instance, value);
+            return true;
+        }
+        return false;
+    }
+
+    bool select_case(
+            uint8_t* instance,
+            const std::string& case_member_name)
+    {
+        for (const auto& pair : labels_)
+        {
+            Member* member = &const_cast<Member&>(AggregationType::member(pair.second));
+            if (member->name() == case_member_name)
+            {
+                current_label(instance, pair.first);
+                activate_member(instance, member);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool select_default(
+            uint8_t* instance)
+    {
+        if (default_ != INVALID_UNION_LABEL)
+        {
+            Member* def = &const_cast<Member&>(member(labels_.at(default_)));
+            activate_member(instance, def);
+            current_label(instance, default_);
+            return true;
+        }
+        return false;
+    }
+
+    Member& get_current_selection(
+            uint8_t* instance)
+    {
+        xtypes_assert(active_member_ != nullptr, "UnionType '" << name() << "' doesn't have a case member selected.");
+        return *active_member_;
+    }
+
+    void activate_member(
+            uint8_t* instance,
+            Member* member)
+    {
+        if (active_member_ != nullptr && active_member_ != member)
+        {
+            active_member_->type().destroy_instance(instance + active_member_->offset());
+            member->type().construct_instance(instance + member->offset());
+        }
+        else if (active_member_ == nullptr)
+        {
+            member->type().construct_instance(instance + member->offset());
+        }
+        active_member_ = member;
+    }
+
 private:
-    std::map<size_t, Member*> labels_;
-    Member* default_;
+    std::map<size_t, std::string> labels_;
     size_t memory_size_;
+    // Direct access
+    size_t default_;
+    Member* disc_;
+    mutable Member* active_member_;
+    // Aux memory_size_ calculations
+    size_t maximum_case_member_memory_;
 };
 
 } //namespace xtypes

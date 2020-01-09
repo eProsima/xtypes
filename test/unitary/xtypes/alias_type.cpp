@@ -14,9 +14,9 @@
 
 #include <gtest/gtest.h>
 #include <xtypes/xtypes.hpp>
+#include "../utils.hpp"
 
 #define PI 3.14159f
-#define XTYPES_ASSERT_ERRMSG(MSG) std::string("[XTYPES].*Assertion failed with message: ") + MSG
 
 using namespace eprosima::xtypes;
 

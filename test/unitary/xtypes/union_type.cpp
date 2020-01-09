@@ -28,7 +28,7 @@ using namespace eprosima::xtypes;
  *        UnionType Tests         *
  **********************************/
 
-TEST (UnionType, primitive_union)
+TEST (UnionType, checks_and_access)
 {
     UnionType un("bool_union_name", primitive_type<bool>());
     EXPECT_EQ("bool_union_name", un.name());
@@ -37,28 +37,196 @@ TEST (UnionType, primitive_union)
     size_t mem_size = 0;
     mem_size+=sizeof(bool); // the discriminator is bool
 
+    ASSERT_OR_EXCEPTION({un.add_case_member<bool>({true}, Member("discriminator", primitive_type<uint32_t>()));},
+                        "is reserved");
+
+    ASSERT_OR_EXCEPTION({un.add_case_member<size_t>({SIZE_MAX}, Member("default_label", primitive_type<uint32_t>()));},
+                        "is reserved");
+
+    ASSERT_OR_EXCEPTION({un.add_case_member<size_t>({}, Member("no_labels", primitive_type<uint32_t>()));},
+                        "without labels");
+
     un.add_case_member<bool>({true}, Member("bool", primitive_type<bool>()));
     mem_size+=sizeof(bool);
     EXPECT_EQ(mem_size, un.memory_size());
 
     un.add_case_member<bool>({false}, Member("uint8_t", primitive_type<uint8_t>()));
-    mem_size+=sizeof(uint8_t);
+    // sizeof(bool) == sizeof(uint8_t), so memory_size doesn't change.
     EXPECT_EQ(mem_size, un.memory_size());
 
+    ASSERT_OR_EXCEPTION({un.add_case_member<bool>({true}, Member("label_taken", primitive_type<uint32_t>()));},
+                        "already in use");
+
     DynamicData union_data(un);
+    ASSERT_OR_EXCEPTION({bool data = union_data.get_member("bool"); (void)data;}, "member selected");
     union_data["bool"] = true;
+    ASSERT_OR_EXCEPTION({bool data = union_data.get_member("uint8_t"); (void)data;}, "non-selected case member");
+    {
+        union_data.get_member("bool"); // Once selected, it doesn't fails.
+    }
+    EXPECT_EQ(union_data.d().value<bool>(), true); // The discriminator must be updated
     EXPECT_EQ(union_data["bool"].value<bool>(), true);
     union_data["bool"] = false;
     EXPECT_EQ(union_data["bool"].value<bool>(), false);
 
     union_data["uint8_t"] = uint8_t(55);
+    EXPECT_EQ(union_data.d().value<bool>(), false); // The discriminator must be updated
     EXPECT_EQ(union_data["uint8_t"].value<uint8_t>(), 55);
 
     // Discriminator
-    union_data["discriminator"] = true;
-    EXPECT_EQ(union_data["discriminator"].value<bool>(), true);
-    union_data["discriminator"] = false;
-    EXPECT_EQ(union_data["discriminator"].value<bool>(), false);
-    union_data.discriminator() = true;
-    EXPECT_EQ(union_data["discriminator"].value<bool>(), true);
+    ASSERT_OR_EXCEPTION({union_data["discriminator"] = true;}, "Union discriminator");
+    ASSERT_OR_EXCEPTION({union_data.d(static_cast<size_t>(true));}, "Cannot switch member");
+    union_data.d(static_cast<size_t>(false));
+    union_data["bool"] = true;
+    EXPECT_EQ(union_data.d().value<bool>(), true); // The discriminator must be updated
+
+    DynamicData disc(primitive_type<bool>());
+    disc = true;
+    union_data.d(disc);
+    disc = false;
+    ASSERT_OR_EXCEPTION({union_data.d(disc);}, "Cannot switch member");
+}
+
+TEST (UnionType, discriminator_types)
+{
+    UnionType un_bool("bool_union", primitive_type<bool>());
+    UnionType un_int8("int8_union", primitive_type<int8_t>());
+    UnionType un_uint8("uint8_union", primitive_type<uint8_t>());
+    UnionType un_int16("int16_union", primitive_type<int16_t>());
+    UnionType un_uint16("uint16_union", primitive_type<uint16_t>());
+    UnionType un_int32("int32_union", primitive_type<int32_t>());
+    UnionType un_uint32("uint32_union", primitive_type<uint32_t>());
+    UnionType un_int64("int64_union", primitive_type<int64_t>());
+    UnionType un_uint64("uint64_union", primitive_type<uint64_t>());
+    UnionType un_char8("char8_union", primitive_type<char>());
+    UnionType un_char16("char16_union", primitive_type<wchar_t>());
+
+    EnumerationType<uint32_t> my_enum("MyEnum");
+    UnionType un_enum("enum_union", my_enum);
+
+    AliasType my_alias(my_enum, "MyEnumAlias");
+    UnionType un_alias("alias_union", my_alias);
+
+    AliasType my_alias2(my_alias, "MyAliasAlias");
+    UnionType un_alias2("alias_alias_union", my_alias2);
+
+    ASSERT_OR_EXCEPTION({UnionType un_invalid("invalid", primitive_type<float>());}, "isn't allowed");
+    ASSERT_OR_EXCEPTION({UnionType un_invalid("invalid", primitive_type<double>());}, "isn't allowed");
+    ASSERT_OR_EXCEPTION({UnionType un_invalid("invalid", primitive_type<long double>());}, "isn't allowed");
+    ASSERT_OR_EXCEPTION({UnionType un_invalid("invalid", un_bool);}, "isn't allowed");
+    StringType str;
+    ASSERT_OR_EXCEPTION({UnionType un_invalid("invalid", str);}, "isn't allowed");
+    StructType struct_t("MyStruct");
+    ASSERT_OR_EXCEPTION({UnionType un_invalid("invalid", struct_t);}, "isn't allowed");
+    ArrayType array(primitive_type<bool>(), 5);
+    ASSERT_OR_EXCEPTION({UnionType un_invalid("invalid", array);}, "isn't allowed");
+    SequenceType seq(primitive_type<bool>());
+    ASSERT_OR_EXCEPTION({UnionType un_invalid("invalid", seq);}, "isn't allowed");
+}
+
+TEST (UnionType, complex_union_and_default)
+{
+    AliasType first_alias(primitive_type<char>(), "Alias1");
+    AliasType disc_type(first_alias, "DiscType");
+    UnionType complex("complex", disc_type);
+
+    size_t disc_size = sizeof(char); // the discriminator is char
+    EXPECT_EQ(disc_size, complex.memory_size());
+
+    std::vector<char> bool_labels{'a', 'c', 'd'};
+    complex.add_case_member(bool_labels, Member("bool", primitive_type<bool>()));
+    size_t mem_size = disc_size + sizeof(bool);
+    EXPECT_EQ(mem_size, complex.memory_size());
+
+    StructType st("MyStruct");
+    st.add_member(Member("uint64", primitive_type<uint64_t>()));
+    st.add_member(Member("int64", primitive_type<int64_t>()));
+    st.add_member(Member("float", primitive_type<float>()));
+
+    std::vector<char> st_labels{'b', 'e'};
+    complex.add_case_member(st_labels, Member("st", st));
+    mem_size = disc_size + st.memory_size(); // st is bigger than bool
+    EXPECT_EQ(mem_size, complex.memory_size());
+
+    ArrayType array(primitive_type<uint64_t>(), 50);
+    std::vector<char> array_labels{'f'};
+    complex.add_case_member(array_labels, Member("array", array), true); // DEFAULT!
+
+    // DEFAULT CHECK
+    ASSERT_OR_EXCEPTION(
+        {complex.add_case_member<char>({'z'}, Member("invalid", array), true);},
+        "default");
+
+    mem_size = disc_size + array.memory_size(); // array is bigger than st
+    EXPECT_EQ(mem_size, complex.memory_size());
+
+    StringType string;
+    std::vector<char> string_labels{'g'};
+    complex.add_case_member(string_labels, Member("string", string));
+    // This string isn't bigger than the array, so the size shouldn't change.
+    EXPECT_EQ(mem_size, complex.memory_size());
+
+    DynamicData data(complex);
+
+    // By default, 'f' is selected. The array.
+    EXPECT_EQ('f', data.d().value<char>());
+    for (uint64_t i = 0; i < data.get_member("array").size(); ++i)
+    {
+        data["array"][i] = (i + 1) * 5000;
+        EXPECT_EQ((i + 1) * 5000, data.get_member("array")[i].value<uint64_t>());
+    }
+
+    // Change to bool
+    data["bool"] = true;
+    EXPECT_EQ('a', data.d().value<char>());
+    EXPECT_TRUE(data["bool"].value<bool>());
+
+    // Back to array
+    data["array"]; // Enough to select it.
+    EXPECT_EQ('f', data.d().value<char>());
+    EXPECT_NE(5000, data.get_member("array")[0].value<uint64_t>()); // Modified when accessing as bool.
+
+    // Change to st
+    data["st"]["uint64"] = 5000ul;
+    data["st"]["int64"] = -756757623l;
+    data["st"]["float"] = 445.322f;
+    EXPECT_EQ('b', data.d().value<char>());
+    data.d('e');
+    EXPECT_EQ('e', data.d().value<char>());
+    EXPECT_EQ(data.get_member("st")["uint64"].value<uint64_t>(), 5000ul);
+    EXPECT_EQ(data.get_member("st")["int64"].value<int64_t>(), -756757623l);
+    EXPECT_EQ(data.get_member("st")["float"].value<float>(), 445.322f);
+
+    // Change to string
+    data["string"] = "This is an string";
+    EXPECT_EQ('g', data.d().value<char>());
+    std::string str = data.get_member("string");
+    EXPECT_EQ(str, "This is an string");
+
+    // Change to st again and back to string
+    data["st"];
+    str = data["string"].value<std::string>();
+    EXPECT_NE(str, "This is an string"); // Data lost
+}
+
+TEST (UnionType, default_behavior)
+{
+    EnumerationType<uint32_t> my_enum("MyEnum");
+    my_enum.add_enumerator("A", 5);
+    my_enum.add_enumerator("B", 6);
+    my_enum.add_enumerator("C", 9);
+
+    UnionType union_type("MyUnion", my_enum);
+    ASSERT_OR_EXCEPTION(
+        {union_type.add_case_member<uint32_t>({8}, Member("invalid", primitive_type<bool>()));},
+        "isn't allowed by the discriminator");
+    union_type.add_case_member<uint32_t>({6}, Member("valid", primitive_type<bool>()));
+    union_type.add_case_member<uint32_t>({}, Member("default", my_enum), true);
+    std::vector<uint32_t> labels{my_enum.value("A")};
+    union_type.add_case_member(labels, Member("a", primitive_type<uint32_t>()));
+
+    DynamicData data(union_type);
+    EXPECT_EQ(data.d().value<uint32_t>(), static_cast<uint32_t>(DEFAULT_UNION_LABEL));
+    data["default"] = my_enum.value("C");
+    EXPECT_EQ(data.get_member("default").value<uint32_t>(), 9);
 }
