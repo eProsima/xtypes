@@ -1124,8 +1124,8 @@ private:
             // Little hack. Don't judge me.
             DynamicData hack(primitive_type<uint32_t>());
             hack = result.value(token);
-            outer->create_constant(name + "::" + token, hack);
-            outer->create_constant(token, hack); // Typically both are accessible
+            outer->create_constant(name + "::" + token, hack, false, true); // Mark it as "from_enum"
+            outer->create_constant(token, hack, false, true); // Typically both are accessible
             // End of hack
         }
         outer->enum_32(std::move(result));
