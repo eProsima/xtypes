@@ -52,7 +52,6 @@ public:
         : AggregationType(TypeKind::UNION_TYPE, name)
         , memory_size_(0)
         , default_(INVALID_UNION_LABEL)
-        , disc_(nullptr)
         , active_member_(nullptr)
         , maximum_case_member_memory_(0)
     {
@@ -90,8 +89,7 @@ public:
         }
 
         Member& inner = insert_member(member);
-        // Update disc_
-        disc_ = &const_cast<Member&>(AggregationType::member(0));
+        Member* disc_ = disc();
 
         // In an Union, all members share the memory just after the discriminator.
         inner.offset_ = disc_->type().memory_size();
@@ -133,7 +131,7 @@ public:
 
     /// \brief Specialized version for labels as string representation
     /// It will convert these strings to the discriminator type.
-    /// If the member is going to be the default one, it is expected to receive a label names "default".
+    /// If the member is going to be the default one, it is expected to receive a label named "default".
     UnionType& add_case_member(
             const std::vector<std::string>& labels,
             const Member& member)
@@ -183,7 +181,7 @@ public:
             uint8_t* instance) const override
     {
         // Discriminator must be built.
-        disc_->type().construct_instance(instance);
+        disc()->type().construct_instance(instance);
 
         // If a default exists, built it too. And set it as active.
         if (default_ != INVALID_UNION_LABEL)
@@ -193,32 +191,18 @@ public:
             active_member_ = &const_cast<Member&>(def);
             select_disc(instance, default_);
         }
-
-        /*
-        for(auto&& member: members())
-        {
-            member.type().construct_instance(instance + member.offset());
-        }
-        */
     }
 
     virtual void copy_instance(
             uint8_t* target,
             const uint8_t* source) const override
     {
-        disc_->type().copy_instance(target, source);
+        disc()->type().copy_instance(target, source);
 
         if (active_member_ != nullptr)
         {
             active_member_->type().copy_instance(target + active_member_->offset(), source + active_member_->offset());
         }
-
-        /*
-        for(auto&& member: members())
-        {
-            member.type().copy_instance(target + member.offset(), source + member.offset());
-        }
-        */
     }
 
     virtual void copy_instance_from_type(
@@ -230,7 +214,8 @@ public:
             "Cannot copy data from different types: From '" << other.name() << "' to '" << name() << "'.");
         const UnionType& other_union = static_cast<const UnionType&>(other);
 
-        disc_->type().copy_instance_from_type(target, source, other_union.disc_->type());
+        Member* disc_ = disc();
+        disc_->type().copy_instance_from_type(target, source, other_union.disc()->type());
 
         if (active_member_ != nullptr)
         {
@@ -246,69 +231,36 @@ public:
                 active_member_->type().construct_instance(target + active_member_->offset());
             }
         }
-
-        /*
-        auto other_member = other_union.members().begin();
-        for(auto&& member : members())
-        {
-            if(other_member != other_union.members().end())
-            {
-                member.type().copy_instance_from_type(
-                        target + member.offset(),
-                        source + other_member->offset(),
-                        other_member->type());
-            }
-            else
-            {
-                member.type().construct_instance(target + member.offset());
-            }
-            other_member++;
-        }
-        */
     }
 
     virtual void move_instance(
             uint8_t* target,
             uint8_t* source) const override
     {
-        disc_->type().move_instance(target, source);
+        disc()->type().move_instance(target, source);
 
         if (active_member_ != nullptr)
         {
             active_member_->type().move_instance(target + active_member_->offset(), source + active_member_->offset());
         }
-
-        /*
-        for(auto&& member: members())
-        {
-            member.type().move_instance(target + member.offset(), source + member.offset());
-        }
-        */
     }
 
     virtual void destroy_instance(
             uint8_t* instance) const override
     {
-        disc_->type().destroy_instance(instance);
+        disc()->type().destroy_instance(instance);
 
         if (active_member_ != nullptr)
         {
             active_member_->type().destroy_instance(instance + active_member_->offset());
         }
-
-        /*
-        for (auto&& member = members().rbegin(); member != members().rend(); ++member)
-        {
-            member->type().destroy_instance(instance + member->offset());
-        }
-        */
     }
 
     virtual bool compare_instance(
             const uint8_t* instance,
             const uint8_t* other_instance) const override
     {
-        bool result = disc_->type().compare_instance(instance, other_instance);
+        bool result = disc()->type().compare_instance(instance, other_instance);
 
         if (result)
         {
@@ -323,17 +275,6 @@ public:
         }
 
         return result;
-
-        /*
-        for(auto&& member: members())
-        {
-            if(!member.type().compare_instance(instance + member.offset(), other_instance + member.offset()))
-            {
-                return false;
-            }
-        }
-        return true;
-        */
     }
 
     virtual TypeConsistency is_compatible(
@@ -382,7 +323,7 @@ public:
             const InstanceNode& node,
             InstanceVisitor visitor) const override
     {
-        size_t disc_value = current_label(disc_->type(), node.instance);
+        size_t disc_value = current_label(disc()->type(), node.instance);
 
         xtypes_assert(active_member_ != nullptr, "UnionType '" << name() << "' doesn't have a case member selected.");
         visitor(node);
@@ -417,16 +358,18 @@ protected:
         return new UnionType(*this);
     }
 
+    /// \brief This method adds the discriminator has the first member of the aggregation.
+    /// Its offset will be always 0.
     UnionType& set_discriminator(
             const Member& member)
     {
         Member& inner = insert_member(member);
         inner.offset_ = 0;
         memory_size_ += inner.type().memory_size();
-        disc_ = &const_cast<Member&>(AggregationType::member(0));
         return *this;
     }
 
+    /// \brief This method verifies that the discriminator type is allowed.
     bool check_discriminator(
             const DynamicType& type) const
     {
@@ -445,11 +388,12 @@ protected:
         return result;
     }
 
+    /// \brief This method verifies the validity of a given label.
     void check_label_value(
             size_t label)
     {
         xtypes_assert(label != DEFAULT_UNION_LABEL, "Label '" << label << "' is reserved.");
-        DynamicType* type = &const_cast<DynamicType&>(disc_->type());
+        DynamicType* type = &const_cast<DynamicType&>(disc()->type());
 
         if (type->kind() == TypeKind::ALIAS_TYPE)
         {
@@ -466,15 +410,16 @@ protected:
         }
     }
 
+    /// \brief This method sets changes the discriminator's value given a label_instance and its type.
     void current_label(
             const DynamicType& type,
             uint8_t* instance,
             uint8_t* label_instance)
     {
         xtypes_assert(
-            disc_->type().kind() == type.kind(),
+            disc()->type().kind() == type.kind(),
             "Cannot set label value of type '" << type.name() << "' to the UnionType '" << name()
-                << "' with discriminator type '" << disc_->type().name() << "'.");
+                << "' with discriminator type '" << disc()->type().name() << "'.");
         // Direct instance memory hack to avoid using DynamicData
         // NOTE: THe discriminator offset is always 0.
         switch (type.kind())
@@ -575,10 +520,12 @@ protected:
         }
     }
 
+    /// \brief This method sets changes the discriminator's value.
     void current_label(
             uint8_t* instance,
             size_t new_value) const
     {
+        Member* disc_ = disc();
         TypeKind kind = disc_->type().kind();
         if (kind == TypeKind::ALIAS_TYPE)
         {
@@ -684,6 +631,7 @@ protected:
         }
     }
 
+    /// \brief This method returns the value of the discriminator represented by instance and its type.
     size_t current_label(
             const DynamicType& type,
             uint8_t* instance) const
@@ -778,6 +726,7 @@ protected:
         return disc_value;
     }
 
+    /// \brief This method switches the current selected discriminator, checking its validity.
     bool select_disc(
             const DynamicType& type,
             uint8_t* instance,
@@ -787,6 +736,7 @@ protected:
         return select_disc(instance, new_value);
     }
 
+    /// \brief This method switches the current selected discriminator, checking its validity.
     bool select_disc(
             uint8_t* instance,
             size_t value) const
@@ -813,6 +763,7 @@ protected:
         return false;
     }
 
+    /// \brief This method switches the current selected case member by its name.
     bool select_case(
             uint8_t* instance,
             const std::string& case_member_name)
@@ -830,6 +781,7 @@ protected:
         return false;
     }
 
+    /// \brief This method selects the default case member.
     bool select_default(
             uint8_t* instance)
     {
@@ -843,6 +795,7 @@ protected:
         return false;
     }
 
+    /// \brief This method allows to retrieve the current selected case member.
     Member& get_current_selection(
             uint8_t* instance)
     {
@@ -850,6 +803,8 @@ protected:
         return *active_member_;
     }
 
+    /// \brief This method destroys previous active member, if any, and constructs the new one,
+    /// setting it as active.
     void activate_member(
             uint8_t* instance,
             Member* member)
@@ -866,11 +821,15 @@ protected:
         active_member_ = member;
     }
 
+    /// \brief This method converts labels represented as strings to the internal size_t representation.
+    /// It resolves Enumeration names.
+    /// Doesn't resolves constants names, so they must be resolved previously.
     bool parse_labels(
             const std::vector<std::string>& labels,
             std::vector<size_t>& result)
     {
         bool is_default = false;
+        Member* disc_ = disc();
         TypeKind kind = disc_->type().kind();
         if (kind == TypeKind::ALIAS_TYPE)
         {
@@ -968,7 +927,15 @@ protected:
                         break;
                     case TypeKind::CHAR_8_TYPE:
                         {
-                            result.emplace_back(static_cast<size_t>(label[0]));
+                            // Check if comes with "'"
+                            if (label.size() == 1)
+                            {
+                                result.emplace_back(static_cast<size_t>(label[0]));
+                            }
+                            else
+                            {
+                                result.emplace_back(static_cast<size_t>(label[label.find("'") + 1]));
+                            }
                         }
                         break;
                     case TypeKind::CHAR_16_TYPE:
@@ -976,7 +943,16 @@ protected:
                             using convert_type = std::codecvt_utf8<wchar_t>;
                             std::wstring_convert<convert_type, wchar_t> converter;
                             std::wstring temp = converter.from_bytes(label);
-                            wchar_t value = temp[0];
+                            wchar_t value;
+                            // Check if comes with "'"
+                            if (label.size() == 1)
+                            {
+                                value = temp[0];
+                            }
+                            else
+                            {
+                                value = temp[temp.find(L"'") + 1];
+                            }
                             result.emplace_back(static_cast<size_t>(value));
                         }
                         break;
@@ -1014,10 +990,18 @@ private:
     size_t memory_size_;
     // Direct access
     size_t default_;
-    Member* disc_;
     mutable Member* active_member_;
     // Aux memory_size_ calculations
     size_t maximum_case_member_memory_;
+
+    /// \brief This method retrieves the discriminator Member.
+    /// It cannot be stored as a pointer (like active_member_) because the internal AggregationType vector
+    /// could be resized or moved, or we being cloned, invalidating the address. Updating it in each case,
+    /// could be a runtime perfomance improvement if needed.
+    Member* disc() const
+    {
+        return &const_cast<Member&>(AggregationType::member(0));
+    }
 };
 
 } //namespace xtypes

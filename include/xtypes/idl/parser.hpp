@@ -1168,6 +1168,8 @@ private:
         }
 
         // TODO Replace by Unions. Kept as Struct to allow name solving.
+        // Union forward declaration may be an special case of Union,
+        // because they doesn't defines the switch type
         StructType result(name);
         context_->log(log::LogLevel::DEBUG, "UNION_FW_DCL",
             "Found forward union declaration: \"" + name + "\"",
@@ -1262,7 +1264,7 @@ private:
         }
 
         UnionType& union_type = outer->union_switch(name);
-        if (!union_type.members().empty())
+        if (union_type.members().size() > 1)
         {
             const std::string msg = "Union \"" + name + "\" redefinition.";
             if (context_->ignore_redefinition)
@@ -1282,10 +1284,11 @@ private:
             ast);
         for (auto& pair : member_list)
         {
+            Member& member = pair.second;
             context_->log(log::LogLevel::DEBUG, "UNION_DEF_MEMBER",
-                "Union \"" + name + "\" member: " + pair.second.name(),
+                "Union \"" + name + "\" member: " + member.name(),
                 ast);
-            union_type.add_case_member(pair.first, std::move(pair.second));
+            union_type.add_case_member(pair.first, std::move(member));
         }
     }
 
@@ -1302,7 +1305,6 @@ private:
             {
                 case "CASE"_:
                 {
-                    std::cout << "CASE FOUND: " << std::endl;
                     switch_case(node, outer, member_list, type);
                     break;
                 }
@@ -1342,26 +1344,29 @@ private:
             const DynamicType::Ptr type)
     {
         using namespace peg::udl;
+        std::vector<std::string> labels;
+        std::vector<Member> member;
+
         for (const auto& node : ast->nodes)
         {
-            std::vector<std::string> labels;
-            std::vector<Member> member;
-
             switch (node->original_tag)
             {
                 case "CASE_LABEL"_:
                 {
-                    std::cout << "LABEL: " << node->token << std::endl;
-                    labels.push_back(node->token); // Raw token, must be processed later.
+                    std::string value = node->token;
+                    if (outer->has_constant(value))
+                    {
+                        DynamicData constant = outer->constant(value);
+                        value = constant.cast<std::string>();
+                    }
+                    labels.push_back(value);
                     break;
                 }
                 case "ELEMENT_SPEC"_:
                 {
                     case_member_def(node, outer, member);
-                    std::cout << "Member: " << member.at(0).name() << std::endl;
                     // Label cases only have one member per case.
-                    LabelsCaseMemberPair pair = std::make_pair(labels, std::move(member.at(0)));
-                    member_list.emplace_back(std::move(pair));
+                    member_list.emplace_back(std::make_pair(std::move(labels), std::move(member.at(0))));
                     break;
                 }
             }
@@ -1742,9 +1747,9 @@ private:
                 break;
             default:
                 context_->log(log::LogLevel::ERROR, "EXCEPTION",
-                    "Only a positive intenger number can be used as dimension.",
+                    "Only a positive integer number can be used as dimension.",
                     node);
-                throw exception("Only a positive intenger number can be used as dimension.", node);
+                throw exception("Only a positive integer number can be used as dimension.", node);
         }
         return dim;
     }

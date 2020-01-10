@@ -284,7 +284,8 @@ public:
         {
             return
                 type == nullptr ||
-                (type->is_primitive_type() && ((type->kind() & TypeKind::ENUMERATED_TYPE) == TypeKind::NO_TYPE));
+                //(type->is_primitive_type() && ((type->kind() & TypeKind::ENUMERATED_TYPE) == TypeKind::NO_TYPE));
+                (type->is_primitive_type() && !type->is_enumerated_type());
         }
     };
 };

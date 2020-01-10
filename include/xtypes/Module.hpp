@@ -108,6 +108,7 @@ public:
             bool extend = true) const
     {
         bool has_it = structs_.count(ident) > 0
+            || unions_.count(ident) > 0
             || aliases_.count(ident) > 0
             || constants_.count(ident) > 0
             || enumerations_32_.count(ident) > 0
@@ -293,10 +294,17 @@ public:
             {
                 map.emplace(module_name + "::" + pair.first, pair.second);
             }
+            for (const auto& pair : unions_)
+            {
+                map.emplace(module_name + "::" + pair.first, pair.second);
+            }
+            // TODO Add other types...
         }
         else
         {
             map.insert(structs_.begin(), structs_.end());
+            map.insert(unions_.begin(), unions_.end());
+            // TODO Add other types...
         }
 
         for (const auto& pair : inner_)
@@ -522,7 +530,10 @@ public:
         }
 
         // Check unions
-        // TODO
+        if (module.first->has_union(module.second))
+        {
+            return module.first->unions_.at(module.second);
+        }
 
         // Check bitsets
         // TODO
