@@ -25,6 +25,8 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <regex>
+#include <codecvt>
 
 namespace eprosima {
 namespace xtypes {
@@ -127,6 +129,18 @@ public:
         }
 
         return *this;
+    }
+
+    /// \brief Specialized version for labels as string representation
+    /// It will convert these strings to the discriminator type.
+    /// If the member is going to be the default one, it is expected to receive a label names "default".
+    UnionType& add_case_member(
+            const std::vector<std::string>& labels,
+            const Member& member)
+    {
+        std::vector<size_t> values;
+        bool is_default = parse_labels(labels, values);
+        return add_case_member(values, member, is_default);
     }
 
     /// \brief Create a member in this union.
@@ -850,6 +864,149 @@ protected:
             member->type().construct_instance(instance + member->offset());
         }
         active_member_ = member;
+    }
+
+    bool parse_labels(
+            const std::vector<std::string>& labels,
+            std::vector<size_t>& result)
+    {
+        bool is_default = false;
+        TypeKind kind = disc_->type().kind();
+        if (kind == TypeKind::ALIAS_TYPE)
+        {
+            const AliasType& alias = static_cast<const AliasType&>(disc_->type());
+            kind = alias.rget().kind();
+        }
+
+        for (const std::string& label : labels)
+        {
+            if (label == "default")
+            {
+                xtypes_assert(!is_default, "Received two 'default' cases.");
+                is_default = true;
+            }
+            else
+            {
+                int base = 10;
+                if (label.find("0x") == 0 || label.find("0X") == 0)
+                {
+                    base = 16;
+                }
+                else if (label.find("0") == 0)
+                {
+                    base = 8;
+                }
+
+                switch (kind)
+                {
+                    case TypeKind::BOOLEAN_TYPE:
+                        {
+                            if (label == "TRUE")
+                            {
+                                result.emplace_back(1);
+                            }
+                            else if (label == "FALSE")
+                            {
+                                result.emplace_back(0);
+                            }
+                            else
+                            {
+                                xtypes_assert(
+                                    false,
+                                    "Received '" << label
+                                        << "' while parsing a bool label. Only 'TRUE' or 'FALSE' are allowed");
+                            }
+                        }
+                        break;
+                    case TypeKind::INT_8_TYPE:
+                        {
+                            int8_t value = std::strtoll(label.c_str(), nullptr, base);
+                            result.emplace_back(static_cast<size_t>(value));
+                        }
+                        break;
+                    case TypeKind::UINT_8_TYPE:
+                        {
+                            uint8_t value = std::strtoull(label.c_str(), nullptr, base);
+                            result.emplace_back(static_cast<size_t>(value));
+                        }
+                        break;
+                    case TypeKind::INT_16_TYPE:
+                        {
+                            int16_t value = std::strtoll(label.c_str(), nullptr, base);
+                            result.emplace_back(static_cast<size_t>(value));
+                        }
+                        break;
+                    case TypeKind::UINT_16_TYPE:
+                        {
+                            uint32_t value = std::strtoull(label.c_str(), nullptr, base);
+                            result.emplace_back(static_cast<size_t>(value));
+                        }
+                        break;
+                    case TypeKind::INT_32_TYPE:
+                        {
+                            int32_t value = std::strtoll(label.c_str(), nullptr, base);
+                            result.emplace_back(static_cast<size_t>(value));
+                        }
+                        break;
+                    case TypeKind::UINT_32_TYPE:
+                        {
+                            uint32_t value = std::strtoull(label.c_str(), nullptr, base);
+                            result.emplace_back(static_cast<size_t>(value));
+                        }
+                        break;
+                    case TypeKind::INT_64_TYPE:
+                        {
+                            int64_t value = std::strtoll(label.c_str(), nullptr, base);
+                            result.emplace_back(static_cast<size_t>(value));
+                        }
+                        break;
+                    case TypeKind::UINT_64_TYPE:
+                        {
+                            uint64_t value = std::strtoull(label.c_str(), nullptr, base);
+                            result.emplace_back(static_cast<size_t>(value));
+                        }
+                        break;
+                    case TypeKind::CHAR_8_TYPE:
+                        {
+                            result.emplace_back(static_cast<size_t>(label[0]));
+                        }
+                        break;
+                    case TypeKind::CHAR_16_TYPE:
+                        {
+                            using convert_type = std::codecvt_utf8<wchar_t>;
+                            std::wstring_convert<convert_type, wchar_t> converter;
+                            std::wstring temp = converter.from_bytes(label);
+                            wchar_t value = temp[0];
+                            result.emplace_back(static_cast<size_t>(value));
+                        }
+                        break;
+                    case TypeKind::ENUMERATION_TYPE:
+                        {
+                            // TODO: If other enumeration types are added, switch again.
+                            uint32_t value = std::strtoull(label.c_str(), nullptr, base);
+                            if (value == 0)
+                            {
+                                // Check if strtoull failed because it was an string or it was really a '0'.
+                                std::regex re("[_A-Za-z]");
+                                std::string new_s = std::regex_replace(label, re, "*");
+                                if (new_s.find("*") != std::string::npos)
+                                {
+                                    // Get the Enum value
+                                    const EnumerationType<uint32_t>& enum_type =
+                                        static_cast<const EnumerationType<uint32_t>&>(disc_->type());
+                                    value = enum_type.value(label);
+                                }
+                            }
+                            result.emplace_back(static_cast<size_t>(value));
+                        }
+                        break;
+                    default:
+                        xtypes_assert(false, "Internal UnionType error!");
+                }
+            }
+        }
+
+        return is_default;
     }
 
 private:

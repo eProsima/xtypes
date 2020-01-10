@@ -398,6 +398,7 @@ public:
 
 private:
     friend struct Context;
+    using LabelsCaseMemberPair = std::pair<std::vector<std::string>, Member>;
 
     peg::parser parser_;
     Context* context_;
@@ -1235,7 +1236,7 @@ private:
     {
         using namespace peg::udl;
         std::string name;
-        //std::vector<Member> member_list;
+        std::vector<LabelsCaseMemberPair> member_list;
         DynamicType::Ptr type;
         for (const auto& node : ast->nodes)
         {
@@ -1250,50 +1251,180 @@ private:
                 case "SCOPED_NAME"_:
                 {
                     type = type_spec(node, outer);
-                    //UnionType result(name, type);
-                    //outer->unions.emplace(name, std::move(result));
+                    UnionType result(name, *type);
+                    outer->union_switch(std::move(result));
                     break;
                 }
                 case "SWITCH_BODY"_:
-                    //switch_body(node, outer, member_list, type);
-                    // TODO:
-                    //     + SWITCH_BODY
-                    //          + CASE
-                    //              - CASE_LABEL/0 (0)
-                    //              + ELEMENT_SPEC
-                    //                  + TYPE_SPEC/0[SIGNED_LONG_INT]
-                    //                  - DECLARATOR/1[IDENTIFIER] (my_int32)
-                    //          + CASE
-                    //              - CASE_LABEL/0 (1)
-                    //              + ELEMENT_SPEC
-                    //                  + TYPE_SPEC/0[UNSIGNED_LONGLONG_INT]
-                    //                  - DECLARATOR/1[IDENTIFIER] (my_uint64)
-                    //          + CASE
-                    //              + CASE_LABEL/1 (default)
-                    //              + ELEMENT_SPEC
-                    //                  + TYPE_SPEC/0[STRING_TYPE]
-                    //                  - DECLARATOR/1[IDENTIFIER] (my_string)
+                    switch_body(node, outer, member_list, type);
                     break;
             }
         }
 
-        context_->log(log::LogLevel::WARNING, "UNSUPPORTED",
-            "Found \"union " + name + "\" with discriminator of type " + type->name()
-            + " but unions aren't supported. Ignoring.",
-            ast);
-        /* TODO
-        UnionType& union_type = outer->get_union(name);
+        UnionType& union_type = outer->union_switch(name);
         if (!union_type.members().empty())
         {
-            if (context_.ignore_redefinition) ...
-            throw exception("Union " + name + " redefinition.", ast);
+            const std::string msg = "Union \"" + name + "\" redefinition.";
+            if (context_->ignore_redefinition)
+            {
+                context_->log(log::LogLevel::INFO, "REDEFINITION",
+                    msg,
+                    ast);
+                return;
+            }
+            context_->log(log::LogLevel::ERROR, "EXCEPTION",
+                msg,
+                ast);
+            throw exception(msg, ast);
         }
-        for (auto& member : member_list)
+        context_->log(log::LogLevel::DEBUG, "UNION_DEF",
+            "Union \"" + name + "\" definition.",
+            ast);
+        for (auto& pair : member_list)
         {
-            union_type.add_member(std::move(member.second));
+            context_->log(log::LogLevel::DEBUG, "UNION_DEF_MEMBER",
+                "Union \"" + name + "\" member: " + pair.second.name(),
+                ast);
+            union_type.add_case_member(pair.first, std::move(pair.second));
         }
-        // Replace? Probably not needed.
-        */
+    }
+
+    void switch_body(
+            const std::shared_ptr<peg::Ast> ast,
+            std::shared_ptr<Module> outer,
+            std::vector<LabelsCaseMemberPair>& member_list,
+            const DynamicType::Ptr type)
+    {
+        using namespace peg::udl;
+        for (const auto& node : ast->nodes)
+        {
+            switch (node->original_tag)
+            {
+                case "CASE"_:
+                {
+                    std::cout << "CASE FOUND: " << std::endl;
+                    switch_case(node, outer, member_list, type);
+                    break;
+                }
+                default:
+                {
+                    context_->log(log::LogLevel::ERROR, "UNSUPPORTED",
+                       "Found unexepcted node \"" + node->name + "\" while parsing an Union. Ignoring.",
+                        node);
+                }
+            }
+        }
+    }
+
+    // TODO:
+    //     + SWITCH_BODY
+    //          + CASE
+    //              - CASE_LABEL/0 (0)
+    //              - CASE_LABEL/0 (2)
+    //              + ELEMENT_SPEC
+    //                  + TYPE_SPEC/0[SIGNED_LONG_INT]
+    //                  - DECLARATOR/1[IDENTIFIER] (my_int32)
+    //          + CASE
+    //              - CASE_LABEL/0 (1)
+    //              + ELEMENT_SPEC
+    //                  + TYPE_SPEC/0[UNSIGNED_LONGLONG_INT]
+    //                  - DECLARATOR/1[IDENTIFIER] (my_uint64)
+    //          + CASE
+    //              + CASE_LABEL/1 (default)
+    //              + ELEMENT_SPEC
+    //                  + TYPE_SPEC/0[STRING_TYPE]
+    //                  - DECLARATOR/1[IDENTIFIER] (my_string)
+
+    void switch_case(
+            const std::shared_ptr<peg::Ast> ast,
+            std::shared_ptr<Module> outer,
+            std::vector<LabelsCaseMemberPair>& member_list,
+            const DynamicType::Ptr type)
+    {
+        using namespace peg::udl;
+        for (const auto& node : ast->nodes)
+        {
+            std::vector<std::string> labels;
+            std::vector<Member> member;
+
+            switch (node->original_tag)
+            {
+                case "CASE_LABEL"_:
+                {
+                    std::cout << "LABEL: " << node->token << std::endl;
+                    labels.push_back(node->token); // Raw token, must be processed later.
+                    break;
+                }
+                case "ELEMENT_SPEC"_:
+                {
+                    case_member_def(node, outer, member);
+                    std::cout << "Member: " << member.at(0).name() << std::endl;
+                    // Label cases only have one member per case.
+                    LabelsCaseMemberPair pair = std::make_pair(labels, std::move(member.at(0)));
+                    member_list.emplace_back(std::move(pair));
+                    break;
+                }
+            }
+        }
+    }
+
+    void case_member_def(
+            const std::shared_ptr<peg::Ast> ast,
+            std::shared_ptr<Module> outer,
+            std::vector<Member>& result)
+    {
+        using namespace peg::udl;
+        DynamicType::Ptr type;
+
+        using id_pair = std::pair<std::string, std::vector<size_t>>;
+        using id_pair_vector = std::vector<id_pair>;
+
+        id_pair_vector pairs;
+
+        for (const auto& node : ast->nodes)
+        {
+            switch (node->original_tag)
+            {
+                case "TYPE_SPEC"_:
+                    type = type_spec(node, outer);
+                    break;
+                case "DECLARATOR"_:
+                    identifier(node, outer, pairs);
+                    break;
+            }
+        }
+
+        for (id_pair& pair : pairs)
+        {
+            std::string name = pair.first;
+            std::vector<size_t> dimensions = pair.second;
+
+            bool already_defined = false;
+            for (const Member& m : result)
+            {
+                if (m.name() == name)
+                {
+                    already_defined = true;
+                    break;
+                }
+            }
+
+            if (already_defined)
+            {
+                context_->log(log::LogLevel::ERROR, "EXCEPTION",
+                    "Member identifier " + ast->token + " already defined",
+                    ast);
+                throw exception("Member identifier " + ast->token + " already defined", ast);
+            }
+            if (dimensions.empty())
+            {
+                result.emplace_back(Member(name, *type));
+            }
+            else
+            {
+                member_array(name, dimensions, type, result);
+            }
+        }
     }
 
     void annotation_dcl(

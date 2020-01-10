@@ -230,3 +230,20 @@ TEST (UnionType, default_behavior)
     data["default"] = my_enum.value("C");
     EXPECT_EQ(data.get_member("default").value<uint32_t>(), 9);
 }
+
+TEST (UnionType, labels_as_string)
+{
+    EnumerationType<uint32_t> my_enum("MyEnum");
+    my_enum.add_enumerator("A", 55);
+    my_enum.add_enumerator("B", 100);
+
+    UnionType union_type("MyUnion", my_enum);
+    std::vector<std::string> labels_1{"A"};
+    std::vector<std::string> labels_2{"100", "default"};
+
+    union_type.add_case_member(labels_1, Member("a", primitive_type<bool>()));
+    union_type.add_case_member(labels_2, Member("b_default", primitive_type<bool>()));
+
+    DynamicData data(union_type);
+    EXPECT_EQ(data.d().value<uint32_t>(), static_cast<uint32_t>(100));
+}
