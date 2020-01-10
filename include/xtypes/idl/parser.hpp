@@ -1608,10 +1608,6 @@ private:
                 DynamicType::Ptr type = outer->type(node->token);
                 if (type.get() == nullptr)
                 {
-                    if (outer->has_alias(node->token))
-                    {
-                        return AliasType(outer->alias(node->token));
-                    }
                     context_->log(log::LogLevel::ERROR, "EXCEPTION",
                         "Member type " + node->token + " is unknown",
                         node);

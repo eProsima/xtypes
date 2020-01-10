@@ -469,7 +469,7 @@ public:
     }
 
     bool has_alias(
-            const std::string& name)
+            const std::string& name) const
     {
         // Solve scope
         PairModuleSymbol module = resolve_scope(name);
@@ -533,6 +533,12 @@ public:
         if (module.first->has_union(module.second))
         {
             return module.first->unions_.at(module.second);
+        }
+
+        // Check aliases
+        if (module.first->has_alias(module.second))
+        {
+            return module.first->aliases_.at(module.second);
         }
 
         // Check bitsets
