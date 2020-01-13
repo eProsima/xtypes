@@ -172,6 +172,60 @@ public:
         return add_case_member(labels, Member(name, type), is_default);
     }
 
+    /// \brief This method retrieves the discriminator type.
+    const DynamicType& discriminator() const
+    {
+        return disc()->type();
+    }
+
+    /// \brief Return a list of labels for the given case member name.
+    std::vector<size_t> get_labels(
+            const std::string& member) const
+    {
+        std::vector<size_t> result;
+        for (const auto& pair : labels_)
+        {
+            if (pair.second == member && pair.first != DEFAULT_UNION_LABEL)
+            {
+                result.push_back(pair.first);
+            }
+        }
+        return result;
+    }
+
+    /// \brief Returns the default case member name.
+    std::string get_default() const
+    {
+        if (default_ != INVALID_UNION_LABEL)
+        {
+            return labels_.at(default_);
+        }
+        return std::string();
+    }
+
+    /// \brief Checks if the case member name is set as default.
+    bool is_default(
+            const std::string& name) const
+    {
+        if (default_ != INVALID_UNION_LABEL)
+        {
+            const std::string& member = labels_.at(default_);
+            return member == name;
+        }
+        return false;
+    }
+
+    /// \brief Returns a list of case member names.
+    std::vector<std::string> get_case_members() const
+    {
+        std::vector<std::string> result;
+        for (size_t i = 1; i < members().size(); ++i) // Skip "disciminator" member
+        {
+            result.push_back(member(i).name());
+        }
+        return result;
+    }
+
     virtual size_t memory_size() const override
     {
         return memory_size_;

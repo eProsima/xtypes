@@ -65,6 +65,20 @@ public:
         return false;
     }
 
+    /// \brief Returns the enumerator for the given value.
+    /// \returns The enumerator as std::string if exists, empty is doesn't.
+    std::string enumerator(T value) const
+    {
+        for (const auto& pair : values_)
+        {
+            if (pair.second == value)
+            {
+                return pair.first;
+            }
+        }
+        return "";
+    }
+
     virtual TypeConsistency is_compatible(
             const DynamicType& other) const override
     {
