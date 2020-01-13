@@ -98,5 +98,19 @@ int main()
     // EnumerationType<uint64_t> my_long_enum("MyLongEnum"); // Static assert, uint64_t isn't allowed
     // enum_data2 = static_cast<uint32_t>(2); // Asserts because 2 isn't a valid value (0, 10 and 11).
 
+    UnionType union_type("MyUnion", my_enum); // New UnionType using an enumeration as discriminator type
+    std::vector<std::string> string_label = {"A"};
+    union_type.add_case_member(string_label, Member("um1", inner));
+    std::vector<uint32_t> enum_label = {my_enum.value("B"), my_enum.value("C")};
+    union_type.add_case_member<uint32_t>(enum_label, Member("um2", primitive_type<float>()));
+    union_type.add_case_member<uint32_t>({}, Member("um3", abool), true);
+
+    DynamicData union_data(union_type);
+    std::cout << "Uninitialized 'union::um3' data: " << union_data.get_member("um3").value<bool>() << std::endl;
+    union_data["um2"] = 3.14159265f;
+    std::cout << "union::um2 = PI: " << union_data["um2"].value<float>() << std::endl;
+    union_data["um1"] = data["om2"];
+    std::cout << "union::um1::im2: " << union_data["um1"]["im2"].value<float>() << std::endl;
+
     return 0;
 }
