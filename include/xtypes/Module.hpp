@@ -108,6 +108,7 @@ public:
             bool extend = true) const
     {
         bool has_it = structs_.count(ident) > 0
+            || aliases_.count(ident) > 0
             || constants_.count(ident) > 0
             || enumerations_32_.count(ident) > 0
             || inner_.count(ident) > 0;
