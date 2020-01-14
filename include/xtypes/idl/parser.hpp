@@ -1318,25 +1318,6 @@ private:
         }
     }
 
-    // TODO:
-    //     + SWITCH_BODY
-    //          + CASE
-    //              - CASE_LABEL/0 (0)
-    //              - CASE_LABEL/0 (2)
-    //              + ELEMENT_SPEC
-    //                  + TYPE_SPEC/0[SIGNED_LONG_INT]
-    //                  - DECLARATOR/1[IDENTIFIER] (my_int32)
-    //          + CASE
-    //              - CASE_LABEL/0 (1)
-    //              + ELEMENT_SPEC
-    //                  + TYPE_SPEC/0[UNSIGNED_LONGLONG_INT]
-    //                  - DECLARATOR/1[IDENTIFIER] (my_uint64)
-    //          + CASE
-    //              + CASE_LABEL/1 (default)
-    //              + ELEMENT_SPEC
-    //                  + TYPE_SPEC/0[STRING_TYPE]
-    //                  - DECLARATOR/1[IDENTIFIER] (my_string)
-
     void switch_case(
             const std::shared_ptr<peg::Ast> ast,
             std::shared_ptr<Module> outer,
