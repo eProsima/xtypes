@@ -62,6 +62,30 @@ public:
     ArrayType(const ArrayType& other) = default;
     ArrayType(ArrayType&& other) = default;
 
+    /// \brief Direct multidimensional ArrayType constructor
+    /// Allows to create multidimensional ArrayTypes without explicitly create internal sub-arrays. For example:
+    /// Without using this constructor: ArrayType(ArrayType(ArrayType(primitive_type<float>(), 3), 2), 1);
+    /// Using this constructor: ArrayType(primitive_type<float>(), {1, 2, 3});
+    ArrayType(
+            const DynamicType& content,
+            const std::vector<uint32_t>& dimensions)
+    {
+        xtypes_assert(!dimensions.empty(), "Cannot create an ArrayType without dimensions.");
+        kind_ = TypeKind::ARRAY_TYPE;
+        dimension_ = dimensions.at(0);
+        if (dimensions.size() > 1)
+        {
+            std::vector<uint32_t> content_dims(dimensions.size() - 1);
+            std::copy(dimensions.begin() + 1, dimensions.end(), content_dims.begin());
+            content_ = DynamicType::Ptr(ArrayType(content, content_dims));
+        }
+        else
+        {
+            content_ = DynamicType::Ptr(content);
+        }
+        name_ = "array_" + std::to_string(dimension_) + "_" + content.name();
+    }
+
     /// \brief Dimension of the array.
     /// \returns The dimension.
     uint32_t dimension() const { return dimension_; }

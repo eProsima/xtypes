@@ -173,7 +173,6 @@ protected:
     /// \returns a new DynamicType without managing.
     virtual DynamicType* clone() const = 0;
 
-private:
     TypeKind kind_;
     std::string name_;
 
