@@ -253,6 +253,49 @@ TEST (CollectionTypes, resize_sequence)
     ASSERT_OR_EXCEPTION({d.resize(101);}, "is bigger than maximum allowed");
 }
 
+TEST (CollectionType, resize_complex_sequence)
+{
+    StructType str("my_struct");
+    str.add_member("st0", StringType());
+    str.add_member("st1", primitive_type<uint32_t>());
+    SequenceType seq(str, 0);
+    DynamicData data(seq);
+
+    EXPECT_EQ(data.bounds(), 0);
+    EXPECT_EQ(data.size(), 0);
+
+    for (size_t i = 0; i < 3; ++i)
+    {
+        std::stringstream ss;
+        ss << "data_" << i;
+        DynamicData item(str);
+        item["st0"] = ss.str();
+        item["st1"] = static_cast<uint32_t>(i);
+        data.push(item);
+    }
+    EXPECT_EQ(data.size(), 3);
+
+    data.resize(5);
+    EXPECT_EQ(data.bounds(), 0);
+    EXPECT_EQ(data.size(), 5);
+
+    for (size_t i = 3; i < 5; ++i)
+    {
+        std::stringstream ss;
+        ss << "new_data_" << i;
+        data[i]["st0"] = ss.str();
+        data[i]["st1"] = 2*static_cast<uint32_t>(i);
+    }
+
+    for (size_t i = 0; i < 5; ++i)
+    {
+        std::stringstream ss;
+        ss << (i < 3 ? "data_" : "new_data_") << i;
+        EXPECT_EQ(data[i]["st0"].value<std::string>(), ss.str());
+        EXPECT_EQ(data[i]["st1"].value<uint32_t>(), i < 3 ? i : 2*i);
+    }
+}
+
 TEST (CollectionTypes, multi_sequence)
 {
     SequenceType simple_seq(primitive_type<uint32_t>(), 5);
