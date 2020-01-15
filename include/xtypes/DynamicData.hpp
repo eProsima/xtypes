@@ -773,7 +773,7 @@ public:
     /// If the key doesn't exists, creates an unitilized entry, adding the key.
     /// \returns A writable reference of the DynamicData accessed.
     WritableDynamicDataRef operator [] (
-            ReadableDynamicDataRef data) const
+            ReadableDynamicDataRef data)
     {
         xtypes_assert(
             type_.kind() == TypeKind::MAP_TYPE,
@@ -784,7 +784,7 @@ public:
         uint8_t* instance = map.get_instance_at(instance_, p_instance(data));
         if (instance == nullptr)
         {
-            uint8_t new_entry[pair.memory_size()];
+            uint8_t new_entry[pair.memory_size()] = {0};
             std::memcpy(new_entry, p_instance(data), pair.first().memory_size()); // Don't copy the "second" part.
             uint8_t* result = map.insert_instance(instance_, new_entry);
             xtypes_assert(result != nullptr, "Cannot insert new element into map.");

@@ -178,7 +178,7 @@ public:
     /// \param[in] key_instance Requested key
     /// \returns The pair instance with the key.
     uint8_t* operator [] (
-            uint8_t* key_instance) const
+            const uint8_t* key_instance) const
     {
         return find_place(key_instance, true);
     }
@@ -194,9 +194,15 @@ public:
 
     /// \brief Checks a key for existance
     bool contains_key(
-            uint8_t* key_instance) const
+            const uint8_t* key_instance) const
     {
         return operator[](key_instance) != nullptr;
+    }
+
+    size_t index_of(
+            const uint8_t* key_instance) const
+    {
+        return get_key_index(key_instance);
     }
 
     /// \brief Size of the map.
@@ -273,9 +279,9 @@ private:
         {
             if (overlap)
             {
-                for(uint32_t i = size_ - 1; i >= 0; --i)
+                for(uint32_t i = size_; i > 0; --i)
                 {
-                    content_.move_instance(target + i * block_size_, source + i * block_size_);
+                    content_.move_instance(target + (i - 1) * block_size_, source + (i - 1) * block_size_);
                 }
             }
             else
@@ -288,7 +294,7 @@ private:
         }
         else //optimization when the pair are both primitive
         {
-            std::memmove(target, source, size_ * block_size_);
+            std::memmove(target, source, (size_ - get_key_index(source)) * block_size_);
         }
     }
 
@@ -296,8 +302,15 @@ private:
             const uint8_t* instance)
     {
         uint8_t* place = find_place(instance);
-        xtypes_assert(hash(instance) != hash(place), "Key already exists.");
-        move_content(place + block_size_, place, true);
+        xtypes_assert(
+            size_ == 0 ||
+                place == get_element(size_) || // Insert at the end
+                hash(instance) != hash(place),
+            "Key already exists.");
+        if (place != get_element(size_))
+        {
+            move_content(place + block_size_, place, true);
+        }
         return place;
     }
 
@@ -305,24 +318,45 @@ private:
             const uint8_t* instance,
             bool exact = false) const
     {
+        uint64_t instance_hash;
+        // Special case, it is empty
+        if (size_ == 0)
+        {
+            if (exact)
+            {
+                return nullptr;
+            }
+            else
+            {
+                return memory_;
+            }
+        }
+
         // Binary search by hash
         uint64_t istart = 0;
         uint64_t iend = size_;
         uint64_t icurrent = (istart + iend) / 2;
-        uint64_t instance_hash = hash(instance);
         uint8_t* start = get_element(0);
         uint8_t* end = get_element(size_);
         uint8_t* current = get_element(icurrent);
 
+        instance_hash = hash(instance);
+        uint64_t current_hash = hash(current);
+
         while (icurrent != istart)
         {
-            uint64_t current_hash = hash(current);
             if (instance_hash == current_hash)
             {
                 return current;
             }
             else if (instance_hash > current_hash)
             {
+                if (current == start)
+                {
+                    // The spot is "end"
+                    current = end;
+                    continue;
+                }
                 start = current;
                 istart = icurrent;
             }
@@ -334,19 +368,35 @@ private:
 
             icurrent = (istart + iend) / 2;
             current = get_element(icurrent);
+            current_hash = hash(current);
         }
 
-        if (exact && hash(current) != instance_hash)
+        if (instance_hash == current_hash)
         {
-            return nullptr;
+            return current;
         }
-        return current;
+        else if (instance_hash < current_hash)
+        {
+            return exact ? nullptr : current;
+        }
+        else
+        {
+            return exact ? nullptr : end;
+        }
     }
 
     uint8_t* get_element(
             size_t index) const
     {
         return memory_ + index * block_size_;
+    }
+
+    size_t get_key_index(
+            const uint8_t* instance) const
+    {
+        uint8_t* place = find_place(instance, true);
+        xtypes_assert(place != nullptr, "Key doesn't exists.");
+        return (place - memory_) / block_size_;
     }
 
     uint64_t hash(
@@ -371,7 +421,7 @@ private:
             uint64_t seed) const
     {
         const uint64_t m = 0x880355f21e6d1965ULL;
-        uint64_t* pos = reinterpret_cast<uint64_t*>(const_cast<uint8_t*>(buf));
+        const uint64_t* pos = reinterpret_cast<const uint64_t*>(buf);
         const uint64_t* end = pos + (len / 8);
         const uint8_t* pos2;
         uint64_t h = seed ^ (len * m);
@@ -384,18 +434,18 @@ private:
             h *= m;
         }
 
-        pos2 = reinterpret_cast<uint8_t*>(pos);
+        pos2 = reinterpret_cast<const uint8_t*>(pos);
         v = 0;
 
         switch (len & 7)
         {
         case 7: v ^= static_cast<uint64_t>(pos2[6]) << 48;
-        case 6: v ^= static_cast<uint64_t>(pos2[6]) << 48;
-        case 5: v ^= static_cast<uint64_t>(pos2[6]) << 48;
-        case 4: v ^= static_cast<uint64_t>(pos2[6]) << 48;
-        case 3: v ^= static_cast<uint64_t>(pos2[6]) << 48;
-        case 2: v ^= static_cast<uint64_t>(pos2[6]) << 48;
-        case 1: v ^= static_cast<uint64_t>(pos2[6]) << 48;
+        case 6: v ^= static_cast<uint64_t>(pos2[5]) << 40;
+        case 5: v ^= static_cast<uint64_t>(pos2[4]) << 32;
+        case 4: v ^= static_cast<uint64_t>(pos2[3]) << 24;
+        case 3: v ^= static_cast<uint64_t>(pos2[2]) << 16;
+        case 2: v ^= static_cast<uint64_t>(pos2[1]) << 8;
+        case 1: v ^= static_cast<uint64_t>(pos2[0]);
             h ^= mix(v);
             h *= m;
         }
