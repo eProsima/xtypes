@@ -24,6 +24,7 @@
 #include <xtypes/PrimitiveType.hpp>
 #include <xtypes/EnumerationType.hpp>
 #include <xtypes/AliasType.hpp>
+#include <xtypes/MapType.hpp>
 
 namespace eprosima {
 namespace xtypes {
@@ -150,6 +151,20 @@ public:
 
         xtypes_assert(type_.kind() != TypeKind::UNION_TYPE, "Members of UnionType cannot be accessed by index.");
 
+        if (type_.kind() == TypeKind::PAIR_TYPE)
+        {
+            xtypes_assert(index < 2, "operator[" << index << "] is out of bounds.");
+            const PairType& pair = static_cast<const PairType&>(type_);
+            if (index == 0)
+            {
+                return ReadableDynamicDataRef(pair.first(), instance_);
+            }
+            else
+            {
+                return ReadableDynamicDataRef(pair.second(), instance_ + pair.first().memory_size());
+            }
+        }
+
         const AggregationType& aggregation = static_cast<const StructType&>(type_);
         const Member& member = aggregation.member(index);
         return ReadableDynamicDataRef(member.type(), instance_ + member.offset());
@@ -164,6 +179,25 @@ public:
         const UnionType& aggregation = static_cast<const UnionType&>(type_);
         const Member& member = aggregation.member(0);
         return ReadableDynamicDataRef(member.type(), instance_);
+    }
+
+    /// \brief key access method by DynamicData.
+    /// \param[in] data DynamicData representing a MapType key.
+    /// \pre The DynamicData must represent a MapType.
+    /// |pre The key must exists.
+    /// \returns A readable reference of the DynamicData accessed.
+    ReadableDynamicDataRef at (
+            ReadableDynamicDataRef data) const
+    {
+        xtypes_assert(
+            type_.kind() == TypeKind::MAP_TYPE,
+            "operator[const DynamicData&] is only available for MapType.");
+
+        const MapType& map = static_cast<const MapType&>(type_);
+        const PairType& pair = static_cast<const PairType&>(map.content_type());
+        uint8_t* instance = map.get_instance_at(instance_, data.instance_);
+        xtypes_assert(instance != nullptr, "MapType '" << type_.name() << "' doesn't contains the requested key.");
+        return ReadableDynamicDataRef(pair.second(), instance + pair.first().memory_size());
     }
 
     /// \brief Size of the DynamicData.
@@ -506,6 +540,7 @@ protected:
         xtypes_assert(type_.is_aggregation_type(),
             "operator [const std::string&] isn't available for type '" << type_.name() << "'.");
         const AggregationType& aggregation = static_cast<const AggregationType&>(type_);
+        xtypes_assert(type_.kind() != TypeKind::PAIR_TYPE, "PairType doesn't have operator [const std::string&]");
         xtypes_assert(aggregation.has_member(member_name),
             "Type '" << type_.name() << "' doesn't have a member named '" << member_name << "'.");
 
@@ -703,7 +738,7 @@ public:
     /// \brief See ReadableDynamicDataRef::operator[]()
     /// \returns A writable reference to the DynamicData accessed.
     WritableDynamicDataRef operator [] (
-            size_t index) //
+            size_t index)
     {
         return ReadableDynamicDataRef::operator[](index);
     }
@@ -730,6 +765,76 @@ public:
         xtypes_assert(type_.kind() == TypeKind::UNION_TYPE, "discriminator is only available for UnionType.");
         UnionType& un = const_cast<UnionType&>(static_cast<const UnionType&>(type_));
         un.select_disc(disc.type(), instance_, p_instance(disc));
+    }
+
+    /// \brief index access operator by DynamicData.
+    /// \param[in] data DynamicData representing a MapType key.
+    /// \pre The DynamicData must represent a MapType.
+    /// If the key doesn't exists, creates an unitilized entry, adding the key.
+    /// \returns A writable reference of the DynamicData accessed.
+    WritableDynamicDataRef operator [] (
+            ReadableDynamicDataRef data) const
+    {
+        xtypes_assert(
+            type_.kind() == TypeKind::MAP_TYPE,
+            "operator[const DynamicData&] is only available for MapType.");
+
+        const MapType& map = static_cast<const MapType&>(type_);
+        const PairType& pair = static_cast<const PairType&>(map.content_type());
+        uint8_t* instance = map.get_instance_at(instance_, p_instance(data));
+        if (instance == nullptr)
+        {
+            uint8_t new_entry[pair.memory_size()];
+            std::memcpy(new_entry, p_instance(data), pair.first().memory_size()); // Don't copy the "second" part.
+            uint8_t* result = map.insert_instance(instance_, new_entry);
+            xtypes_assert(result != nullptr, "Cannot insert new element into map.");
+            instance = result;
+            pair.second().construct_instance(instance + pair.first().memory_size()); // "second" part initilized here!
+        }
+        return WritableDynamicDataRef(pair.second(), instance + pair.first().memory_size());
+    }
+
+    /// \brief key access method by DynamicData.
+    /// \param[in] data DynamicData representing a MapType key.
+    /// \pre The DynamicData must represent a MapType.
+    /// |pre The key must exists.
+    /// \returns A writable reference of the DynamicData accessed.
+    WritableDynamicDataRef at (
+            ReadableDynamicDataRef data)
+    {
+        return ReadableDynamicDataRef::at(data);
+    }
+
+    /// \brief inserts a pair key, value into the DynamicData.
+    /// \param[in] data DynamicData representing a PairType key.
+    /// \pre The DynamicData must represent a MapType.
+    /// If the key already exists, or the map reached its limits, returns false.
+    /// \returns If the insertion succeded.
+    bool insert (
+            ReadableDynamicDataRef data) const
+    {
+        xtypes_assert(
+            type_.kind() == TypeKind::MAP_TYPE,
+            "insert method is only available for MapType.");
+
+        const MapType& map = static_cast<const MapType&>(type_);
+        xtypes_assert(map.content_type().is_compatible(data.type()) == TypeConsistency::EQUALS, "Types doesn't match");
+        return map.insert_instance(instance_, p_instance(data)) != nullptr;
+    }
+
+    /// \brief checks if a key is contained in the map represented by the DynamicData.
+    /// \pre The DynamicData must represent a MapType.
+    bool has_key(
+            ReadableDynamicDataRef key) const
+    {
+        xtypes_assert(
+            type_.kind() == TypeKind::MAP_TYPE,
+            "has_key method is only available for MapType.");
+
+        const MapType& map = static_cast<const MapType&>(type_);
+        const PairType& pair = static_cast<const PairType&>(map.content_type());
+        xtypes_assert(pair.first().is_compatible(key.type()) == TypeConsistency::EQUALS, "Key types doesn't match.");
+        return map.has_key(instance_, p_instance(key));
     }
 
     /// \brief Set a primitive or string value into the DynamicData
@@ -798,24 +903,31 @@ public:
         return *this;
     }
 
-    /// \brief resize the Sequence representing by the DynamicData.
+    /// \brief resize the Sequence or Map representing by the DynamicData.
     /// If size is less or equals that the current size, nothing happens,
     /// otherwise a default-initialized values are insert to the sequence to increase its size.
-    /// \param[int] size New sequence size
-    /// \pre The DynamicData must represent a SequenceType.
+    /// \param[int] size New sequence/map size
+    /// \pre The DynamicData must represent a SequenceType or a MapType.
     /// \pre The bounds must be greater or equal to the new size.
     /// \returns The writable reference to this DynamicData
-    WritableDynamicDataRef& resize(size_t size) // this = SequenceType
+    WritableDynamicDataRef& resize(size_t size) // this = SequenceType || MapType
     {
-        xtypes_assert(type_.kind() == TypeKind::SEQUENCE_TYPE,
-            "resize() is only available for sequence types but called for '" << type_.name() << "'.");
+        xtypes_assert(type_.kind() == TypeKind::SEQUENCE_TYPE || type_.kind() == TypeKind::MAP_TYPE,
+            "resize() is only available for sequence and map types but called for '" << type_.name() << "'.");
         size_t bound = bounds();
         xtypes_assert(!bound || bound >= size,
             "The desired size (" << size << ") is bigger than maximum allowed size for the type '"
             << type_.name() << "' (" << bounds() << ").");
-        const SequenceType& sequence = static_cast<const SequenceType&>(type_);
-
-        sequence.resize_instance(instance_, size);
+        if (type_.kind() == TypeKind::SEQUENCE_TYPE)
+        {
+            const SequenceType& sequence = static_cast<const SequenceType&>(type_);
+            sequence.resize_instance(instance_, size);
+        }
+        else
+        {
+            const MapType& map = static_cast<const MapType&>(type_);
+            map.resize_instance(instance_, size);
+        }
         return *this;
     }
 

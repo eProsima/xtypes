@@ -59,12 +59,14 @@ enum class TypeKind
     SEQUENCE_TYPE    = CONSTRUCTED_TYPE | COLLECTION_TYPE | 0x0005, ///< Reprensets a SequenceType
     STRING_TYPE      = CONSTRUCTED_TYPE | COLLECTION_TYPE | 0x0006, ///< Represents a StringType
     WSTRING_TYPE     = CONSTRUCTED_TYPE | COLLECTION_TYPE | 0x0007, ///< Represents a WStringType
-    MAP_TYPE         = CONSTRUCTED_TYPE | COLLECTION_TYPE | 0x0008, ///< Not supported
+    MAP_TYPE         = CONSTRUCTED_TYPE | COLLECTION_TYPE | 0x0008, ///< Represents a MapType
 
     UNION_TYPE                = CONSTRUCTED_TYPE | AGGREGATION_TYPE | 0x0009, ///< Represents an UnionType
     STRUCTURE_TYPE            = CONSTRUCTED_TYPE | AGGREGATION_TYPE | 0x000A, ///< Represents a StructType
     UNION_FWD_DECL_TYPE       = CONSTRUCTED_TYPE | AGGREGATION_TYPE | 0x000B, ///< Not supported
-    STRUCTURE_FWD_DECL_TYPE   = CONSTRUCTED_TYPE | AGGREGATION_TYPE | 0x000C ///< Not supported
+    STRUCTURE_FWD_DECL_TYPE   = CONSTRUCTED_TYPE | AGGREGATION_TYPE | 0x000C, ///< Not supported
+
+    PAIR_TYPE                 = CONSTRUCTED_TYPE | AGGREGATION_TYPE | 0x000F ///< Represents a PairType
 };
 
 /// \brief OR operator

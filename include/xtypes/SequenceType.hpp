@@ -32,7 +32,7 @@ class SequenceType : public MutableCollectionType
 {
 public:
     /// \brief Construct a SequenceType.
-    /// \param[in] content Content type of the array.
+    /// \param[in] content Content type of the sequence.
     /// \param[in] bounds Size limit of the sequence, 0 means that no limits.
     explicit SequenceType(
             const DynamicType& content,
@@ -45,7 +45,7 @@ public:
     {}
 
     /// \brief Construct a SequenceType.
-    /// \param[in] content Content type of the array.
+    /// \param[in] content Content type of the sequence.
     /// \param[in] bounds Size limit of the sequence, 0 means that no limits.
     template<typename DynamicTypeImpl>
     SequenceType(
