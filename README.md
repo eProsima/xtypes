@@ -91,7 +91,7 @@ The API is divided into two different and yet related conceps.
 
 ### Type definition
 All types inherit from the base abstract type `DynamicType` as shown in the following diagram:
-![](https://www.plantuml.com/plantuml/img/ZPBT2i8m38NlynHxWRs1Z8bwAGWRU9rreHJQRdQfCF3XfGYrBVFdDkSxoKb8kp0wzaR3nIcZMDsfNsUgQZ_NZwOwhXQD4g44UoaTIMGrsK_8OTAQn3S2EdPUS2eNVG7spk6Q4dbRE7l6GTFsi88DyvILAR5fX-k_O4StJrRGRn9ErXjoo3IcS7Reo1Hhv5O071PsA3WxPYoM9un2aIZMjmCBZSkIvzlrpTkLXmhIor7i48IMx1Y-wWa0)
+![](https://www.plantuml.com/plantuml/img/ZP912i8m44NtSufUe3UGqg8k1Q4LrzDqA84ahSb4A7XuBK9iGgjk_ty_-JD9wHWjUwtWRAMMBE_KJ2DbkH_pHv4T9eDQYbc2gkyjzSXoC5l8Vb2An3S2AYNHRRerMozuQIUtmiKafwS0LDRYj2JYLd3oZAsYzQu9EnUIfbyIgt6u_WlMTFDa1FqcuMYy9ejCtHAEtYamoHXn501RnnO5HziEOhh2O2IDWhvUM2XqBkwtQufFAYurM-z4CiDib6IwrwTy0W00)
 
 #### PrimitiveType
 Represents the system's basic types.
@@ -177,6 +177,36 @@ my_struct.add_member("m_f", SequenceType(other_struct)); //member of sequence of
 Note: once a `DynamicType` is added to an struct, a copy is performed.
 This allows modifications to `DynamicType` to be performed without side effects.
 It also and facilitates the user's memory management duties.
+
+#### UnionType
+Similar to a *C-like union* or a [StructType](#structtype) but with only one member active at the same time.
+It is defined by a *discriminator* and a list of labels allowing to identify the current active member.
+```c++
+UnionType my_union("MyUnion", primitive_type<char>());
+```
+The allowed *discriminator* types are all the **no floating point** primitives, EnumerationType, and AliasType that
+solves (directly or indirectly) to any other allowed type.
+
+Once the `UnionType` has been declared, any number of *case members* can be added, defining the labels that
+belong to the case member.
+It is possible to define a `default` case for one member, which will be selected when the DynamicData is built.
+This can be done setting the flag `is_default` to *true* in the `add_case_member` method (*false* by default), or
+defining a label named `default` when using a list of strings as labels.
+```c++
+my_union.add_case_member<char>({'a', 'b'}, Member("m_ab", StringType());
+std::vector<char> label_list = {'c', 'd', 'e'};
+my_union.add_case_member(label_list, Member("m_cde", primitive_type<float>());
+my_union.add_case_member<char>({}, Member("m_default", primitive_type<uint32_t>()), true);
+```
+This code is equivalent to the following one:
+
+```c++
+my_union.add_case_member<std::string>({"a", "b"}, Member("m_ab", StringType());
+std::vector<std::string> label_list = {"c", "d", "e"};
+my_union.add_case_member(label_list, Member("m_cde", primitive_type<float>());
+my_union.add_case_member<std::string>({"default"}, Member("m_default", primitive_type<uint32_t>()));
+```
+A *case member* without labels must be `default`.
 
 #### AliasType
 Acts as a *C-like typedef*, allowing to specify a custom name for an already existing type. They can be
@@ -293,6 +323,16 @@ The following methods are available when:
             std::cout << elem.type().name() << " " << elem.name() << ": " << elem.value<int32_t>() << std::endl;
         }
     }
+    ```
+1. `DynamicData` represents an `UnionType`
+    Same as `AggregationType` but:
+    - Doesn't allow accesing members by index.
+    - Accessing a member by name sets it as the active member.
+    And plus:
+    ```c++
+    DynamicData disc = data.d(); // Access to the current discriminator value.
+    data.d(disc); // Modifies the discriminator value accordingly the CPP11 mapping for IDL (https://www.omg.org/spec/CPP11/1.4/PDF)
+    DynamicData member_data = data.get_member("member_name"); // Retrieves the member only if is the active member (checks are applied).
     ```
 1. `DynamicData` represents a `CollectionType`
     ```c++

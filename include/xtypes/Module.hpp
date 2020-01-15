@@ -108,6 +108,7 @@ public:
             bool extend = true) const
     {
         bool has_it = structs_.count(ident) > 0
+            || unions_.count(ident) > 0
             || aliases_.count(ident) > 0
             || constants_.count(ident) > 0
             || enumerations_32_.count(ident) > 0
@@ -197,6 +198,80 @@ public:
         return result.second;
     }
 
+    bool has_union(
+            const std::string& name) const
+    {
+        // Solve scope
+        PairModuleSymbol module = resolve_scope(name);
+        if (module.first == nullptr)
+        {
+            return false;
+        }
+        return module.first->unions_.count(module.second) > 0;
+    }
+
+    const UnionType& union_switch(
+            const std::string& name) const
+    {
+        // Solve scope
+        PairModuleSymbol module = resolve_scope(name);
+
+        xtypes_assert(module.first != nullptr, "Cannot solve scope for union '" + name + "'.");
+
+        auto it = module.first->unions_.find(module.second);
+
+        xtypes_assert(it != module.first->unions_.end(), "Cannot find union '" + name + "'.");
+        return static_cast<const UnionType&>(*it->second);
+    }
+
+    UnionType& union_switch(
+            const std::string& name)
+    {
+        // Solve scope
+        PairModuleSymbol module = resolve_scope(name);
+
+        xtypes_assert(module.first != nullptr, "Cannot solve scope for union '" + name + "'.");
+
+        auto it = module.first->unions_.find(module.second);
+
+        xtypes_assert(it != module.first->unions_.end(), "Cannot find union '" + name + "'.");
+        return static_cast<UnionType&>(const_cast<DynamicType&>(*it->second));
+    }
+
+    bool union_switch(
+            const UnionType& union_type)
+    {
+        if (union_type.name().find("::") != std::string::npos)
+        {
+            return false; // Cannot add a symbol with scoped name.
+        }
+
+        auto result = unions_.emplace(union_type.name(), union_type);
+        return result.second;
+    }
+
+    bool union_switch(
+            UnionType&& union_type,
+            bool replace = false)
+    {
+        if (union_type.name().find("::") != std::string::npos)
+        {
+            return false; // Cannot add a symbol with scoped name.
+        }
+
+        if (replace)
+        {
+            auto it = unions_.find(union_type.name());
+            if (it != unions_.end())
+            {
+                unions_.erase(it);
+            }
+        }
+
+        auto result = unions_.emplace(union_type.name(), std::move(union_type));
+        return result.second;
+    }
+
     // TODO has, get and set of:
     // enums, bitmasks and unions
 
@@ -219,10 +294,17 @@ public:
             {
                 map.emplace(module_name + "::" + pair.first, pair.second);
             }
+            for (const auto& pair : unions_)
+            {
+                map.emplace(module_name + "::" + pair.first, pair.second);
+            }
+            // TODO Add other types...
         }
         else
         {
             map.insert(structs_.begin(), structs_.end());
+            map.insert(unions_.begin(), unions_.end());
+            // TODO Add other types...
         }
 
         for (const auto& pair : inner_)
@@ -387,7 +469,7 @@ public:
     }
 
     bool has_alias(
-            const std::string& name)
+            const std::string& name) const
     {
         // Solve scope
         PairModuleSymbol module = resolve_scope(name);
@@ -448,7 +530,16 @@ public:
         }
 
         // Check unions
-        // TODO
+        if (module.first->has_union(module.second))
+        {
+            return module.first->unions_.at(module.second);
+        }
+
+        // Check aliases
+        if (module.first->has_alias(module.second))
+        {
+            return module.first->aliases_.at(module.second);
+        }
 
         // Check bitsets
         // TODO
@@ -468,6 +559,7 @@ protected:
     std::vector<std::string> from_enum_;
     std::map<std::string, DynamicType::Ptr> enumerations_32_;
     std::map<std::string, DynamicType::Ptr> structs_;
+    std::map<std::string, DynamicType::Ptr> unions_;
     //std::map<std::string, std::shared_ptr<AnnotationType>> annotations_;
     Module* outer_;
     std::map<std::string, std::shared_ptr<Module>> inner_;

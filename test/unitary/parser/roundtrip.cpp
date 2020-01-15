@@ -118,6 +118,27 @@ void check_result(
     ASSERT_TRUE(mod_B.has_structure("BStruct"));
     const StructType& b_struct = mod_B.structure("BStruct");
     ASSERT_EQ(b_struct.member("my_deep_string").type().kind(), TypeKind::STRING_TYPE);
+
+    ASSERT_TRUE(root.has_union("MyUnion"));
+    const UnionType& root_union = root.union_switch("MyUnion");
+    ASSERT_EQ(root_union.discriminator().kind(), root_enum.kind());
+    ASSERT_EQ(root_union.discriminator().name(), root_enum.name());
+    ASSERT_TRUE(root_union.has_member("union_struct"));
+    ASSERT_TRUE(root_union.has_member("union_uint32"));
+    ASSERT_TRUE(root_union.has_member("union_float"));
+    std::vector<int64_t> labels = root_union.get_labels("union_struct");
+    ASSERT_EQ(labels.size(), 2);
+    ASSERT_EQ(labels[0], root_enum.value("VALUE_1"));
+    ASSERT_EQ(labels[1], root_enum.value("VALUE_2"));
+    ASSERT_FALSE(root_union.is_default("union_struct"));
+    labels = root_union.get_labels("union_uint32");
+    ASSERT_EQ(labels.size(), 1);
+    ASSERT_EQ(labels[0], root_enum.value("VALUE_3"));
+    ASSERT_FALSE(root_union.is_default("union_uint32"));
+    labels = root_union.get_labels("union_float");
+    ASSERT_EQ(labels.size(), 1);
+    ASSERT_EQ(labels[0], root_enum.value("VALUE_4"));
+    ASSERT_TRUE(root_union.is_default("union_float"));
 }
 
 TEST (IDLGenerator, roundtrip)
@@ -180,6 +201,19 @@ TEST (IDLGenerator, roundtrip)
                     string my_deep_string;
                 };
             };
+        };
+
+        union MyUnion switch (RootEnum) // (ModuleA::ModAEnum) TODO: Support add scope when needed.
+        {
+            case VALUE_1:
+            case VALUE_2:
+                //RootStruct union_struct; // TODO: Support dependency tree. Unions are generated before Structs.
+                RootEnum union_struct;
+            case VALUE_3:
+                uint32 union_uint32;
+            case VALUE_4:
+            default:
+                float union_float;
         };
                    )");
 

@@ -1194,6 +1194,74 @@ TEST(IDLParser, alias_test)
     EXPECT_EQ(static_cast<const AliasType&>(dst3).rget().kind(), TypeKind::FLOAT_64_TYPE);
 }
 
+TEST (IDLParser, union_tests)
+{
+    Context context = parse(R"(
+        enum MyEnum
+        {
+            AAA,
+            BBB,
+            CCC
+        };
+
+        typedef char MyChar;
+        const MyChar C_CHAR = 'L';
+        const MyEnum C_ENUM = CCC;
+
+        union ForwardUnion switch (uint64)
+        {
+            case 0: int32 my_int32;
+            case 1: uint64 my_uint64;
+            case C_ENUM:
+            case 3: float my_float;
+            default: string my_string;
+        };
+
+        union MyUnion switch (MyEnum)
+        {
+            case AAA: string str_a;
+            case BBB: wstring wstr_b;
+            case CCC: ForwardUnion union_c;
+        };
+
+        union TestUnion switch (MyChar)
+        {
+            case 'a': string a;
+            case 'b': string b;
+            case C_CHAR: string c;
+        };
+
+                   )");
+
+    std::map<std::string, DynamicType::Ptr> result = context.module().get_all_types();
+    EXPECT_EQ(3, result.size());
+
+    const UnionType& my_union = context.module().union_switch("MyUnion");
+    DynamicData data(my_union);
+
+    data["str_a"] = "Testing";
+    EXPECT_EQ(data.d().value<uint32_t>(), 0);
+
+    data["wstr_b"] = L"Testing Wstring";
+    EXPECT_EQ(data.d().value<uint32_t>(), 1);
+
+    EXPECT_EQ(data["union_c"].d().value<size_t>(), static_cast<size_t>(DEFAULT_UNION_LABEL));
+    data["union_c"]["my_string"] = "Correct";
+    data["union_c"]["my_float"] = 3.14f;
+    EXPECT_EQ(data["union_c"].d().value<size_t>(), 2);
+    data["union_c"].d(3);
+    EXPECT_EQ(data["union_c"].d().value<size_t>(), 3);
+    data["union_c"]["my_uint64"] = 314ul;
+    EXPECT_EQ(data["union_c"].d().value<size_t>(), 1);
+    data["union_c"]["my_int32"] = 314;
+    EXPECT_EQ(data["union_c"].d().value<size_t>(), 0);
+
+    const UnionType& test_union = context.module().union_switch("TestUnion");
+    DynamicData data_2(test_union);
+    data_2["b"] = "Testing!";
+    EXPECT_EQ(data_2.d().value<char>(), 'b');
+}
+
 int main(int argc, char** argv)
 {
     testing::InitGoogleTest(&argc, argv);

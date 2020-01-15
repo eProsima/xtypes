@@ -3,7 +3,10 @@ PrimitiveType -up-|> DynamicType
 AggregationType -up-|> DynamicType
 CollectionType -up-|> DynamicType
 
+AliasType -up-|> DynamicType
+
 StructType -up-|> AggregationType
+UnionType -up-|> AggregationType
 
 ArrayType -up-|> CollectionType
 MutableCollectionType -up-|> CollectionType
