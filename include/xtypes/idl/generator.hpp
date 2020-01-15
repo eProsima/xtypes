@@ -198,8 +198,8 @@ inline std::string generate_union(const UnionType& type, size_t tabs = 0)
     std::vector<std::string> members = type.get_case_members();
     for (const std::string& name : members)
     {
-        std::vector<size_t> labels = type.get_labels(name);
-        for (size_t value : labels)
+        std::vector<int64_t> labels = type.get_labels(name);
+        for (int64_t value : labels)
         {
             ss << std::string((tabs + 1) * 4, ' ');
             ss << "case " << generator::label_value(value, type.discriminator()) << ":" << std::endl;

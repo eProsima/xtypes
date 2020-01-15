@@ -163,7 +163,7 @@ public:
         xtypes_assert(type_.kind() == TypeKind::UNION_TYPE, "discriminator is only available for UnionType.");
         const UnionType& aggregation = static_cast<const UnionType&>(type_);
         const Member& member = aggregation.member(0);
-        return ReadableDynamicDataRef(member.type(), instance_ + member.offset());
+        return ReadableDynamicDataRef(member.type(), instance_);
     }
 
     /// \brief Size of the DynamicData.

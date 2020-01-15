@@ -40,7 +40,7 @@ TEST (UnionType, checks_and_access)
     ASSERT_OR_EXCEPTION({un.add_case_member<bool>({true}, Member("discriminator", primitive_type<uint32_t>()));},
                         "is reserved");
 
-    ASSERT_OR_EXCEPTION({un.add_case_member<size_t>({SIZE_MAX}, Member("default_label", primitive_type<uint32_t>()));},
+    ASSERT_OR_EXCEPTION({un.add_case_member<int64_t>({DEFAULT_UNION_LABEL}, Member("default_label", primitive_type<uint32_t>()));},
                         "is reserved");
 
     ASSERT_OR_EXCEPTION({un.add_case_member<size_t>({}, Member("no_labels", primitive_type<uint32_t>()));},
@@ -85,6 +85,12 @@ TEST (UnionType, checks_and_access)
     union_data.d(disc);
     disc = false;
     ASSERT_OR_EXCEPTION({union_data.d(disc);}, "Cannot switch member");
+
+    // -1 must be allowed
+    un.add_case_member<int64_t>({-1}, Member("_1", primitive_type<int32_t>()));
+
+    // This line doesn't compiles
+    // un.add_case_member<float>({55.5}, Member("dont_compiles", primitive_type<bool>()));
 }
 
 TEST (UnionType, discriminator_types)

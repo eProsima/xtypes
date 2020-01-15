@@ -126,7 +126,7 @@ void check_result(
     ASSERT_TRUE(root_union.has_member("union_struct"));
     ASSERT_TRUE(root_union.has_member("union_uint32"));
     ASSERT_TRUE(root_union.has_member("union_float"));
-    std::vector<size_t> labels = root_union.get_labels("union_struct");
+    std::vector<int64_t> labels = root_union.get_labels("union_struct");
     ASSERT_EQ(labels.size(), 2);
     ASSERT_EQ(labels[0], root_enum.value("VALUE_1"));
     ASSERT_EQ(labels[1], root_enum.value("VALUE_2"));

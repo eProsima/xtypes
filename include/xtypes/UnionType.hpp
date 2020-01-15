@@ -36,8 +36,8 @@ class ReadableDynamicDataRef;
 class WritableDynamicDataRef;
 
 static const std::string UNION_DISCRIMINATOR("discriminator");
-static const size_t DEFAULT_UNION_LABEL = SIZE_MAX;
-static const size_t INVALID_UNION_LABEL = SIZE_MAX - 1;
+static const int64_t DEFAULT_UNION_LABEL = std::numeric_limits<int64_t>::max();
+static const int64_t INVALID_UNION_LABEL = DEFAULT_UNION_LABEL - 1;
 
 /// \brief DynamicType representing an union.
 /// A UnionType represents a TypeKind::UNION_TYPE.
@@ -75,12 +75,13 @@ public:
             const Member& member,
             bool is_default = false)
     {
+        static_assert (std::is_integral<T>::value, "Only 'integral' types are allowed.");
         xtypes_assert(is_default || !labels.empty(), "Cannot add a non default case member without labels.");
         xtypes_assert(UNION_DISCRIMINATOR != member.name(), "Case member name 'discriminator' is reserved.");
         // Check labels
         for (T label : labels)
         {
-            size_t l = static_cast<size_t>(label);
+            int64_t l = static_cast<int64_t>(label);
             check_label_value(l);
             xtypes_assert(
                 labels_.count(l) == 0,
@@ -102,10 +103,10 @@ public:
         }
 
         // Add labels
-        size_t first_label = DEFAULT_UNION_LABEL;
+        int64_t first_label = DEFAULT_UNION_LABEL;
         for (T label : labels)
         {
-            size_t l = static_cast<size_t>(label);
+            int64_t l = static_cast<int64_t>(label);
             if (l != DEFAULT_UNION_LABEL)
             {
                 labels_[l] = inner.name();
@@ -136,7 +137,7 @@ public:
             const std::vector<std::string>& labels,
             const Member& member)
     {
-        std::vector<size_t> values;
+        std::vector<int64_t> values;
         bool is_default = parse_labels(labels, values);
         return add_case_member(values, member, is_default);
     }
@@ -179,10 +180,10 @@ public:
     }
 
     /// \brief Return a list of labels for the given case member name.
-    std::vector<size_t> get_labels(
+    std::vector<int64_t> get_labels(
             const std::string& member) const
     {
-        std::vector<size_t> result;
+        std::vector<int64_t> result;
         for (const auto& pair : labels_)
         {
             if (pair.second == member && pair.first != DEFAULT_UNION_LABEL)
@@ -377,7 +378,7 @@ public:
             const InstanceNode& node,
             InstanceVisitor visitor) const override
     {
-        size_t disc_value = current_label(disc()->type(), node.instance);
+        int64_t disc_value = current_label(disc()->type(), node.instance);
 
         xtypes_assert(active_member_ != nullptr, "UnionType '" << name() << "' doesn't have a case member selected.");
         visitor(node);
@@ -444,7 +445,7 @@ protected:
 
     /// \brief This method verifies the validity of a given label.
     void check_label_value(
-            size_t label)
+            int64_t label)
     {
         xtypes_assert(label != DEFAULT_UNION_LABEL, "Label '" << label << "' is reserved.");
         DynamicType* type = &const_cast<DynamicType&>(disc()->type());
@@ -481,77 +482,76 @@ protected:
             case TypeKind::BOOLEAN_TYPE:
                 {
                     bool lvalue = *reinterpret_cast<bool*>(label_instance);
-                    size_t new_value = static_cast<size_t>(lvalue);
+                    int64_t new_value = static_cast<int64_t>(lvalue);
                     current_label(instance, new_value);
                 }
                 break;
             case TypeKind::INT_8_TYPE:
                 {
                     int8_t lvalue = *reinterpret_cast<int8_t*>(label_instance);
-                    size_t new_value = static_cast<size_t>(lvalue);
+                    int64_t new_value = static_cast<int64_t>(lvalue);
                     current_label(instance, new_value);
                 }
                 break;
             case TypeKind::UINT_8_TYPE:
                 {
                     uint8_t lvalue = *reinterpret_cast<uint8_t*>(label_instance);
-                    size_t new_value = static_cast<size_t>(lvalue);
+                    int64_t new_value = static_cast<int64_t>(lvalue);
                     current_label(instance, new_value);
                 }
                 break;
             case TypeKind::INT_16_TYPE:
                 {
                     int16_t lvalue = *reinterpret_cast<int16_t*>(label_instance);
-                    size_t new_value = static_cast<size_t>(lvalue);
+                    int64_t new_value = static_cast<int64_t>(lvalue);
                     current_label(instance, new_value);
                 }
                 break;
             case TypeKind::UINT_16_TYPE:
                 {
                     uint16_t lvalue = *reinterpret_cast<uint16_t*>(label_instance);
-                    size_t new_value = static_cast<size_t>(lvalue);
+                    int64_t new_value = static_cast<int64_t>(lvalue);
                     current_label(instance, new_value);
                 }
                 break;
             case TypeKind::INT_32_TYPE:
                 {
                     int32_t lvalue = *reinterpret_cast<int32_t*>(label_instance);
-                    size_t new_value = static_cast<size_t>(lvalue);
+                    int64_t new_value = static_cast<int64_t>(lvalue);
                     current_label(instance, new_value);
                 }
                 break;
             case TypeKind::UINT_32_TYPE:
                 {
                     uint32_t lvalue = *reinterpret_cast<uint32_t*>(label_instance);
-                    size_t new_value = static_cast<size_t>(lvalue);
+                    int64_t new_value = static_cast<int64_t>(lvalue);
                     current_label(instance, new_value);
                 }
                 break;
             case TypeKind::INT_64_TYPE:
                 {
                     int64_t lvalue = *reinterpret_cast<int64_t*>(label_instance);
-                    size_t new_value = static_cast<size_t>(lvalue);
-                    current_label(instance, new_value);
+                    current_label(instance, lvalue);
                 }
                 break;
             case TypeKind::UINT_64_TYPE:
                 {
                     uint64_t lvalue = *reinterpret_cast<uint64_t*>(label_instance);
-                    size_t new_value = static_cast<size_t>(lvalue);
+                    int64_t new_value = static_cast<int64_t>(lvalue);
                     current_label(instance, new_value);
                 }
                 break;
             case TypeKind::CHAR_8_TYPE:
                 {
                     char lvalue = *reinterpret_cast<char*>(label_instance);
-                    size_t new_value = static_cast<size_t>(lvalue);
+                    int64_t new_value = static_cast<int64_t>(lvalue);
                     current_label(instance, new_value);
                 }
                 break;
             case TypeKind::CHAR_16_TYPE:
                 {
                     wchar_t lvalue = *reinterpret_cast<wchar_t*>(label_instance);
-                    size_t new_value = static_cast<size_t>(lvalue);
+                    int64_t new_value = static_cast<int64_t>(lvalue);
                     current_label(instance, new_value);
                 }
                 break;
@@ -559,7 +559,7 @@ protected:
                 {
                     // TODO: If other enumeration types are added, switch again.
                     uint32_t lvalue = *reinterpret_cast<uint32_t*>(label_instance);
-                    size_t new_value = static_cast<size_t>(lvalue);
+                    int64_t new_value = static_cast<int64_t>(lvalue);
                     current_label(instance, new_value);
                 }
                 break;
@@ -577,7 +577,7 @@ protected:
     /// \brief This method sets changes the discriminator's value.
     void current_label(
             uint8_t* instance,
-            size_t new_value) const
+            int64_t new_value) const
     {
         Member* disc_ = disc();
         TypeKind kind = disc_->type().kind();
@@ -686,86 +686,85 @@ protected:
     }
 
     /// \brief This method returns the value of the discriminator represented by instance and its type.
-    size_t current_label(
+    int64_t current_label(
             const DynamicType& type,
             uint8_t* instance) const
     {
         // Direct instance memory hack to avoid using DynamicData
         // NOTE: THe discriminator offset is always 0.
-        size_t disc_value = 0;
+        int64_t disc_value = 0;
         switch (type.kind())
         {
             case TypeKind::BOOLEAN_TYPE:
                 {
                     bool value = *reinterpret_cast<bool*>(instance);
-                    disc_value = static_cast<size_t>(value);
+                    disc_value = static_cast<int64_t>(value);
                 }
                 break;
             case TypeKind::INT_8_TYPE:
                 {
                     int8_t value = *reinterpret_cast<int8_t*>(instance);
-                    disc_value = static_cast<size_t>(value);
+                    disc_value = static_cast<int64_t>(value);
                 }
                 break;
             case TypeKind::UINT_8_TYPE:
                 {
                     uint8_t value = *reinterpret_cast<uint8_t*>(instance);
-                    disc_value = static_cast<size_t>(value);
+                    disc_value = static_cast<int64_t>(value);
                 }
                 break;
             case TypeKind::INT_16_TYPE:
                 {
                     int16_t value = *reinterpret_cast<int16_t*>(instance);
-                    disc_value = static_cast<size_t>(value);
+                    disc_value = static_cast<int64_t>(value);
                 }
                 break;
             case TypeKind::UINT_16_TYPE:
                 {
                     uint16_t value = *reinterpret_cast<uint16_t*>(instance);
-                    disc_value = static_cast<size_t>(value);
+                    disc_value = static_cast<int64_t>(value);
                 }
                 break;
             case TypeKind::INT_32_TYPE:
                 {
                     int32_t value = *reinterpret_cast<int32_t*>(instance);
-                    disc_value = static_cast<size_t>(value);
+                    disc_value = static_cast<int64_t>(value);
                 }
                 break;
             case TypeKind::UINT_32_TYPE:
                 {
                     uint32_t value = *reinterpret_cast<uint32_t*>(instance);
-                    disc_value = static_cast<size_t>(value);
+                    disc_value = static_cast<int64_t>(value);
                 }
                 break;
             case TypeKind::INT_64_TYPE:
                 {
-                    int64_t value = *reinterpret_cast<int64_t*>(instance);
-                    disc_value = static_cast<size_t>(value);
+                    disc_value = *reinterpret_cast<int64_t*>(instance);
                 }
                 break;
             case TypeKind::UINT_64_TYPE:
                 {
                     uint64_t value = *reinterpret_cast<uint64_t*>(instance);
-                    disc_value = static_cast<size_t>(value);
+                    disc_value = static_cast<int64_t>(value);
                 }
                 break;
             case TypeKind::CHAR_8_TYPE:
                 {
                     char value = *reinterpret_cast<char*>(instance);
-                    disc_value = static_cast<size_t>(value);
+                    disc_value = static_cast<int64_t>(value);
                 }
                 break;
             case TypeKind::CHAR_16_TYPE:
                 {
                     wchar_t value = *reinterpret_cast<wchar_t*>(instance);
-                    disc_value = static_cast<size_t>(value);
+                    disc_value = static_cast<int64_t>(value);
                 }
                 break;
             case TypeKind::ENUMERATION_TYPE:
                 {
                     // TODO: If other enumeration types are added, switch again.
                     uint32_t value = *reinterpret_cast<uint32_t*>(instance);
-                    disc_value = static_cast<size_t>(value);
+                    disc_value = static_cast<int64_t>(value);
                 }
                 break;
             case TypeKind::ALIAS_TYPE:
@@ -786,14 +785,14 @@ protected:
             uint8_t* instance,
             uint8_t* label_instance)
     {
-        size_t new_value = current_label(type, label_instance);
+        int64_t new_value = current_label(type, label_instance);
         return select_disc(instance, new_value);
     }
 
     /// \brief This method switches the current selected discriminator, checking its validity.
     bool select_disc(
             uint8_t* instance,
-            size_t value) const
+            int64_t value) const
     {
         if (labels_.count(value) == 0)
         {
@@ -875,12 +874,12 @@ protected:
         active_member_ = member;
     }
 
-    /// \brief This method converts labels represented as strings to the internal size_t representation.
+    /// \brief This method converts labels represented as strings to the internal int64_t representation.
     /// It resolves Enumeration names.
     /// Doesn't resolves constants names, so they must be resolved previously.
     bool parse_labels(
             const std::vector<std::string>& labels,
-            std::vector<size_t>& result)
+            std::vector<int64_t>& result)
     {
         bool is_default = false;
         Member* disc_ = disc();
@@ -934,49 +933,49 @@ protected:
                     case TypeKind::INT_8_TYPE:
                         {
                             int8_t value = std::strtoll(label.c_str(), nullptr, base);
-                            result.emplace_back(static_cast<size_t>(value));
+                            result.emplace_back(static_cast<int64_t>(value));
                         }
                         break;
                     case TypeKind::UINT_8_TYPE:
                         {
                             uint8_t value = std::strtoull(label.c_str(), nullptr, base);
-                            result.emplace_back(static_cast<size_t>(value));
+                            result.emplace_back(static_cast<int64_t>(value));
                         }
                         break;
                     case TypeKind::INT_16_TYPE:
                         {
                             int16_t value = std::strtoll(label.c_str(), nullptr, base);
-                            result.emplace_back(static_cast<size_t>(value));
+                            result.emplace_back(static_cast<int64_t>(value));
                         }
                         break;
                     case TypeKind::UINT_16_TYPE:
                         {
                             uint32_t value = std::strtoull(label.c_str(), nullptr, base);
-                            result.emplace_back(static_cast<size_t>(value));
+                            result.emplace_back(static_cast<int64_t>(value));
                         }
                         break;
                     case TypeKind::INT_32_TYPE:
                         {
                             int32_t value = std::strtoll(label.c_str(), nullptr, base);
-                            result.emplace_back(static_cast<size_t>(value));
+                            result.emplace_back(static_cast<int64_t>(value));
                         }
                         break;
                     case TypeKind::UINT_32_TYPE:
                         {
                             uint32_t value = std::strtoull(label.c_str(), nullptr, base);
-                            result.emplace_back(static_cast<size_t>(value));
+                            result.emplace_back(static_cast<int64_t>(value));
                         }
                         break;
                     case TypeKind::INT_64_TYPE:
                         {
                             int64_t value = std::strtoll(label.c_str(), nullptr, base);
-                            result.emplace_back(static_cast<size_t>(value));
+                            result.emplace_back(value);
                         }
                         break;
                     case TypeKind::UINT_64_TYPE:
                         {
                             uint64_t value = std::strtoull(label.c_str(), nullptr, base);
-                            result.emplace_back(static_cast<size_t>(value));
+                            result.emplace_back(static_cast<int64_t>(value));
                         }
                         break;
                     case TypeKind::CHAR_8_TYPE:
@@ -984,11 +983,11 @@ protected:
                             // Check if comes with "'"
                             if (label.size() == 1)
                             {
-                                result.emplace_back(static_cast<size_t>(label[0]));
+                                result.emplace_back(static_cast<int64_t>(label[0]));
                             }
                             else
                             {
-                                result.emplace_back(static_cast<size_t>(label[label.find("'") + 1]));
+                                result.emplace_back(static_cast<int64_t>(label[label.find("'") + 1]));
                             }
                         }
                         break;
@@ -1007,7 +1006,7 @@ protected:
                             {
                                 value = temp[temp.find(L"'") + 1];
                             }
-                            result.emplace_back(static_cast<size_t>(value));
+                            result.emplace_back(static_cast<int64_t>(value));
                         }
                         break;
                     case TypeKind::ENUMERATION_TYPE:
@@ -1027,7 +1026,7 @@ protected:
                                     value = enum_type.value(label);
                                 }
                             }
-                            result.emplace_back(static_cast<size_t>(value));
+                            result.emplace_back(static_cast<int64_t>(value));
                         }
                         break;
                     default:
@@ -1040,10 +1039,10 @@ protected:
     }
 
 private:
-    std::map<size_t, std::string> labels_;
+    std::map<int64_t, std::string> labels_;
     size_t memory_size_;
     // Direct access
-    size_t default_;
+    int64_t default_;
     mutable Member* active_member_;
     // Aux memory_size_ calculations
     size_t maximum_case_member_memory_;
