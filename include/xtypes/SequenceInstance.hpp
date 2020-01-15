@@ -164,9 +164,9 @@ public:
 
         realloc(new_size);
 
-        uint8_t* place = memory_ + size_ * block_size_;
         for(size_t i = size_; i < new_size; i++)
         {
+            uint8_t* place = memory_ + i * block_size_;
             content_.construct_instance(place);
         }
 
