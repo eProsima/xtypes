@@ -166,10 +166,10 @@ int array[2][3];
 ```
 Using ArrayType, the same can be achieved just creating an array, and then using it as the content of the outer array:
 ```c++
-ArrayType array(ArrayType(primitive_type<int32_T>(), 3), 2); // Conceptually equivalent to "int array[2][3];"
+ArrayType array(ArrayType(primitive_type<int32_t>(), 3), 2); // Conceptually equivalent to "int array[2][3];"
 ```
 Note that the dimensions are swapped, because the inner array is the *second* index.
-To ease this kind of type, ArrayType provides a constructor that receives an `std::vector` of dimensions (`uint32_t`).
+To ease this kind of type definition, ArrayType provides a constructor that receives an `std::vector` of dimensions (`uint32_t`).
 This constructor receives the indexes in the natural order, like in the *C-like* example:
 ```c++
 ArrayType array(primitive_type<int32_t>, {2, 3});
