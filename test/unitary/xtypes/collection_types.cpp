@@ -100,8 +100,12 @@ TEST (CollectionTypes, multi_array_constructor)
 {
 
     ArrayType array_array_array(primitive_type<uint32_t>(), {3, 4, 5});
+    const ArrayType& inner = static_cast<const ArrayType&>(array_array_array.content_type());
+    const ArrayType& inner_inner = static_cast<const ArrayType&>(inner.content_type());
 
     EXPECT_EQ(array_array_array.dimension(), 3);
+    EXPECT_EQ(inner.dimension(), 4);
+    EXPECT_EQ(inner_inner.dimension(), 5);
 
     EXPECT_EQ(array_array_array.memory_size(), 3 * 4 * 5 * sizeof(uint32_t));
 
