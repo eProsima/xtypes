@@ -58,7 +58,7 @@ public:
 
 
     bool has_submodule(
-            const std::string& submodule)
+            const std::string& submodule) const
     {
         return inner_.count(submodule) > 0;
     }
@@ -107,8 +107,14 @@ public:
             const std::string& ident,
             bool extend = true) const
     {
-        size_t n_elems = structs_.count(ident); // + constants_.count(ident) + members.count(ident) + types.count(ident);
-        if (n_elems > 0)
+        bool has_it = structs_.count(ident) > 0
+            || unions_.count(ident) > 0
+            || aliases_.count(ident) > 0
+            || constants_.count(ident) > 0
+            || enumerations_32_.count(ident) > 0
+            || inner_.count(ident) > 0;
+
+        if (has_it)
         {
             return true;
         }
@@ -136,19 +142,13 @@ public:
     {
         // Solve scope
         PairModuleSymbol module = resolve_scope(name);
-        if (module.first == nullptr)
-        {
-            // This will fail
-            return static_cast<const StructType&>(*structs_.end()->second);
-        }
+
+        xtypes_assert(module.first != nullptr, "Cannot solve scope for structure '" + name + "'.");
 
         auto it = module.first->structs_.find(module.second);
-        if (it != module.first->structs_.end())
-        {
-            return static_cast<const StructType&>(*it->second);
-        }
-        // This will fail
-        return static_cast<const StructType&>(*structs_.end()->second);
+
+        xtypes_assert(it != module.first->structs_.end(), "Cannot find structure '" + name + "'.");
+        return static_cast<const StructType&>(*it->second);
     }
 
     StructType& structure(
@@ -156,19 +156,12 @@ public:
     {
         // Solve scope
         PairModuleSymbol module = resolve_scope(name);
-        if (module.first == nullptr)
-        {
-            // This will fail
-            return static_cast<StructType&>(const_cast<DynamicType&>(*structs_.end()->second));
-        }
+
+        xtypes_assert(module.first != nullptr, "Cannot solve scope for structure '" + name + "'.");
 
         auto it = module.first->structs_.find(module.second);
-        if (it != module.first->structs_.end())
-        {
-            return static_cast<StructType&>(const_cast<DynamicType&>(*it->second));
-        }
-        // This will fail
-        return static_cast<StructType&>(const_cast<DynamicType&>(*structs_.end()->second));
+        xtypes_assert(it != module.first->structs_.end(), "Cannot find structure '" + name + "'.");
+        return static_cast<StructType&>(const_cast<DynamicType&>(*it->second));
     }
 
     bool structure(
@@ -205,6 +198,80 @@ public:
         return result.second;
     }
 
+    bool has_union(
+            const std::string& name) const
+    {
+        // Solve scope
+        PairModuleSymbol module = resolve_scope(name);
+        if (module.first == nullptr)
+        {
+            return false;
+        }
+        return module.first->unions_.count(module.second) > 0;
+    }
+
+    const UnionType& union_switch(
+            const std::string& name) const
+    {
+        // Solve scope
+        PairModuleSymbol module = resolve_scope(name);
+
+        xtypes_assert(module.first != nullptr, "Cannot solve scope for union '" + name + "'.");
+
+        auto it = module.first->unions_.find(module.second);
+
+        xtypes_assert(it != module.first->unions_.end(), "Cannot find union '" + name + "'.");
+        return static_cast<const UnionType&>(*it->second);
+    }
+
+    UnionType& union_switch(
+            const std::string& name)
+    {
+        // Solve scope
+        PairModuleSymbol module = resolve_scope(name);
+
+        xtypes_assert(module.first != nullptr, "Cannot solve scope for union '" + name + "'.");
+
+        auto it = module.first->unions_.find(module.second);
+
+        xtypes_assert(it != module.first->unions_.end(), "Cannot find union '" + name + "'.");
+        return static_cast<UnionType&>(const_cast<DynamicType&>(*it->second));
+    }
+
+    bool union_switch(
+            const UnionType& union_type)
+    {
+        if (union_type.name().find("::") != std::string::npos)
+        {
+            return false; // Cannot add a symbol with scoped name.
+        }
+
+        auto result = unions_.emplace(union_type.name(), union_type);
+        return result.second;
+    }
+
+    bool union_switch(
+            UnionType&& union_type,
+            bool replace = false)
+    {
+        if (union_type.name().find("::") != std::string::npos)
+        {
+            return false; // Cannot add a symbol with scoped name.
+        }
+
+        if (replace)
+        {
+            auto it = unions_.find(union_type.name());
+            if (it != unions_.end())
+            {
+                unions_.erase(it);
+            }
+        }
+
+        auto result = unions_.emplace(union_type.name(), std::move(union_type));
+        return result.second;
+    }
+
     // TODO has, get and set of:
     // enums, bitmasks and unions
 
@@ -227,10 +294,17 @@ public:
             {
                 map.emplace(module_name + "::" + pair.first, pair.second);
             }
+            for (const auto& pair : unions_)
+            {
+                map.emplace(module_name + "::" + pair.first, pair.second);
+            }
+            // TODO Add other types...
         }
         else
         {
             map.insert(structs_.begin(), structs_.end());
+            map.insert(unions_.begin(), unions_.end());
+            // TODO Add other types...
         }
 
         for (const auto& pair : inner_)
@@ -278,10 +352,17 @@ public:
         return false;
     }
 
+    bool is_const_from_enum(
+            const std::string& name) const
+    {
+        return std::find(from_enum_.begin(), from_enum_.end(), name) != from_enum_.end();
+    }
+
     bool create_constant(
             const std::string& name,
             const DynamicData& value,
-            bool replace = false)
+            bool replace = false,
+            bool from_enumeration = false)
     {
         if (name.find("::") != std::string::npos)
         {
@@ -304,6 +385,10 @@ public:
             DynamicData temp(*(inserted.first->second));
             temp = value;
             auto result = constants_.emplace(name, temp);
+            if (result.second && from_enumeration)
+            {
+                from_enum_.push_back(name);
+            }
             return result.second;
         }
         return false;
@@ -314,25 +399,31 @@ public:
     {
         // Solve scope
         PairModuleSymbol module = resolve_scope(name);
-        if (module.first == nullptr)
-        {
-            // This will fail
-            return static_cast<EnumerationType<uint32_t>&>(const_cast<DynamicType&>(*enumerations_32_.end()->second));
-        }
+
+        xtypes_assert(module.first != nullptr, "Cannot solve scope for enumeration '" + name + "'.");
 
         auto it = module.first->enumerations_32_.find(module.second);
-        if (it != module.first->enumerations_32_.end())
-        {
-            return static_cast<EnumerationType<uint32_t>&>(const_cast<DynamicType&>(*it->second));
-        }
-        // This will fail
-        return static_cast<EnumerationType<uint32_t>&>(const_cast<DynamicType&>(*enumerations_32_.end()->second));
+        xtypes_assert(it != module.first->enumerations_32_.end(), "Cannot find enumeration '" + name + "'.");
+        return static_cast<EnumerationType<uint32_t>&>(const_cast<DynamicType&>(*it->second));
     }
 
     bool has_enum_32(
             const std::string& name) const
     {
         return enumerations_32_.count(name) > 0;
+    }
+
+    const EnumerationType<uint32_t>& enum_32(
+            const std::string& name) const
+    {
+        // Solve scope
+        PairModuleSymbol module = resolve_scope(name);
+
+        xtypes_assert(module.first != nullptr, "Cannot solve scope for enumeration '" + name + "'.");
+
+        auto it = module.first->enumerations_32_.find(module.second);
+        xtypes_assert(it != module.first->enumerations_32_.end(), "Cannot find enumeration '" + name + "'.");
+        return static_cast<const EnumerationType<uint32_t>&>(*it->second);
     }
 
     bool enum_32(
@@ -355,6 +446,64 @@ public:
 
         auto result = enumerations_32_.emplace(enumeration.name(), std::move(enumeration));
         return result.second;
+    }
+
+    const AliasType& alias(
+            const std::string& name) const
+    {
+        // Solve scope
+        PairModuleSymbol module = resolve_scope(name);
+        xtypes_assert(module.first != nullptr, "Cannot solve scope for alias '" + name + "'.");
+
+        return static_cast<const AliasType&>(*module.first->aliases_.at(module.second));
+    }
+
+    AliasType& alias(
+            const std::string& name)
+    {
+        // Solve scope
+        PairModuleSymbol module = resolve_scope(name);
+        xtypes_assert(module.first != nullptr, "Cannot solve scope for alias '" + name + "'.");
+
+        return static_cast<AliasType&>(const_cast<DynamicType&>(*module.first->aliases_.at(module.second)));
+    }
+
+    bool has_alias(
+            const std::string& name) const
+    {
+        // Solve scope
+        PairModuleSymbol module = resolve_scope(name);
+        if (module.first == nullptr)
+        {
+            return false;
+        }
+
+        auto it = module.first->aliases_.find(module.second);
+        return it != module.first->aliases_.end();
+    }
+
+    bool create_alias(
+            const DynamicType::Ptr&& type,
+            const std::string& name)
+    {
+        if (name.find("::") != std::string::npos || has_alias(name))
+        {
+            return false; // Cannot define alias with scoped name (or already defined).
+        }
+
+        return aliases_.emplace(name, AliasType(type, name)).second;
+    }
+
+    bool add_alias(
+            const AliasType& alias)
+    {
+        return aliases_.emplace(alias.name(), AliasType(alias)).second;
+    }
+
+    bool add_alias(
+            const AliasType&& alias)
+    {
+        return aliases_.emplace(alias.name(), std::move(alias)).second;
     }
 
     // Generic type retrieval.
@@ -381,7 +530,16 @@ public:
         }
 
         // Check unions
-        // TODO
+        if (module.first->has_union(module.second))
+        {
+            return module.first->unions_.at(module.second);
+        }
+
+        // Check aliases
+        if (module.first->has_alias(module.second))
+        {
+            return module.first->aliases_.at(module.second);
+        }
 
         // Check bitsets
         // TODO
@@ -395,10 +553,13 @@ public:
 protected:
     friend std::string idl::generator::module_contents(const Module& module, size_t tabs);
 
+    std::map<std::string, DynamicType::Ptr> aliases_;
     std::map<std::string, DynamicType::Ptr> constants_types_;
     std::map<std::string, DynamicData> constants_;
+    std::vector<std::string> from_enum_;
     std::map<std::string, DynamicType::Ptr> enumerations_32_;
     std::map<std::string, DynamicType::Ptr> structs_;
+    std::map<std::string, DynamicType::Ptr> unions_;
     //std::map<std::string, std::shared_ptr<AnnotationType>> annotations_;
     Module* outer_;
     std::map<std::string, std::shared_ptr<Module>> inner_;
@@ -488,7 +649,21 @@ protected:
             }
         }
 
-        return std::make_pair<const Module*, std::string>(this, std::move(name));
+        if (has_symbol(name, false))
+        {
+            return std::make_pair<const Module*, std::string>(this, std::move(name));
+        }
+
+        if (outer_ != nullptr)
+        {
+            return outer_->resolve_scope(symbol_name, original_name, true);
+        }
+
+        // Failed, not found
+        PairModuleSymbol pair;
+        pair.first = nullptr;
+        pair.second = original_name;
+        return pair;
     }
 
 };

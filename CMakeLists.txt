@@ -115,13 +115,16 @@ if(XTYPES_BUILD_TESTS)
         test/unitary/xtypes/primitive_types.cpp
         test/unitary/xtypes/collection_types.cpp
         test/unitary/xtypes/struct_type.cpp
+        test/unitary/xtypes/union_type.cpp
         test/unitary/xtypes/iterators.cpp
         test/unitary/xtypes/module.cpp
         test/unitary/xtypes/consistency.cpp
         test/unitary/xtypes/integration.cpp
+        test/unitary/xtypes/alias_type.cpp
         )
 
     compile_test(${PROJECT_NAME}_idl_parser_test_unitary SOURCE test/unitary/parser/parser_test.cpp)
+    compile_test(${PROJECT_NAME}_idl_parser_roundtrip SOURCE test/unitary/parser/roundtrip.cpp)
     # ...
 
     # Copy IDL files

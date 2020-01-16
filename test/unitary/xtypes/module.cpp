@@ -65,7 +65,7 @@ TEST (Modules, scope)
     ASSERT_TRUE(submod_A.has_structure("A::OuterType"));
     ASSERT_FALSE(submod_A.has_structure("OuterType"));
     ASSERT_TRUE(submod_A.has_structure("::InnerType"));
-    ASSERT_FALSE(submod_A.has_structure("InnerType"));
+    ASSERT_TRUE(submod_A.has_structure("InnerType"));
     ASSERT_FALSE(submod_A.has_structure("BType"));
     ASSERT_TRUE(submod_A.has_structure("B::BType"));
     ASSERT_FALSE(submod_A.has_structure("A::BType"));
@@ -77,7 +77,7 @@ TEST (Modules, scope)
     ASSERT_TRUE(submod_AA.has_structure("A::OuterType"));
     ASSERT_TRUE(submod_AA.has_structure("OuterType"));
     ASSERT_TRUE(submod_AA.has_structure("::InnerType"));
-    ASSERT_FALSE(submod_AA.has_structure("InnerType"));
+    ASSERT_TRUE(submod_AA.has_structure("InnerType"));
     ASSERT_FALSE(submod_AA.has_structure("BType"));
     ASSERT_TRUE(submod_AA.has_structure("B::BType"));
     ASSERT_FALSE(submod_AA.has_structure("A::BType"));
@@ -89,7 +89,7 @@ TEST (Modules, scope)
     ASSERT_FALSE(submod_B.has_structure("A::OuterType"));
     ASSERT_FALSE(submod_B.has_structure("OuterType"));
     ASSERT_TRUE(submod_B.has_structure("::InnerType"));
-    ASSERT_FALSE(submod_B.has_structure("InnerType"));
+    ASSERT_TRUE(submod_B.has_structure("InnerType"));
     ASSERT_TRUE(submod_B.has_structure("BType"));
     ASSERT_TRUE(submod_B.has_structure("B::BType"));
     ASSERT_FALSE(submod_B.has_structure("A::BType"));

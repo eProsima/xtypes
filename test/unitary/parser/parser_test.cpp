@@ -953,6 +953,315 @@ TEST (IDLParser, enumerations_test)
     }
 }
 
+TEST (IDLParser, bad_idl_logging)
+{
+    Context context;
+    context.log_level(log::LogLevel::DEBUG);
+    // context.print_log(true); // Useful for debbuging
+    context.preprocess = false;
+    parse(R"~~(
+        // This is not a well formed IDL file
+        struct Str
+        {
+            323241 std_string;
+        };
+        )~~", context);
+
+    std::vector<log::LogEntry> log = context.log();
+    ASSERT_GT(log.size(), 0);
+
+    uint32_t log_peglib_error = 0;
+    uint32_t log_result = 0;
+
+    for (const log::LogEntry& entry : log)
+    {
+        if (entry.category == "PEGLIB_PARSER")
+        {
+            if (entry.message.find("syntax error") != std::string::npos)
+            {
+                ++log_peglib_error;
+            }
+            else
+            {
+                FAIL() << "Unexpected log entry: " << entry.to_string();
+            }
+        }
+        else if (entry.category == "RESULT")
+        {
+            if (entry.message.find("found errors") != std::string::npos)
+            {
+                ++log_result;
+            }
+            else
+            {
+                FAIL() << "Unexpected log entry: " << entry.to_string();
+            }
+        }
+        else
+        {
+            FAIL() << "Unexpected log entry: " << entry.to_string();
+        }
+    }
+
+    ASSERT_EQ(log_peglib_error, 1);
+    ASSERT_EQ(log_result, 1);
+}
+
+TEST (IDLParser, logging)
+{
+    Context context;
+    context.log_level(log::LogLevel::INFO);
+    // context.print_log(true); // Useful for debbuging
+    context.preprocess = false;
+    context.allow_keyword_identifiers = true;
+    context.ignore_redefinition = true;
+    parse(R"~~(
+        struct Struct
+        {
+            int32 int32;
+        };
+        struct Struct
+        {
+            int64 int64;
+        };
+        )~~", context);
+
+    std::vector<log::LogEntry> log = context.log();
+    ASSERT_GT(log.size(), 0);
+
+    // Expected logs are:
+    // INFO - 'Struct' reserved word x 2
+    // INFO - 'int32' reserved word
+    // INFO - 'Struct' already used
+    // INFO - 'int64' reserved word
+    // INFO - 'Struct' redefinition
+    uint32_t log_struct_reserved = 0;
+    uint32_t log_int32_reserved = 0;
+    uint32_t log_int64_reserved = 0;
+    uint32_t log_struct_already_used = 0;
+    uint32_t log_struct_redefinition = 0;
+
+    for (const log::LogEntry& entry : log)
+    {
+        if (entry.category == "RESERVED_WORD")
+        {
+            if (entry.message.find("Struct") != std::string::npos)
+            {
+                ++log_struct_reserved;
+            }
+            else if (entry.message.find("int32") != std::string::npos)
+            {
+                ++log_int32_reserved;
+            }
+            else if (entry.message.find("int64") != std::string::npos)
+            {
+                ++log_int64_reserved;
+            }
+            else
+            {
+                FAIL() << "Unexpected log entry: " << entry.to_string();
+            }
+        }
+        else if (entry.category == "ALREADY_USED")
+        {
+            if (entry.message.find("Struct") != std::string::npos)
+            {
+                ++log_struct_already_used;
+            }
+            else
+            {
+                FAIL() << "Unexpected log entry: " << entry.to_string();
+            }
+        }
+        else if (entry.category == "REDEFINITION")
+        {
+            if (entry.message.find("Struct") != std::string::npos)
+            {
+                ++log_struct_redefinition;
+            }
+            else
+            {
+                FAIL() << "Unexpected log entry: " << entry.to_string();
+            }
+        }
+        else
+        {
+            FAIL() << "Unexpected log entry: " << entry.to_string();
+        }
+    }
+
+    ASSERT_EQ(log_struct_reserved, 2);
+    ASSERT_EQ(log_int32_reserved, 1);
+    ASSERT_EQ(log_int64_reserved, 1);
+    ASSERT_EQ(log_struct_already_used, 1);
+    ASSERT_EQ(log_struct_redefinition, 1);
+}
+
+#define EXPECTED_LOG_RESULTS(LOG_LEVEL, N_ENTRIES, ASSERT, PRINT)                                                   \
+{                                                                                                                   \
+    Context context;                                                                                                \
+    context.log_level(log::LogLevel::LOG_LEVEL);                                                                    \
+    if(PRINT)                                                                                                       \
+    {                                                                                                               \
+        context.print_log(true);                                                                                    \
+    }                                                                                                               \
+    context.preprocess = false;                                                                                     \
+    context.allow_keyword_identifiers = true;                                                                       \
+    parse(idl_str, context);                                                                                        \
+                                                                                                                    \
+    std::vector<log::LogEntry> log = context.log();                                                                 \
+    ASSERT(log.size(), N_ENTRIES);                                                                                  \
+}
+
+#define EXPECTED_LOG_RESULTS_FILTERED(LOG_LEVEL, N_ENTRIES, ASSERT, PRINT)                                          \
+{                                                                                                                   \
+    Context context;                                                                                                \
+    context.log_level(log::LogLevel::DEBUG);                                                                        \
+    if(PRINT)                                                                                                       \
+    {                                                                                                               \
+        context.print_log(true);                                                                                    \
+    }                                                                                                               \
+    context.preprocess = false;                                                                                     \
+    context.allow_keyword_identifiers = true;                                                                       \
+    parse(idl_str, context);                                                                                        \
+                                                                                                                    \
+    std::vector<log::LogEntry> log = context.log(log::LogLevel::LOG_LEVEL, true);                                   \
+    ASSERT(log.size(), N_ENTRIES);                                                                                  \
+}
+
+TEST (IDLParser, severity_logging)
+{
+    const std::string idl_str = R"~~(
+        struct MyStruct // DEBUG
+        {
+            int32 int32; // DEBUG + INFO
+        }; // DEBUG + DEBUG
+
+        const MyStruct NOT_VALID = 666; // DEBUG + ERROR
+
+        const boolean BAD_LITERAL = 55; // DEBUG + WARNING + WARNING + DEBUG (result)
+        )~~";
+
+    EXPECTED_LOG_RESULTS(ERROR, 1, ASSERT_EQ, false);
+    EXPECTED_LOG_RESULTS(WARNING, 3, ASSERT_EQ, false);
+    EXPECTED_LOG_RESULTS(INFO, 4, ASSERT_EQ, false);
+    EXPECTED_LOG_RESULTS(DEBUG, 11, ASSERT_EQ, false);
+    EXPECTED_LOG_RESULTS_FILTERED(ERROR, 1, ASSERT_EQ, false);
+    EXPECTED_LOG_RESULTS_FILTERED(WARNING, 2, ASSERT_EQ, false);
+    EXPECTED_LOG_RESULTS_FILTERED(INFO, 1, ASSERT_EQ, false);
+    EXPECTED_LOG_RESULTS_FILTERED(DEBUG, 7, ASSERT_EQ, false);
+}
+
+TEST(IDLParser, alias_test)
+{
+    std::string idl_spec = R"(
+        typedef uint32 u32;
+        typedef double longfloat;
+        typedef longfloat lfloat;
+        typedef lfloat lflt;
+        struct StructData
+        {
+            u32 st0;
+            longfloat st1;
+            lfloat st2;
+            lflt st3;
+        };
+    )";
+
+    Context context = parse(idl_spec);
+    ASSERT_TRUE(context.success);
+
+    Module& m_context = context.module();
+    EXPECT_TRUE(m_context.has_alias("u32"));
+    EXPECT_TRUE(m_context.has_alias("longfloat"));
+    EXPECT_TRUE(m_context.has_alias("lfloat"));
+    EXPECT_TRUE(m_context.has_alias("lflt"));
+
+    const StructType& st = m_context.structure("StructData");
+    const DynamicType& dst0 = st.member("st0").type();
+    const DynamicType& dst1 = st.member("st1").type();
+    const DynamicType& dst2 = st.member("st2").type();
+    const DynamicType& dst3 = st.member("st3").type();
+    EXPECT_EQ(dst0.kind(), TypeKind::ALIAS_TYPE);
+    EXPECT_EQ(dst1.kind(), TypeKind::ALIAS_TYPE);
+    EXPECT_EQ(dst2.kind(), TypeKind::ALIAS_TYPE);
+    EXPECT_EQ(dst3.kind(), TypeKind::ALIAS_TYPE);
+    EXPECT_EQ(static_cast<const AliasType&>(dst0).get().kind(), TypeKind::UINT_32_TYPE);
+    EXPECT_EQ(static_cast<const AliasType&>(dst1).get().kind(), TypeKind::FLOAT_64_TYPE);
+    EXPECT_EQ(static_cast<const AliasType&>(dst2).get().kind(), TypeKind::ALIAS_TYPE);
+    EXPECT_EQ(static_cast<const AliasType&>(dst2).rget().kind(), TypeKind::FLOAT_64_TYPE);
+    EXPECT_EQ(static_cast<const AliasType&>(dst3).get().kind(), TypeKind::ALIAS_TYPE);
+    EXPECT_EQ(static_cast<const AliasType&>(dst3).rget().kind(), TypeKind::FLOAT_64_TYPE);
+}
+
+TEST (IDLParser, union_tests)
+{
+    Context context = parse(R"(
+        enum MyEnum
+        {
+            AAA,
+            BBB,
+            CCC
+        };
+
+        typedef char MyChar;
+        const MyChar C_CHAR = 'L';
+        const MyEnum C_ENUM = CCC;
+
+        union ForwardUnion switch (uint64)
+        {
+            case 0: int32 my_int32;
+            case 1: uint64 my_uint64;
+            case C_ENUM:
+            case 3: float my_float;
+            default: string my_string;
+        };
+
+        union MyUnion switch (MyEnum)
+        {
+            case AAA: string str_a;
+            case BBB: wstring wstr_b;
+            case CCC: ForwardUnion union_c;
+        };
+
+        union TestUnion switch (MyChar)
+        {
+            case 'a': string a;
+            case 'b': string b;
+            case C_CHAR: string c;
+        };
+
+                   )");
+
+    std::map<std::string, DynamicType::Ptr> result = context.module().get_all_types();
+    EXPECT_EQ(3, result.size());
+
+    const UnionType& my_union = context.module().union_switch("MyUnion");
+    DynamicData data(my_union);
+
+    data["str_a"] = "Testing";
+    EXPECT_EQ(data.d().value<uint32_t>(), 0);
+
+    data["wstr_b"] = L"Testing Wstring";
+    EXPECT_EQ(data.d().value<uint32_t>(), 1);
+
+    EXPECT_EQ(data["union_c"].d().value<size_t>(), static_cast<size_t>(DEFAULT_UNION_LABEL));
+    data["union_c"]["my_string"] = "Correct";
+    data["union_c"]["my_float"] = 3.14f;
+    EXPECT_EQ(data["union_c"].d().value<size_t>(), 2);
+    data["union_c"].d(3);
+    EXPECT_EQ(data["union_c"].d().value<size_t>(), 3);
+    data["union_c"]["my_uint64"] = 314ul;
+    EXPECT_EQ(data["union_c"].d().value<size_t>(), 1);
+    data["union_c"]["my_int32"] = 314;
+    EXPECT_EQ(data["union_c"].d().value<size_t>(), 0);
+
+    const UnionType& test_union = context.module().union_switch("TestUnion");
+    DynamicData data_2(test_union);
+    data_2["b"] = "Testing!";
+    EXPECT_EQ(data_2.d().value<char>(), 'b');
+}
+
 int main(int argc, char** argv)
 {
     testing::InitGoogleTest(&argc, argv);

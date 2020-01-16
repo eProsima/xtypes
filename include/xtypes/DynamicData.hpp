@@ -18,10 +18,12 @@
 #define EPROSIMA_XTYPES_DYNAMIC_DATA_HPP_
 
 #include <xtypes/StructType.hpp>
+#include <xtypes/UnionType.hpp>
 #include <xtypes/CollectionType.hpp>
 #include <xtypes/SequenceType.hpp>
 #include <xtypes/PrimitiveType.hpp>
 #include <xtypes/EnumerationType.hpp>
+#include <xtypes/AliasType.hpp>
 
 namespace eprosima {
 namespace xtypes {
@@ -124,20 +126,13 @@ public:
     ReadableDynamicDataRef operator [] (
             const std::string& member_name) const
     {
-        xtypes_assert(type_.is_aggregation_type(),
-            "operator [const std::string&] isn't available for type '" << type_.name() << "'.");
-        const AggregationType& aggregation = static_cast<const AggregationType&>(type_);
-        xtypes_assert(aggregation.has_member(member_name),
-            "Type '" << type_.name() << "' doesn't have a member named '" << member_name << "'.");
-
-        const Member& member = aggregation.member(member_name);
-        return ReadableDynamicDataRef(member.type(), instance_ + member.offset());
+        return operator_at_impl(member_name);
     }
 
     /// \brief index access operator by name.
     /// Depends of the underlying DynamicType, the index can be represent the member or element position.
     /// \param[in] index Index requested.
-    /// \pre The DynamicData must represent an AggregationType or a CollectionType.
+    /// \pre The DynamicData must represent an AggregationType (except an UnionType) or a CollectionType.
     /// \pre index < size()
     /// \returns A readable reference of the DynamicData accessed.
     ReadableDynamicDataRef operator [] (
@@ -153,9 +148,22 @@ public:
             return ReadableDynamicDataRef(collection.content_type(), collection.get_instance_at(instance_, index));
         }
 
+        xtypes_assert(type_.kind() != TypeKind::UNION_TYPE, "Members of UnionType cannot be accessed by index.");
+
         const AggregationType& aggregation = static_cast<const StructType&>(type_);
         const Member& member = aggregation.member(index);
         return ReadableDynamicDataRef(member.type(), instance_ + member.offset());
+    }
+
+    /// \brief access to Union discriminator.
+    /// \pre The DynamicData must represent an UnionType.
+    /// \return A readable reference of the discriminator.
+    ReadableDynamicDataRef d() const
+    {
+        xtypes_assert(type_.kind() == TypeKind::UNION_TYPE, "discriminator is only available for UnionType.");
+        const UnionType& aggregation = static_cast<const UnionType&>(type_);
+        const Member& member = aggregation.member(0);
+        return ReadableDynamicDataRef(member.type(), instance_);
     }
 
     /// \brief Size of the DynamicData.
@@ -182,7 +190,7 @@ public:
 
     /// \brief Shortcut for ((MutableCollectionType)type()).bounds()
     /// \pre The DynamicData must represent a CollectionType.
-    /// \returns Bound (max size) of the type. If zero, means the collecition is unbound.
+    /// \returns Bound (max size) of the type. If zero, means the collection is unbound.
     /// If the DynamicData represents an Array, then bounds() == size()
     size_t bounds() const
     {
@@ -479,7 +487,7 @@ protected:
     ReadableDynamicDataRef(
             const DynamicType& type,
             uint8_t* source)
-        : type_(type)
+        : type_(type.kind() == TypeKind::ALIAS_TYPE ? static_cast<const AliasType&>(type).rget() : type)
         , instance_(source)
     {}
 
@@ -490,6 +498,35 @@ protected:
     /// \param[in] other readable reference from who get the instance.
     /// \result The raw instance.
     uint8_t* p_instance(const ReadableDynamicDataRef& other) const { return other.instance_; }
+
+    ReadableDynamicDataRef operator_at_impl (
+            const std::string& member_name,
+            bool read_only = true) const
+    {
+        xtypes_assert(type_.is_aggregation_type(),
+            "operator [const std::string&] isn't available for type '" << type_.name() << "'.");
+        const AggregationType& aggregation = static_cast<const AggregationType&>(type_);
+        xtypes_assert(aggregation.has_member(member_name),
+            "Type '" << type_.name() << "' doesn't have a member named '" << member_name << "'.");
+
+        if (type_.kind() == TypeKind::UNION_TYPE)
+        {
+            xtypes_assert(
+                member_name != UNION_DISCRIMINATOR,
+                "Access to Union discriminator must be done through 'd()' method.");
+
+            UnionType& union_type = const_cast<UnionType&>(static_cast<const UnionType&>(aggregation));
+            if (read_only)
+            {
+                xtypes_assert(member_name == union_type.get_current_selection(instance_).name(),
+                              "Cannot retrieve a non-selected case member.");
+            }
+            union_type.select_case(instance_, member_name);
+        }
+
+        const Member& member = aggregation.member(member_name);
+        return ReadableDynamicDataRef(member.type(), instance_ + member.offset());
+    }
 
     template<typename T, class = Primitive<T>>
     inline T _cast() const
@@ -600,6 +637,7 @@ class WritableDynamicDataRef : public ReadableDynamicDataRef
 public:
     using ReadableDynamicDataRef::operator [];
     using ReadableDynamicDataRef::value;
+    using ReadableDynamicDataRef::d;
 
     /// \brief Assignment operator.
     WritableDynamicDataRef& operator = (
@@ -647,12 +685,19 @@ public:
         return ReadableDynamicDataRef::value<T>();
     }
 
+    /// \brief Similar to operator [], but allow checking read access.
+    ReadableDynamicDataRef get_member (
+            const std::string& member_name) const
+    {
+        return operator_at_impl(member_name);
+    }
+
     /// \brief See ReadableDynamicDataRef::operator[]()
     /// \returns A writable reference to the DynamicData accessed.
     WritableDynamicDataRef operator [] (
             const std::string& member_name)
     {
-        return ReadableDynamicDataRef::operator[](member_name);
+        return operator_at_impl(member_name, false);
     }
 
     /// \brief See ReadableDynamicDataRef::operator[]()
@@ -661,6 +706,30 @@ public:
             size_t index) //
     {
         return ReadableDynamicDataRef::operator[](index);
+    }
+
+    /// \brief Modifies the discriminator of an Union.
+    /// Doesn't allow to change the current active member. That must be done through the 'operator[](std::string)'.
+    /// \pre The DynamicData must represent an UnionType.
+    /// \pre The new discriminator value must be a valid label for the current selected value.
+    void d(
+            size_t disc)
+    {
+        xtypes_assert(type_.kind() == TypeKind::UNION_TYPE, "discriminator is only available for UnionType.");
+        UnionType& un = const_cast<UnionType&>(static_cast<const UnionType&>(type_));
+        un.select_disc(instance_, disc);
+    }
+
+    /// \brief Modifies the discriminator of an Union.
+    /// Doesn't allow to change the current active member. That must be done through the 'operator[](std::string)'.
+    /// \pre The DynamicData must represent an UnionType.
+    /// \pre The new discriminator value must be a valid label for the current selected value.
+    void d(
+            ReadableDynamicDataRef disc)
+    {
+        xtypes_assert(type_.kind() == TypeKind::UNION_TYPE, "discriminator is only available for UnionType.");
+        UnionType& un = const_cast<UnionType&>(static_cast<const UnionType&>(type_));
+        un.select_disc(disc.type(), instance_, p_instance(disc));
     }
 
     /// \brief Set a primitive or string value into the DynamicData
@@ -740,7 +809,8 @@ public:
     {
         xtypes_assert(type_.kind() == TypeKind::SEQUENCE_TYPE,
             "resize() is only available for sequence types but called for '" << type_.name() << "'.");
-        xtypes_assert(bounds() >= size,
+        size_t bound = bounds();
+        xtypes_assert(!bound || bound >= size,
             "The desired size (" << size << ") is bigger than maximum allowed size for the type '"
             << type_.name() << "' (" << bounds() << ").");
         const SequenceType& sequence = static_cast<const SequenceType&>(type_);

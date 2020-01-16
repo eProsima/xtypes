@@ -91,7 +91,7 @@ The API is divided into two different and yet related conceps.
 
 ### Type definition
 All types inherit from the base abstract type `DynamicType` as shown in the following diagram:
-![](https://www.plantuml.com/plantuml/img/ZPBT2i8m38NlynHxWRs1Z8bwAGWRU9rreHJQRdQfCF3XfGYrBVFdDkSxoKb8kp0wzaR3nIcZMDsfNsUgQZ_NZwOwhXQD4g44UoaTIMGrsK_8OTAQn3S2EdPUS2eNVG7spk6Q4dbRE7l6GTFsi88DyvILAR5fX-k_O4StJrRGRn9ErXjoo3IcS7Reo1Hhv5O071PsA3WxPYoM9un2aIZMjmCBZSkIvzlrpTkLXmhIor7i48IMx1Y-wWa0)
+![](https://www.plantuml.com/plantuml/img/ZP912i8m44NtSufUe3UGqg8k1Q4LrzDqA84ahSb4A7XuBK9iGgjk_ty_-JD9wHWjUwtWRAMMBE_KJ2DbkH_pHv4T9eDQYbc2gkyjzSXoC5l8Vb2An3S2AYNHRRerMozuQIUtmiKafwS0LDRYj2JYLd3oZAsYzQu9EnUIfbyIgt6u_WlMTFDa1FqcuMYy9ejCtHAEtYamoHXn501RnnO5HziEOhh2O2IDWhvUM2XqBkwtQufFAYurM-z4CiDib6IwrwTy0W00)
 
 #### PrimitiveType
 Represents the system's basic types.
@@ -159,6 +159,22 @@ size_t str1_bounds = str1.bounds(); // As str1 is an unbounded string, its bound
 size_t str2_bounds = str2.bounds(); // As str2 is a bounded string, its bounds are 50.
 ```
 
+##### Multidimensional ArrayType
+In a *C-like* language, the programmer can define multidimensional arrays as an array of array. For example:
+```c++
+int array[2][3];
+```
+Using ArrayType, the same can be achieved just creating an array, and then using it as the content of the outer array:
+```c++
+ArrayType array(ArrayType(primitive_type<int32_t>(), 3), 2); // Conceptually equivalent to "int array[2][3];"
+```
+Note that the dimensions are swapped, because the inner array is the *second* index.
+To ease this kind of type definition, ArrayType provides a constructor that receives an `std::vector` of dimensions (`uint32_t`).
+This constructor receives the indexes in the natural order, like in the *C-like* example:
+```c++
+ArrayType array(primitive_type<int32_t>, {2, 3});
+```
+
 #### StructType
 Similarly to a *C-like struct*, a `StructType` represents an aggregation of members.
 You can specify a `StructType` given the type name of the structure.
@@ -171,12 +187,59 @@ my_struct.add_member(Member("m_a", primitive_type<int32_t>()));
 my_struct.add_member(Member("m_b", StringType()));
 my_struct.add_member(Member("m_c", primitive_type<double>().key().id(42))); //with annotations
 my_struct.add_member("m_d", ArrayType(25)); //shortcut version
-my_struct.add_member("m_e", other_struct)); //member of structs
-my_struct.add_member("m_f", SequenceType(other_struct))); //member of sequence of structs
+my_struct.add_member("m_e", other_struct); //member of structs
+my_struct.add_member("m_f", SequenceType(other_struct)); //member of sequence of structs
 ```
 Note: once a `DynamicType` is added to an struct, a copy is performed.
 This allows modifications to `DynamicType` to be performed without side effects.
 It also and facilitates the user's memory management duties.
+
+#### UnionType
+Similar to a *C-like union* or a [StructType](#structtype) but with only one member active at the same time.
+It is defined by a *discriminator* and a list of labels allowing to identify the current active member.
+```c++
+UnionType my_union("MyUnion", primitive_type<char>());
+```
+The allowed *discriminator* types are all the **no floating point** primitives, EnumerationType, and AliasType that
+solves (directly or indirectly) to any other allowed type.
+
+Once the `UnionType` has been declared, any number of *case members* can be added, defining the labels that
+belong to the case member.
+It is possible to define a `default` case for one member, which will be selected when the DynamicData is built.
+This can be done setting the flag `is_default` to *true* in the `add_case_member` method (*false* by default), or
+defining a label named `default` when using a list of strings as labels.
+```c++
+my_union.add_case_member<char>({'a', 'b'}, Member("m_ab", StringType());
+std::vector<char> label_list = {'c', 'd', 'e'};
+my_union.add_case_member(label_list, Member("m_cde", primitive_type<float>());
+my_union.add_case_member<char>({}, Member("m_default", primitive_type<uint32_t>()), true);
+```
+This code is equivalent to the following one:
+
+```c++
+my_union.add_case_member<std::string>({"a", "b"}, Member("m_ab", StringType());
+std::vector<std::string> label_list = {"c", "d", "e"};
+my_union.add_case_member(label_list, Member("m_cde", primitive_type<float>());
+my_union.add_case_member<std::string>({"default"}, Member("m_default", primitive_type<uint32_t>()));
+```
+A *case member* without labels must be `default`.
+
+#### AliasType
+Acts as a *C-like typedef*, allowing to specify a custom name for an already existing type. They can be
+used as any other *DynamicType*. Recursive aliasing is supported, meaning you can assign a new alias to
+an already existing alias.
+When a DynamicData is created using an AliasType as its type specificator, the inner type pointed by
+the alias is retrieved and used to create the DynamicData field.
+```c++
+AliasType my_alias(primitive_type<uint32_t>(), "unsigned32"); // As in C "typedef uint32_t unsigned32;"
+AliasType my_alias2(my_alias, "u32"); // As in C "typedef unsigned32 u32;"
+StructType my_struct("MyStruct");
+my_struct.add_member("m_al", my_alias);
+DynamicData struct_data(my_struct);
+struct_data["m_al"] = 20u; // Internal uint32_t primitive type is accessed
+DynamicData alias_data(my_alias2);
+alias_data = 30u; // Internal uint32_t primitive type is accessed
+```
 
 #### Type Consistency (QoS policies)
 Any pair of `DynamicType`s can be checked for their mutual compatibility.
@@ -276,6 +339,16 @@ The following methods are available when:
             std::cout << elem.type().name() << " " << elem.name() << ": " << elem.value<int32_t>() << std::endl;
         }
     }
+    ```
+1. `DynamicData` represents an `UnionType`
+    Same as `AggregationType` but:
+    - Doesn't allow accesing members by index.
+    - Accessing a member by name sets it as the active member.
+    And plus:
+    ```c++
+    DynamicData disc = data.d(); // Access to the current discriminator value.
+    data.d(disc); // Modifies the discriminator value accordingly the CPP11 mapping for IDL (https://www.omg.org/spec/CPP11/1.4/PDF)
+    DynamicData member_data = data.get_member("member_name"); // Retrieves the member only if is the active member (checks are applied).
     ```
 1. `DynamicData` represents a `CollectionType`
     ```c++
@@ -475,6 +548,8 @@ Possible values are: `CHAR`, `UINT8`, and `INT8` (default `CHAR`).
 - `preprocessor_exec` Specifies the preprocessor executable to launch (default "cpp"`).
 - `include_paths` List of paths where the preprocessor should look for included idl files.
 
+Other `Log` related options are explained in the [Log section](#Log).
+
 The results of the parsing are mainly two:
 - `success` Boolean value with the result of the parsing.
 - `module` Access to the root module of the parsed IDL. It will contain defined types and submodules.
@@ -488,12 +563,27 @@ The results of the parsing are mainly two:
     - `has_constant`: Checks for the existence of a constant by name.
     - `enum_32`: Allows access to a defined enumeration by name (only 32 bits enumeration is supported currently).
     - `has_enum_32`: Check for the existence of a numeration by name.
+    - `alias`: Allows access to a defined alias by name.
+    - `has_alias`: Checks for the existence of an alias by name.
     - `get_all_types`: Retrieves a map with all the defined types.
     - `fill_all_types`: Fills an existant map with all the defined types.
 
 It has, two helper functions to ease the retrieval of all types:
 - `get_all_types`: Retrieves a map with all the defined types.
 - `get_all_scoped_types`: Retrieves a map with all the defined types, whose key is with the scoped name.
+
+#### Log
+The parser comes with a `Log` utility. The parser will log automatically different kind of events happened while
+parsing an IDL. Using the `Context` the user can customize the `Log` behavior and retrieve its results:
+
+- `log_level(LogLevel)` This method sets up the verbosity level (or severity) of the log.
+The available options are `DEBUG`, `INFO`, `WARNING`, and `ERROR` (by default `WARNING`).
+- `log_level()` Retrieves the current verbosity level.
+- `print_log(enable)` When enabled, it prints each log event to the standard output when parsing.
+- `log()` Retrieves the complete list of LogEvent created during the parsing.
+- `log(LogLevel, strict)` Retrieves a subset of LogEvent created during the parsing filtering by LogLevel.
+If `strict` is set to true, then it will return **only** LogEvents with the same LogLevel. Else (default),
+it will return LogEvents with the same or higher severity.
 
 ### Generator
 Analogous but in the opposite direction of the `parse()` method, you can generate IDL content from your defined types.

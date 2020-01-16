@@ -23,6 +23,7 @@
 #include <xtypes/MutableCollectionType.hpp>
 #include <xtypes/SequenceType.hpp>
 #include <xtypes/EnumerationType.hpp>
+#include <xtypes/AliasType.hpp>
 
 #include <sstream>
 
@@ -84,6 +85,10 @@ inline std::string type_name(const DynamicType& type)
         { TypeKind::FLOAT_128_TYPE, "long double" },
     };
 
+    if(type.kind() == TypeKind::ALIAS_TYPE)
+    {
+        return static_cast<const AliasType&>(type).name();
+    }
     if(type.is_primitive_type())
     {
         return mapping.at(type.kind());
@@ -109,6 +114,56 @@ inline std::string type_name(const DynamicType& type)
     }
 }
 
+inline std::string label_value(size_t value, const DynamicType& type)
+{
+    TypeKind kind = type.kind();
+
+    if (kind == TypeKind::ALIAS_TYPE)
+    {
+        kind = static_cast<const AliasType&>(type).rget().kind();
+    }
+
+    switch (kind)
+    {
+        case TypeKind::BOOLEAN_TYPE:
+        {
+            return (value == 0) ? "FALSE" : "TRUE";
+        }
+        case TypeKind::CHAR_8_TYPE:
+        {
+            char temp = static_cast<char>(value);
+            std::stringstream ss;
+            ss << "'" << temp << "'";
+            return ss.str();
+        }
+        case TypeKind::CHAR_16_TYPE:
+        {
+            wchar_t temp = static_cast<wchar_t>(value);
+            std::stringstream ss;
+            ss << "L'" << temp << "'";
+            return ss.str();
+        }
+        case TypeKind::INT_8_TYPE:
+        case TypeKind::UINT_8_TYPE:
+        case TypeKind::INT_16_TYPE:
+        case TypeKind::UINT_16_TYPE:
+        case TypeKind::INT_32_TYPE:
+        case TypeKind::UINT_32_TYPE:
+        case TypeKind::INT_64_TYPE:
+        case TypeKind::UINT_64_TYPE:
+        {
+            return std::to_string(value);
+        }
+        case TypeKind::ENUMERATION_TYPE:
+        {
+            return static_cast<const EnumerationType<uint32_t>&>(type).enumerator(static_cast<uint32_t>(value));
+        }
+        default:
+            xtypes_assert(false, "Unsupported type found while generating label value: " << type.name());
+            return std::to_string(value);
+    }
+}
+
 inline std::string structure(const StructType& type, size_t tabs = 0)
 {
     std::stringstream ss;
@@ -129,6 +184,52 @@ inline std::string structure(const StructType& type, size_t tabs = 0)
         ss << std::endl;
     }
     ss << std::string(tabs * 4, ' ') << "};" << std::endl;
+    return ss.str();
+}
+
+inline std::string generate_union(const UnionType& type, size_t tabs = 0)
+{
+    std::stringstream ss;
+    ss << std::string(tabs * 4, ' ') << "union " << type.name()
+       << " switch (" << generator::type_name(type.discriminator()) << ")" << std::endl;
+
+    ss << std::string(tabs * 4, ' ') << "{" << std::endl;
+
+    std::vector<std::string> members = type.get_case_members();
+    for (const std::string& name : members)
+    {
+        std::vector<int64_t> labels = type.get_labels(name);
+        for (int64_t value : labels)
+        {
+            ss << std::string((tabs + 1) * 4, ' ');
+            ss << "case " << generator::label_value(value, type.discriminator()) << ":" << std::endl;
+        }
+        if (type.is_default(name)) // Add default "label"
+        {
+            ss << std::string((tabs + 1) * 4, ' ');
+            ss << "default:" << std::endl;
+        }
+        const Member& member = type.member(name);
+        ss << std::string((tabs + 2) * 4, ' ');
+        if(member.type().kind() == TypeKind::ARRAY_TYPE)
+        {
+            ss << generator::array_member(member); //Spetial member syntax
+        }
+        else
+        {
+            ss << generator::type_name(member.type()) << " " << member.name() << ";";
+        }
+        ss << std::endl;
+    }
+    ss << std::string(tabs * 4, ' ') << "};" << std::endl;
+    return ss.str();
+}
+
+inline std::string aliase(const DynamicType& type, const std::string& name)
+{
+    std::stringstream ss;
+    ss << "typedef " << generator::type_name(type) << " ";
+    ss << name << ";" << std::endl;
     return ss.str();
 }
 
@@ -163,12 +264,49 @@ inline std::string enumeration32(const EnumerationType<uint32_t>& enumeration, s
     return ss.str();
 }
 
+inline std::string get_const_value(ReadableDynamicDataRef data)
+{
+    std::stringstream ss;
+    std::string prefix = "";
+    std::string suffix = "";
+
+    if (data.type().kind() == TypeKind::STRING_TYPE)
+    {
+        prefix = "\"";
+        suffix = "\"";
+    }
+    else if (data.type().kind() == TypeKind::WSTRING_TYPE)
+    {
+        prefix = "L\"";
+        suffix = "\"";
+    }
+    else if (data.type().kind() == TypeKind::CHAR_8_TYPE)
+    {
+        prefix = "'";
+        suffix = "'";
+    }
+    else if (data.type().kind() == TypeKind::CHAR_16_TYPE)
+    {
+        prefix = "L'";
+        suffix = "'";
+    }
+
+    ss << prefix << data.cast<std::string>() << suffix;
+
+    return ss.str();
+}
+
 // TODO: module_contents (and maybe module) should generate a dependency tree and resolve them in the generated IDL,
 // including maybe the need of forward declarations.
 inline std::string module_contents(const Module& module_, size_t tabs = 0)
 {
     std::stringstream ss;
 
+    // Aliases
+    for (const auto& alias : module_.aliases_)
+    {
+        ss << aliase(static_cast<const AliasType&>(*alias.second).get(), alias.first);
+    }
     // Enums
     for (const auto& pair : module_.enumerations_32_)
     {
@@ -176,19 +314,28 @@ inline std::string module_contents(const Module& module_, size_t tabs = 0)
         ss << enumeration32(enum_type, tabs);
     }
     // Consts
-    for (auto pair : module_.constants_)
+    for (const auto& pair : module_.constants_)
     {
-        ss << std::string(tabs * 4, ' ') << "const " << type_name(pair.second.type()) << " " << pair.first
-           << " = " << pair.second.cast<std::string>() << ";" << std::endl;
+        if (!module_.is_const_from_enum(pair.first)) // Don't add as const the "fake" enumeration consts.
+        {
+            ss << std::string(tabs * 4, ' ') << "const " << type_name(pair.second.type()) << " " << pair.first
+               << " = " << get_const_value(pair.second) << ";" << std::endl;
+        }
+    }
+    // Unions
+    for (const auto& pair : module_.unions_)
+    {
+        const UnionType& union_type = static_cast<const UnionType&>(*pair.second);
+        ss << generate_union(union_type, tabs);
     }
     // Structs
-    for (auto pair : module_.structs_)
+    for (const auto& pair : module_.structs_)
     {
         const StructType& struct_type = static_cast<const StructType&>(*pair.second);
         ss << structure(struct_type, tabs);
     }
     // Submodules
-    for (auto pair : module_.inner_)
+    for (const auto& pair : module_.inner_)
     {
         const Module& inner_module = *pair.second;
         ss << std::string(tabs * 4, ' ') << "module " << inner_module.name() << std::endl;

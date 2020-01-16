@@ -1,6 +1,8 @@
 #ifndef EPROSIMA_TESTS_UTILS_HPP_
 #define EPROSIMA_TESTS_UTILS_HPP_
 
+#define XTYPES_ASSERT_ERRMSG(MSG) std::string("[XTYPES].*Assertion failed with message: ") + MSG
+
 #if defined(XTYPES_EXCEPTIONS)
 #define ASSERT_OR_EXCEPTION(exp, msg)                                                                       \
 {                                                                                                           \

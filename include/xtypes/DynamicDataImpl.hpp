@@ -44,6 +44,9 @@ inline std::string ReadableDynamicDataRef::to_string() const
         }
         switch(node.data().type().kind())
         {
+            case TypeKind::BOOLEAN_TYPE:
+                ss << "<" << type_name << ">  " << node.data().value<bool>();
+                break;
             case TypeKind::CHAR_8_TYPE:
                 ss << "<" << type_name << ">  " << node.data().value<char>();
                 break;

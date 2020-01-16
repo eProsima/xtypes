@@ -96,6 +96,51 @@ TEST (CollectionTypes, multi_array)
 
 }
 
+TEST (CollectionTypes, multi_array_constructor)
+{
+
+    ArrayType array_array_array(primitive_type<uint32_t>(), {3, 4, 5});
+    const ArrayType& inner = static_cast<const ArrayType&>(array_array_array.content_type());
+    const ArrayType& inner_inner = static_cast<const ArrayType&>(inner.content_type());
+
+    EXPECT_EQ(array_array_array.dimension(), 3);
+    EXPECT_EQ(inner.dimension(), 4);
+    EXPECT_EQ(inner_inner.dimension(), 5);
+
+    EXPECT_EQ(array_array_array.memory_size(), 3 * 4 * 5 * sizeof(uint32_t));
+
+    DynamicData data(array_array_array);
+
+    EXPECT_EQ(data.bounds(), 3);
+
+    for (size_t i = 0; i < 3; ++i)
+    {
+        EXPECT_EQ(data[i].bounds(), 4);
+        for (size_t j = 0; j < 4; ++j)
+        {
+            EXPECT_EQ(data[i][j].bounds(), 5);
+            for (size_t k = 0; k < 5; ++k)
+            {
+                data[i][j][k] = static_cast<uint32_t>(i + j + k);
+            }
+        }
+    }
+
+    for (size_t i = 0; i < 3; ++i)
+    {
+        EXPECT_EQ(data[i].bounds(), 4);
+        for (size_t j = 0; j < 4; ++j)
+        {
+            EXPECT_EQ(data[i][j].bounds(), 5);
+            for (size_t k = 0; k < 5; ++k)
+            {
+                EXPECT_EQ(data[i][j][k].value<uint32_t>(), static_cast<uint32_t>(i + j + k));
+            }
+        }
+    }
+
+}
+
 template<typename T>
 void check_primitive_array(T value)
 {
@@ -251,6 +296,49 @@ TEST (CollectionTypes, resize_sequence)
 
     // Cannot grow over the bounds
     ASSERT_OR_EXCEPTION({d.resize(101);}, "is bigger than maximum allowed");
+}
+
+TEST (CollectionType, resize_complex_sequence)
+{
+    StructType str("my_struct");
+    str.add_member("st0", StringType());
+    str.add_member("st1", primitive_type<uint32_t>());
+    SequenceType seq(str, 0);
+    DynamicData data(seq);
+
+    EXPECT_EQ(data.bounds(), 0);
+    EXPECT_EQ(data.size(), 0);
+
+    for (size_t i = 0; i < 3; ++i)
+    {
+        std::stringstream ss;
+        ss << "data_" << i;
+        DynamicData item(str);
+        item["st0"] = ss.str();
+        item["st1"] = static_cast<uint32_t>(i);
+        data.push(item);
+    }
+    EXPECT_EQ(data.size(), 3);
+
+    data.resize(5);
+    EXPECT_EQ(data.bounds(), 0);
+    EXPECT_EQ(data.size(), 5);
+
+    for (size_t i = 3; i < 5; ++i)
+    {
+        std::stringstream ss;
+        ss << "new_data_" << i;
+        data[i]["st0"] = ss.str();
+        data[i]["st1"] = 2*static_cast<uint32_t>(i);
+    }
+
+    for (size_t i = 0; i < 5; ++i)
+    {
+        std::stringstream ss;
+        ss << (i < 3 ? "data_" : "new_data_") << i;
+        EXPECT_EQ(data[i]["st0"].value<std::string>(), ss.str());
+        EXPECT_EQ(data[i]["st1"].value<uint32_t>(), i < 3 ? i : 2*i);
+    }
 }
 
 TEST (CollectionTypes, multi_sequence)

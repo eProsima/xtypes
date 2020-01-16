@@ -173,7 +173,6 @@ protected:
     /// \returns a new DynamicType without managing.
     virtual DynamicType* clone() const = 0;
 
-private:
     TypeKind kind_;
     std::string name_;
 
@@ -284,7 +283,7 @@ public:
         {
             return
                 type == nullptr ||
-                (type->is_primitive_type() && ((type->kind() & TypeKind::ENUMERATED_TYPE) == TypeKind::NO_TYPE));
+                (type->is_primitive_type() && !type->is_enumerated_type());
         }
     };
 };

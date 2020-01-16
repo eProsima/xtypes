@@ -18,6 +18,7 @@ int main()
     idl::Context context = idl::parse(idl_spec);
     const StructType& inner = context.module().structure("InnerType");
 
+    AliasType abool(primitive_type<bool>(), "bool");
     StructType outer("OuterType");
     outer.add_member(Member("om1", primitive_type<double>()).id(2));
     outer.add_member("om2", inner);
@@ -29,6 +30,7 @@ int main()
     outer.add_member("om8", ArrayType(inner, 4));
     outer.add_member("om9", SequenceType(SequenceType(primitive_type<uint32_t>(), 5), 3));
     outer.add_member("om10", ArrayType(ArrayType(primitive_type<uint32_t>(), 2), 3));
+    outer.add_member("om11", abool);
 
     std::cout << idl::generate(inner) << std::endl;
     std::cout << idl::generate(outer) << std::endl;
@@ -47,6 +49,7 @@ int main()
     data["om6"][0] = data["om2"];                          //...
     data["om7"][1] = 123u;                                 //ArrayType(PrimitiveType<uint32_t>)
     data["om8"][1] = data["om2"];                          //ArrayType(inner)
+    data["om11"] = true;                                   //AliasType(PrimitiveType<bool>))
 
     std::cout << data.to_string() << std::endl; //See to_string() implementation as an example of data instrospection
 
@@ -89,10 +92,25 @@ int main()
     DynamicData my_const(primitive_type<uint64_t>());
     my_const = 555ul;
     root.create_constant("MyConst", my_const);
+    root.add_alias(abool);
     std::cout << idl::generate(root) << std::endl;
 
     // EnumerationType<uint64_t> my_long_enum("MyLongEnum"); // Static assert, uint64_t isn't allowed
     // enum_data2 = static_cast<uint32_t>(2); // Asserts because 2 isn't a valid value (0, 10 and 11).
+
+    UnionType union_type("MyUnion", my_enum); // New UnionType using an enumeration as discriminator type
+    std::vector<std::string> string_label = {"A"};
+    union_type.add_case_member(string_label, Member("um1", inner));
+    std::vector<uint32_t> enum_label = {my_enum.value("B"), my_enum.value("C")};
+    union_type.add_case_member<uint32_t>(enum_label, Member("um2", primitive_type<float>()));
+    union_type.add_case_member<uint32_t>({}, Member("um3", abool), true);
+
+    DynamicData union_data(union_type);
+    std::cout << "Uninitialized 'union::um3' data: " << union_data.get_member("um3").value<bool>() << std::endl;
+    union_data["um2"] = 3.14159265f;
+    std::cout << "union::um2 = PI: " << union_data["um2"].value<float>() << std::endl;
+    union_data["um1"] = data["om2"];
+    std::cout << "union::um1::im2: " << union_data["um1"]["im2"].value<float>() << std::endl;
 
     return 0;
 }
