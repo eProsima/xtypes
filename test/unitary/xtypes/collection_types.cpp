@@ -122,9 +122,19 @@ TEST (CollectionTypes, multi_array_constructor)
             for (size_t k = 0; k < 5; ++k)
             {
                 data[i][j][k] = static_cast<uint32_t>(i + j + k);
-                uint32_t temp = data[i][j][k];
+            }
+        }
+    }
+
+    for (size_t i = 0; i < 3; ++i)
+    {
+        EXPECT_EQ(data[i].bounds(), 4);
+        for (size_t j = 0; j < 4; ++j)
+        {
+            EXPECT_EQ(data[i][j].bounds(), 5);
+            for (size_t k = 0; k < 5; ++k)
+            {
                 EXPECT_EQ(data[i][j][k].value<uint32_t>(), static_cast<uint32_t>(i + j + k));
-                EXPECT_EQ(temp, static_cast<uint32_t>(i + j + k));
             }
         }
     }
