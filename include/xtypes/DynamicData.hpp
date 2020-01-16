@@ -242,6 +242,11 @@ public:
         return 0;
     }
 
+    uint64_t hash() const
+    {
+        return type_.hash(instance_);
+    }
+
     /// \brief Returns a std::vector representing the underlying collection of types.
     /// \pre The collection must have primitive or string values.
     /// \returns a std::vector representing the internal collection.

@@ -265,15 +265,18 @@ private:
     {
         if(content_.first().is_constructed_type() || content_.second().is_constructed_type())
         {
-            if (overlap)
+            if (overlap && check_overlap(target, source))
             {
-                for(uint32_t i = size_; i > 0; --i)
+                // Creating a place
+                uint32_t to_move = size_ - get_key_index(source);
+                for(uint32_t i = to_move; i > 0; --i)
                 {
                     content_.move_instance(target + (i - 1) * block_size_, source + (i - 1) * block_size_);
                 }
             }
             else
             {
+                // Moving full memory
                 for(uint32_t i = 0; i < size_; ++i)
                 {
                     content_.move_instance(target + i * block_size_, source + i * block_size_);
@@ -284,6 +287,14 @@ private:
         {
             std::memmove(target, source, (size_ - get_key_index(source)) * block_size_);
         }
+    }
+
+    bool check_overlap(
+            const uint8_t* target,
+            const uint8_t* source) const
+    {
+        uint8_t* end = get_element(size_);
+        return source >= memory_ && target > source && end > target; // target and source are inside the block of memory
     }
 
     uint8_t* create_place(
@@ -306,7 +317,7 @@ private:
             const uint8_t* instance,
             bool exact = false) const
     {
-        uint64_t instance_hash;
+        uint64_t instance_hash = 0;
         // Special case, it is empty
         if (size_ == 0)
         {

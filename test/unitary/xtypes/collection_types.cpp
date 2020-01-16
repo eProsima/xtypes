@@ -620,83 +620,68 @@ TEST (CollectionTypes, string_key_map)
     }
 }
 
-/*
-TEST (CollectionType, resize_complex_map)
+TEST (CollectionTypes, string_hash)
 {
-    StructType str("my_struct");
-    str.add_member("st0", StringType());
-    str.add_member("st1", primitive_type<uint32_t>());
-    SequenceType map(str, 0);
-    DynamicData data(map);
-
-    EXPECT_EQ(data.bounds(), 0);
-    EXPECT_EQ(data.size(), 0);
-
-    for (size_t i = 0; i < 3; ++i)
-    {
-        std::stringstream ss;
-        ss << "data_" << i;
-        DynamicData item(str);
-        item["st0"] = ss.str();
-        item["st1"] = static_cast<uint32_t>(i);
-        data.push(item);
-    }
-    EXPECT_EQ(data.size(), 3);
-
-    data.resize(5);
-    EXPECT_EQ(data.bounds(), 0);
-    EXPECT_EQ(data.size(), 5);
-
-    for (size_t i = 3; i < 5; ++i)
-    {
-        std::stringstream ss;
-        ss << "new_data_" << i;
-        data[i]["st0"] = ss.str();
-        data[i]["st1"] = 2*static_cast<uint32_t>(i);
-    }
-
-    for (size_t i = 0; i < 5; ++i)
-    {
-        std::stringstream ss;
-        ss << (i < 3 ? "data_" : "new_data_") << i;
-        EXPECT_EQ(data[i]["st0"].value<std::string>(), ss.str());
-        EXPECT_EQ(data[i]["st1"].value<uint32_t>(), i < 3 ? i : 2*i);
-    }
+    StringType str;
+    DynamicData str1(str);
+    DynamicData str2(str);
+    DynamicData str3(str);
+    str1 = "Hola";
+    str2 = "Hola";
+    str3 = "Hola_";
+    EXPECT_EQ(str1.hash(), str2.hash());
+    EXPECT_NE(str1.hash(), str3.hash());
+    str3 = "Hola";
+    str2 = "_Hola";
+    EXPECT_NE(str1.hash(), str2.hash());
+    EXPECT_EQ(str1.hash(), str3.hash());
 }
 
-TEST (CollectionTypes, multi_map)
+TEST (CollectionTypes, multi_map_struct_key)
 {
-    SequenceType simple_seq(primitive_type<uint32_t>(), 5);
-    SequenceType seq_seq(simple_seq, 4);
-    SequenceType seq_seq_seq(seq_seq, 0); // Must be called explicitely to avoid copy ctor.
+    StructType key_type("KeyStruct");
+    key_type.add_member("st0", StringType());
+    key_type.add_member("st1", primitive_type<uint32_t>());
 
-    DynamicData data(seq_seq_seq);
+    MapType simple_map(key_type, primitive_type<uint32_t>(), 5);
+    MapType map_map(key_type, simple_map, 4);
+    MapType map_map_map(key_type, map_map);
+
+    DynamicData data(map_map_map);
 
     EXPECT_EQ(data.bounds(), 0);
     EXPECT_EQ(data.size(), 0);
 
+    DynamicData index_1(key_type);
+    DynamicData index_2(key_type);
+    DynamicData index_3(key_type);
     for (size_t i = 0; i < 3; ++i)
     {
-        data.push(DynamicData(seq_seq));
-        EXPECT_EQ(data[i].size(), 0);
+        index_1["st0"] = std::to_string(i);
+        index_1["st1"] = uint32_t(i);
+        data[index_1] = DynamicData(map_map);
+        EXPECT_EQ(data[index_1].size(), 0);
         for (size_t j = 0; j < 4; ++j)
         {
-            data[i].push(DynamicData(simple_seq));
-            EXPECT_EQ(data[i][j].size(), 0);
+            index_2["st0"] = std::to_string(j);
+            index_2["st1"] = uint32_t(j);
+            data[index_1][index_2] = DynamicData(simple_map);
+            EXPECT_EQ(data[index_1][index_2].size(), 0);
             for (size_t k = 0; k < 5; ++k)
             {
-                data[i][j].push(static_cast<uint32_t>(i + j + k));
-                uint32_t temp = data[i][j][k];
-                EXPECT_EQ(data[i][j][k].value<uint32_t>(), static_cast<uint32_t>(i + j + k));
+                index_3["st0"] = std::to_string(k);
+                index_3["st1"] = uint32_t(k);
+                data[index_1][index_2][index_3] = static_cast<uint32_t>(i + j + k);
+                uint32_t temp = data[index_1][index_2][index_3];
+                EXPECT_EQ(data[index_1][index_2][index_3].value<uint32_t>(), static_cast<uint32_t>(i + j + k));
                 EXPECT_EQ(temp, static_cast<uint32_t>(i + j + k));
-                EXPECT_EQ(data[i][j].size(), k + 1);
+                EXPECT_EQ(data[index_1][index_2].size(), k + 1);
             }
-            EXPECT_EQ(data[i][j].bounds(), 5);
-            EXPECT_EQ(data[i].size(), j + 1);
+            EXPECT_EQ(data[index_1][index_2].bounds(), 5);
+            EXPECT_EQ(data[index_1].size(), j + 1);
         }
-        EXPECT_EQ(data[i].bounds(), 4);
+        EXPECT_EQ(data[index_1].bounds(), 4);
         EXPECT_EQ(data.size(), i + 1);
     }
     EXPECT_EQ(data.bounds(), 0);
 }
-*/

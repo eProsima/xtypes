@@ -36,8 +36,8 @@ TEST (AliasType, alias_casting)
 {
     AliasType at(StringType(100), "str100");
 
-    ASSERT_DEATH({ static_cast<const StructType&>(at); },
-        XTYPES_ASSERT_ERRMSG("Alias \\[" + at.name() + "\\] cannot be cast to the specified type"));
+    ASSERT_OR_EXCEPTION({ static_cast<const StructType&>(at); },
+        "Alias [str100] cannot be cast to the specified type");
 }
 
 TEST (AliasType, dynamic_alias_data)
@@ -52,8 +52,7 @@ TEST (AliasType, dynamic_alias_data)
     const DynamicType& dt = data["st0"].type();
     ASSERT_EQ(dt.kind(), TypeKind::FLOAT_32_TYPE);
     ASSERT_EQ(static_cast<float>(data["st0"]), PI);
-    ASSERT_DEATH({ data["st0"] = "This will fail"; },
-        XTYPES_ASSERT_ERRMSG("Expected type 'float'"));
+    ASSERT_OR_EXCEPTION({ data["st0"] = "This will fail"; }, "Expected type 'float'");
 }
 
 TEST (AliasType, recursive_dynamic_alias_data)
