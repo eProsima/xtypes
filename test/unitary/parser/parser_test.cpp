@@ -1262,6 +1262,110 @@ TEST (IDLParser, union_tests)
     EXPECT_EQ(data_2.d().value<char>(), 'b');
 }
 
+TEST (IDLParser, map_tests)
+{
+    Context context = parse(R"(
+        enum MyEnum
+        {
+            AAA,
+            BBB,
+            CCC
+        };
+
+        typedef char MyChar;
+
+        struct KeyStruct
+        {
+            string my_string;
+        };
+
+        struct MyStruct
+        {
+            map<uint32, string> map_1;
+            map<KeyStruct, MyEnum> map_2;
+            map<string, MyChar> map_3;
+            map<MyChar, float> map_4;
+            map<MyEnum, KeyStruct> map_5;
+        };
+
+                   )");
+
+    std::map<std::string, DynamicType::Ptr> result = context.module().get_all_types();
+    EXPECT_EQ(2, result.size());
+
+    const StructType& my_struct = context.module().structure("MyStruct");
+    const StructType& my_key = context.module().structure("KeyStruct");
+    const AliasType& my_alias = context.module().alias("MyChar");
+    const EnumerationType<uint32_t>& my_enum = context.module().enum_32("MyEnum");
+    DynamicData data(my_struct);
+
+    StringType str_type;
+    DynamicData map_1_key(primitive_type<uint32_t>());
+    DynamicData map_2_key(my_key);
+    DynamicData map_3_key(str_type);
+    DynamicData map_4_key(my_alias);
+    DynamicData map_5_key(my_enum);
+
+    DynamicData key_data(my_key);
+    DynamicData enum_data(my_enum);
+
+    // Set values
+    map_1_key = uint32_t(55);
+    data["map_1"][map_1_key] = "This is a simple map";
+    map_1_key = uint32_t(99);
+    data["map_1"][map_1_key] = "This is the same simple map";
+
+    map_2_key["my_string"] = "String A";
+    data["map_2"][map_2_key] = my_enum.value("AAA");
+    map_2_key["my_string"] = "String B";
+    data["map_2"][map_2_key] = my_enum.value("BBB");
+
+    map_3_key = "KeyA";
+    data["map_3"][map_3_key] = 'A';
+    map_3_key = "KeyB";
+    data["map_3"][map_3_key] = 'B';
+
+    map_4_key = 'A';
+    data["map_4"][map_4_key] = 1.1f;
+    map_4_key = 'B';
+    data["map_4"][map_4_key] = 2.2f;
+
+    key_data["my_string"] = "AAA String";
+    map_5_key = my_enum.value("AAA");
+    data["map_5"][map_5_key] = key_data;
+    key_data["my_string"] = "BBB String";
+    map_5_key = my_enum.value("BBB");
+    data["map_5"][map_5_key] = key_data;
+
+    // Check everything worked as expected.
+    map_1_key = uint32_t(55);
+    EXPECT_EQ(data["map_1"][map_1_key].value<std::string>(), "This is a simple map");
+    map_1_key = uint32_t(99);
+    EXPECT_EQ(data["map_1"][map_1_key].value<std::string>(), "This is the same simple map");
+
+    map_2_key["my_string"] = "String A";
+    EXPECT_EQ(data["map_2"][map_2_key].value<uint32_t>(), my_enum.value("AAA"));
+    map_2_key["my_string"] = "String B";
+    EXPECT_EQ(data["map_2"][map_2_key].value<uint32_t>(), my_enum.value("BBB"));
+
+    map_3_key = "KeyA";
+    EXPECT_EQ(data["map_3"][map_3_key].value<char>(), 'A');
+    map_3_key = "KeyB";
+    EXPECT_EQ(data["map_3"][map_3_key].value<char>(), 'B');
+
+    map_4_key = 'A';
+    EXPECT_EQ(data["map_4"][map_4_key].value<float>(), 1.1f);
+    map_4_key = 'B';
+    EXPECT_EQ(data["map_4"][map_4_key].value<float>(), 2.2f);
+
+    key_data["my_string"] = "AAA String";
+    map_5_key = my_enum.value("AAA");
+    EXPECT_EQ(data["map_5"][map_5_key]["my_string"].value<std::string>(), "AAA String");
+    key_data["my_string"] = "BBB String";
+    map_5_key = my_enum.value("BBB");
+    EXPECT_EQ(data["map_5"][map_5_key]["my_string"].value<std::string>(), "BBB String");
+}
+
 int main(int argc, char** argv)
 {
     testing::InitGoogleTest(&argc, argv);
