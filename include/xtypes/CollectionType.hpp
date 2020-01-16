@@ -46,6 +46,8 @@ public:
     virtual size_t get_instance_size(const uint8_t* instance) const = 0;
 
 protected:
+    CollectionType() : DynamicType (TypeKind::COLLECTION_TYPE, "") {} // Empty constructor for Array's multidim ctor.
+
     CollectionType(
             TypeKind kind,
             const std::string& name,
@@ -54,7 +56,6 @@ protected:
         , content_(std::move(content))
     {}
 
-private:
     DynamicType::Ptr content_;
 };
 

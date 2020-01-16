@@ -159,6 +159,22 @@ size_t str1_bounds = str1.bounds(); // As str1 is an unbounded string, its bound
 size_t str2_bounds = str2.bounds(); // As str2 is a bounded string, its bounds are 50.
 ```
 
+##### Multidimensional ArrayType
+In a *C-like* language, the programmer can define multidimensional arrays as an array of array. For example:
+```c++
+int array[2][3];
+```
+Using ArrayType, the same can be achieved just creating an array, and then using it as the content of the outer array:
+```c++
+ArrayType array(ArrayType(primitive_type<int32_t>(), 3), 2); // Conceptually equivalent to "int array[2][3];"
+```
+Note that the dimensions are swapped, because the inner array is the *second* index.
+To ease this kind of type definition, ArrayType provides a constructor that receives an `std::vector` of dimensions (`uint32_t`).
+This constructor receives the indexes in the natural order, like in the *C-like* example:
+```c++
+ArrayType array(primitive_type<int32_t>, {2, 3});
+```
+
 #### StructType
 Similarly to a *C-like struct*, a `StructType` represents an aggregation of members.
 You can specify a `StructType` given the type name of the structure.
