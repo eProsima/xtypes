@@ -785,7 +785,14 @@ public:
         if (instance == nullptr)
         {
             uint8_t new_entry[pair.memory_size()] = {0};
-            std::memcpy(new_entry, p_instance(data), pair.first().memory_size()); // Don't copy the "second" part.
+            if (pair.first().is_constructed_type())
+            {
+                pair.first().copy_instance(new_entry, p_instance(data));
+            }
+            else // Primitive Type
+            {
+                std::memcpy(new_entry, p_instance(data), pair.first().memory_size()); // Don't copy the "second" part.
+            }
             uint8_t* result = map.insert_instance(instance_, new_entry);
             xtypes_assert(result != nullptr, "Cannot insert new element into map.");
             instance = result;
@@ -903,31 +910,23 @@ public:
         return *this;
     }
 
-    /// \brief resize the Sequence or Map representing by the DynamicData.
+    /// \brief resize the Sequence representing by the DynamicData.
     /// If size is less or equals that the current size, nothing happens,
     /// otherwise a default-initialized values are insert to the sequence to increase its size.
-    /// \param[int] size New sequence/map size
-    /// \pre The DynamicData must represent a SequenceType or a MapType.
+    /// \param[int] size New sequence size
+    /// \pre The DynamicData must represent a SequenceType.
     /// \pre The bounds must be greater or equal to the new size.
     /// \returns The writable reference to this DynamicData
-    WritableDynamicDataRef& resize(size_t size) // this = SequenceType || MapType
+    WritableDynamicDataRef& resize(size_t size) // this = SequenceType
     {
-        xtypes_assert(type_.kind() == TypeKind::SEQUENCE_TYPE || type_.kind() == TypeKind::MAP_TYPE,
-            "resize() is only available for sequence and map types but called for '" << type_.name() << "'.");
+        xtypes_assert(type_.kind() == TypeKind::SEQUENCE_TYPE,
+            "resize() is only available for sequence types but called for '" << type_.name() << "'.");
         size_t bound = bounds();
         xtypes_assert(!bound || bound >= size,
             "The desired size (" << size << ") is bigger than maximum allowed size for the type '"
             << type_.name() << "' (" << bounds() << ").");
-        if (type_.kind() == TypeKind::SEQUENCE_TYPE)
-        {
-            const SequenceType& sequence = static_cast<const SequenceType&>(type_);
-            sequence.resize_instance(instance_, size);
-        }
-        else
-        {
-            const MapType& map = static_cast<const MapType&>(type_);
-            map.resize_instance(instance_, size);
-        }
+        const SequenceType& sequence = static_cast<const SequenceType&>(type_);
+        sequence.resize_instance(instance_, size);
         return *this;
     }
 

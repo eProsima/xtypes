@@ -152,28 +152,6 @@ public:
         return place;
     }
 
-    /// \brief Resize the map. All new elements will be default-initialized.
-    /// If the new size is equal or less than the current size, nothing happens.
-    /// \param[in] new_size New map size.
-    void resize(
-            size_t new_size)
-    {
-        if(size_ >= new_size)
-        {
-            return;
-        }
-
-        realloc(new_size);
-
-        for(size_t i = size_; i < new_size; i++)
-        {
-            uint8_t* place = memory_ + size_ * block_size_;
-            content_.construct_instance(place);
-        }
-
-        size_ = new_size;
-    }
-
     /// \brief Key access operator.
     /// \param[in] key_instance Requested key
     /// \returns The pair instance with the key.
@@ -208,6 +186,16 @@ public:
     /// \brief Size of the map.
     /// \returns Size of the map.
     uint32_t size() const { return size_; }
+
+    uint64_t map_hash() const
+    {
+        uint64_t h = content_.hash(memory_);
+        for (uint32_t i = 1; i < size_; ++i)
+        {
+            Instanceable::hash_combine(h, content_.hash(get_element(i)));
+        }
+        return h;
+    }
 
 private:
     const PairType& content_;
@@ -402,56 +390,9 @@ private:
     uint64_t hash(
             const uint8_t* instance) const
     {
-        return hash64(instance, content_.first().memory_size(), 0x2145654af87a5b6dULL);
+        return content_.first().hash(instance);
     }
 
-    // Hash function based on fasthash (https://github.com/ZilongTan/fast-hash)
-    uint64_t& mix(
-            uint64_t& h) const
-    {
-        h ^= (h >> 23);
-        h *= 0x2127599bf4325c37ULL;
-        h ^= (h >> 47);
-        return h;
-    }
-
-    uint64_t hash64(
-            const uint8_t* buf,
-            size_t len,
-            uint64_t seed) const
-    {
-        const uint64_t m = 0x880355f21e6d1965ULL;
-        const uint64_t* pos = reinterpret_cast<const uint64_t*>(buf);
-        const uint64_t* end = pos + (len / 8);
-        const uint8_t* pos2;
-        uint64_t h = seed ^ (len * m);
-        uint64_t v;
-
-        while (pos != end)
-        {
-            v = *pos++;
-            h ^= mix(v);
-            h *= m;
-        }
-
-        pos2 = reinterpret_cast<const uint8_t*>(pos);
-        v = 0;
-
-        switch (len & 7)
-        {
-        case 7: v ^= static_cast<uint64_t>(pos2[6]) << 48;
-        case 6: v ^= static_cast<uint64_t>(pos2[5]) << 40;
-        case 5: v ^= static_cast<uint64_t>(pos2[4]) << 32;
-        case 4: v ^= static_cast<uint64_t>(pos2[3]) << 24;
-        case 3: v ^= static_cast<uint64_t>(pos2[2]) << 16;
-        case 2: v ^= static_cast<uint64_t>(pos2[1]) << 8;
-        case 1: v ^= static_cast<uint64_t>(pos2[0]);
-            h ^= mix(v);
-            h *= m;
-        }
-
-        return mix(h);
-    }
 };
 
 } //namespace xtypes

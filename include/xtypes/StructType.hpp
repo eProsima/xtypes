@@ -248,6 +248,22 @@ public:
         }
     }
 
+    virtual uint64_t hash(
+            const uint8_t* instance) const override
+    {
+        if (members().size() > 0)
+        {
+            uint64_t h = member(0).type().hash(instance + member(0).offset());
+            for (size_t i = 1; i < members().size(); ++i)
+            {
+                const Member& m = member(i);
+                Instanceable::hash_combine(h, m.type().hash(instance + m.offset()));
+            }
+            return h;
+        }
+        return 0;
+    }
+
 protected:
     virtual DynamicType* clone() const override
     {

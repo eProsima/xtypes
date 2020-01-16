@@ -161,6 +161,14 @@ public:
         second_->for_each_instance(s, visitor);
     }
 
+    virtual uint64_t hash(
+            const uint8_t* instance) const override
+    {
+        uint64_t h = first_->hash(instance);
+        Instanceable::hash_combine(h, second_->hash(instance + first_->memory_size()));
+        return h;
+    }
+
 protected:
     DynamicType::Ptr first_;
     DynamicType::Ptr second_;

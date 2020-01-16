@@ -193,6 +193,25 @@ public:
         reinterpret_cast<SequenceInstance*>(instance)->resize(size);
     }
 
+    virtual uint64_t hash(
+            const uint8_t* c_instance) const override
+    {
+        uint8_t* instance = const_cast<uint8_t*>(c_instance);
+        if (content_type().is_constructed_type())
+        {
+            uint64_t h = content_type().hash(instance);
+            for (size_t i = 1; i < bounds(); ++i)
+            {
+                Instanceable::hash_combine(h, content_type().hash(get_instance_at(instance, i)));
+            }
+            return h;
+        }
+        else
+        {
+            return Instanceable::hash(instance);
+        }
+    }
+
 protected:
     virtual DynamicType* clone() const override
     {

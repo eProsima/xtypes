@@ -88,7 +88,6 @@ public:
     virtual void destroy_instance(
             uint8_t* instance) const override
     {
-        using namespace std;
         reinterpret_cast<std::basic_string<CHAR_T>*>(instance)->std::basic_string<CHAR_T>::~basic_string<CHAR_T>();
     }
 
@@ -144,6 +143,13 @@ public:
             const uint8_t* instance) const override
     {
         return reinterpret_cast<const std::basic_string<CHAR_T>*>(instance)->size();
+    }
+
+    virtual uint64_t hash(
+            const uint8_t* instance) const override
+    {
+        std::hash<std::basic_string<CHAR_T>> hash_fn;
+        return hash_fn(*reinterpret_cast<const std::basic_string<CHAR_T>*>(instance));
     }
 
 protected:

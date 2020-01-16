@@ -229,8 +229,8 @@ TEST (CollectionTypes, sequence)
     DynamicData ddd(d, s10_2);
     EXPECT_FALSE(ddd != d);
 
-    DynamicData dddd(d, su_1); // This ctor isn't copying content, and it should!
-    EXPECT_EQ(10, dddd.size()); // This EXPECT will fail because the lack of content copy. Keep failing as a reminder.
+    DynamicData dddd(d, su_1);
+    EXPECT_EQ(10, dddd.size());
     EXPECT_EQ(0, dddd.bounds());
     EXPECT_FALSE(dddd != d);
 
@@ -238,7 +238,7 @@ TEST (CollectionTypes, sequence)
     {
         EXPECT_EQ(d[i].value<uint16_t>(), dd[i].value<uint16_t>());
         EXPECT_EQ(d[i].value<uint16_t>(), ddd[i].value<uint16_t>());
-        //EXPECT_EQ(d[i].value<uint16_t>(), dddd[i].value<uint16_t>()); // index < size() assert raising due to the lack of copy.
+        EXPECT_EQ(d[i].value<uint16_t>(), dddd[i].value<uint16_t>());
         EXPECT_EQ(d[i].value<uint16_t>(), uint16_t(i));
         uint16_t temp = dd[i];
         EXPECT_EQ(temp, uint16_t(i));
@@ -504,9 +504,11 @@ TEST (CollectionTypes, wstring)
 TEST (CollectionTypes, map)
 {
     MapType m10_1(primitive_type<uint32_t>(), primitive_type<uint16_t>(), 10);
-    MapType m10_2(StringType(), primitive_type<uint16_t>(), 10);
+    MapType m10_2(primitive_type<uint32_t>(), primitive_type<uint16_t>(), 10);
+    MapType m10_3(StringType(), primitive_type<uint16_t>(), 10);
     MapType m20_1(primitive_type<bool>(), primitive_type<uint16_t>(), 20);
-    MapType mu_1(primitive_type<int64_t>(), primitive_type<uint16_t>());
+    MapType m20_2(primitive_type<uint32_t>(), primitive_type<uint16_t>(), 20);
+    MapType mu_1(primitive_type<uint32_t>(), primitive_type<uint16_t>());
 
     DynamicData d(m10_1);
     EXPECT_EQ(0, d.size());
@@ -525,13 +527,13 @@ TEST (CollectionTypes, map)
         uint32_data = i;
         ASSERT_EQ(d.at(uint32_data).value<uint16_t>(), i);
     }
-    /*
 
     EXPECT_EQ(10, d.size());
     EXPECT_EQ(10, d.bounds());
 
-    DynamicData dd(d, m20_1);
+    ASSERT_OR_EXCEPTION({DynamicData fails(d, m20_1);}, "Cannot copy data from type");
 
+    DynamicData dd(d, m20_2);
     EXPECT_EQ(10, dd.size());
     EXPECT_EQ(20, dd.bounds());
     EXPECT_FALSE(d != dd);
@@ -539,84 +541,93 @@ TEST (CollectionTypes, map)
     DynamicData ddd(d, m10_2);
     EXPECT_FALSE(ddd != d);
 
-    DynamicData dddd(d, mu_1); // This ctor isn't copying content, and it should!
-    EXPECT_EQ(10, dddd.size()); // This EXPECT will fail because the lack of content copy. Keep failing as a reminder.
+    DynamicData dddd(d, mu_1);
+    EXPECT_EQ(10, dddd.size());
     EXPECT_EQ(0, dddd.bounds());
     EXPECT_FALSE(dddd != d);
 
-    for (size_t i = 0; i < d.size(); ++i)
+    ASSERT_OR_EXCEPTION({DynamicData fails(d, m10_3);}, "Incompatible types");
+
+    for (size_t idx = 0; idx < d.size(); ++idx)
     {
-        EXPECT_EQ(d[i].value<uint16_t>(), dd[i].value<uint16_t>());
-        EXPECT_EQ(d[i].value<uint16_t>(), ddd[i].value<uint16_t>());
-        //EXPECT_EQ(d[i].value<uint16_t>(), dddd[i].value<uint16_t>()); // index < size() assert raising due to the lack of copy.
-        EXPECT_EQ(d[i].value<uint16_t>(), uint16_t(i));
-        uint16_t temp = dd[i];
-        EXPECT_EQ(temp, uint16_t(i));
+        uint32_data = uint32_t(idx);
+        uint16_t value = d[uint32_data];
+        EXPECT_EQ(value, dd[uint32_data].value<uint16_t>());
+        EXPECT_EQ(value, ddd[uint32_data].value<uint16_t>());
+        EXPECT_EQ(value, dddd[uint32_data].value<uint16_t>());
+        EXPECT_EQ(value, uint16_t(idx));
+        uint16_t temp = dd[uint32_data];
+        EXPECT_EQ(temp, uint16_t(idx));
     }
-    */
 }
 
-/*
-TEST (CollectionTypes, resize_map)
+TEST (CollectionTypes, map_bounds)
 {
-    SequenceType seq(primitive_type<uint16_t>(), 100);
+    //MapType map(StringType(), primitive_type<uint16_t>(), 100);
+    MapType map(primitive_type<uint8_t>(), primitive_type<uint16_t>(), 10);
 
-    DynamicData d(seq);
+    DynamicData d(map);
     EXPECT_EQ(0, d.size());
-    EXPECT_EQ(100, d.bounds());
+    EXPECT_EQ(10, d.bounds());
 
+    //StringType str_type;
+    //DynamicData index(str_type);
+    DynamicData index(primitive_type<uint8_t>());
     for(uint16_t i = 0; i < 10; ++i)
     {
-        d.push(i);
+        //index = std::to_string(i);
+        index = uint8_t(i);
+        d[index] = i;
     }
 
     EXPECT_EQ(10, d.size());
 
     for (size_t i = 0; i < d.size(); ++i)
     {
-        EXPECT_EQ(d[i].value<uint16_t>(), i);
-    }
-
-    // Check nothing happens
-    d.resize(2);
-    EXPECT_EQ(10, d.size());
-    EXPECT_EQ(100, d.bounds());
-    for (size_t i = 0; i < d.size(); ++i)
-    {
-        EXPECT_EQ(d[i].value<uint16_t>(), i);
-    }
-
-    // A resize must keep the size and content,
-    d.resize(20);
-    EXPECT_EQ(20, d.size());
-    EXPECT_EQ(100, d.bounds());
-    for (size_t i = 0; i < 10; ++i) // From 10 to 20, the values are default initialized, so uninteresting to us now.
-    {
-        EXPECT_EQ(d[i].value<uint16_t>(), i);
-    }
-
-    // And of course, allow to modify the new elements
-    for(size_t i = 0; i < 10; ++i)
-    {
-        d[i + 10] = uint16_t(i);
-    }
-    EXPECT_EQ(20, d.size());
-    for (size_t i = 0; i < d.size(); ++i)
-    {
-        EXPECT_EQ(d[i].value<uint16_t>(), i%10);
+        //index = std::to_string(i);
+        index = uint8_t(i);
+        EXPECT_EQ(d[index].value<uint16_t>(), i);
     }
 
     // Cannot grow over the bounds
-    ASSERT_OR_EXCEPTION({d.resize(101);}, "is bigger than maximum allowed");
+    ASSERT_OR_EXCEPTION({d.resize(1);}, "only available for sequence");
+    index = uint8_t(100); // The map if full already
+    ASSERT_OR_EXCEPTION({d[index] = 50;}, "Cannot insert new element into map.");
 }
 
+TEST (CollectionTypes, string_key_map)
+{
+    MapType map(StringType(), primitive_type<uint16_t>(), 100);
+
+    DynamicData d(map);
+    EXPECT_EQ(0, d.size());
+    EXPECT_EQ(100, d.bounds());
+
+    StringType str_type;
+    DynamicData index(str_type);
+    for(uint16_t i = 0; i < 10; ++i)
+    {
+        index = std::to_string(i);
+        d[index] = i;
+    }
+
+    EXPECT_EQ(10, d.size());
+
+    for (size_t i = 0; i < d.size(); ++i)
+    {
+        index = std::to_string(i);
+        EXPECT_EQ(d[index].value<uint16_t>(), i);
+    }
+}
+
+/*
 TEST (CollectionType, resize_complex_map)
 {
     StructType str("my_struct");
     str.add_member("st0", StringType());
     str.add_member("st1", primitive_type<uint32_t>());
-    SequenceType seq(str, 0);
-    DynamicData data(seq);
+    SequenceType map(str, 0);
+    DynamicData data(map);
 
     EXPECT_EQ(data.bounds(), 0);
     EXPECT_EQ(data.size(), 0);

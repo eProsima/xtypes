@@ -197,23 +197,19 @@ public:
         return nullptr;
     }
 
-    /// \brief Resize a map instance to reach the requested size.
-    /// All new values needed will be default-initialized
-    /// \param[in, out] instance Memory instance representing a MapInstance.
-    /// \param[in] size new map instance size.
-    void resize_instance(
-            uint8_t* instance,
-            size_t size) const
-    {
-        reinterpret_cast<MapInstance*>(instance)->resize(size);
-    }
-
     /// \brief checks if a key is contained in the map.
     bool has_key(
             uint8_t* instance,
             uint8_t* key) const
     {
         return reinterpret_cast<MapInstance*>(instance)->contains_key(key);
+    }
+
+    virtual uint64_t hash(
+            const uint8_t* c_instance) const override
+    {
+        uint8_t* instance = const_cast<uint8_t*>(c_instance);
+        return reinterpret_cast<MapInstance*>(instance)->map_hash();
     }
 
 protected:
