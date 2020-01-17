@@ -138,9 +138,10 @@ As pointed by the self-explanatory name, CollectionTypes provide a way to create
 There are several collection types:
 
 - `ArrayType`: fixed-size set of elements. Similar to *C-like* arrays.
-- `SequenceType`: variable-size set of elements. Equivalent to *C++* `*std::vector`
+- `SequenceType`: variable-size set of elements. Equivalent to *C++* `std::vector`
 - `StringType`: variable-size set of char-type elements. Similar to *C++* `std::string`
 - `WStringType`: variable-size set of wchar-type elements. Similar to *C++* `std::wstring`
+- `MapType`: variable-size set of [*pairs*](#pairtype). Equivalent to *C++* `std::map`.
 
 ```c++
 ArrayType a1(primitive_type<int32_t>(), 10); //size 10
@@ -151,12 +152,25 @@ SequenceType s3(SequenceType(structure), 20); //bounded sequence of unbounded se
 StringType str1; //unbounded string
 StringType str2(50); //bounded string
 WStringType wstr(); //unbounded wstring
+MapType m1(StringType(), primitive_type<float>()); // unbounded map, key of type string, value of type float.
+MapType m2(primitive_type<uint32_t>(), structure, 10); // bounded map, max size of 10, key as uint32_t, value as struct.
 size_t a1_bounds = a1.bounds(); // As a1 is an ArrayType, its bounds are equal to its size.
 size_t s1_bounds = s1.bounds(); // As s1 is an unbounded sequence, its bounds are 0.
 size_t s2_bounds = s2.bounds(); // As s2 is a bounded sequence, its bounds are 30.
 size_t s3_bounds = s3.bounds(); // As s3 is a bounded sequence, its bounds are 20.
 size_t str1_bounds = str1.bounds(); // As str1 is an unbounded string, its bounds are 0.
 size_t str2_bounds = str2.bounds(); // As str2 is a bounded string, its bounds are 50.
+size_t m1_bounds = m1.bounds(); // As m1 is an unbounded map, its bounds are 0.
+size_t m2_bounds = m2.bounds(); // As m2 is a bounded map, its bounds are 10.
+```
+
+##### PairType
+The `MapType` is a specialization of `CollectionType` which content is a set of *pairs*.
+This *pairs* are represented internally by an auxiliar type named `PairType`.
+```cpp
+PairType pair(StringType(), primitive_type<uint32_t>);
+std::cout << pair.first().name() << std::endl; // Prints "std::string".
+std::cout << pair.second().name() << std::endl; // Prints "uint32_t".
 ```
 
 ##### Multidimensional ArrayType
@@ -350,7 +364,7 @@ The following methods are available when:
     data.d(disc); // Modifies the discriminator value accordingly the CPP11 mapping for IDL (https://www.omg.org/spec/CPP11/1.4/PDF)
     DynamicData member_data = data.get_member("member_name"); // Retrieves the member only if is the active member (checks are applied).
     ```
-1. `DynamicData` represents a `CollectionType`
+1. `DynamicData` represents a `CollectionType` (except a MapType)
     ```c++
     data[2] = 42; // set value 42 to position 2 of the collection.
     int32_t value = data[2]; // get value from position 2 of the collection
@@ -360,6 +374,38 @@ The following methods are available when:
     for (WritableDynamicDataRef&& elem : data) // Iterate through its contents.
     {
         elem = 0;
+    }
+    ```
+1. `DynamicData` represents a `MapType`.
+    The map must be accessed by its key (using always a DynamicData instance of the key type)
+    or iterated through its pairs.
+    Accesing the map using the index is forbiden because if the map's key is a numeral type, this may lead to
+    confusion to the user. For example, do the user want to access the value associated to that index value, or
+    access to the pair stored at the index position?
+    This pairs are ordered internally using a hashing the key's value, so the order while iterating may change
+    after any modification of the map.
+    ```c++
+    StringType key_type;
+    MapType map_type(key_type, primitive_type<uint64_t>());
+    DynamicData data(map_type);
+    DynamicData key(key_type);
+    key = "First";
+    data[key] = 55; // Adds the value 55 associated to the key "First".
+    key = "Second";
+    data[key] = 42; // Adds the value 42 associated to the key "Second".
+    key = "First";
+    data[key] = 1000; // Modifies the value associated to the key "First" to 1000.
+    uint64_t value = data.at(key); // Retrieves the value associated to the key "First", failing if it doesn't exists.
+    key = "Third";
+    value = data[key]; // Adds a new entry for the key "Third", returning a default-initialized value.
+    key = "First";
+    value = data[key]; // As "First" already exists, returns it associated value.
+    WritableDynamicDataRef ref = data[key]; //references to a DynamicData representing the value associated to "Third".
+    size_t size = data.size(); // size of the map (number of pairs).
+    for (WritableDynamicDataRef&& elem : data) // Iterate through its pairs.
+    {
+        elem[1] = 23; // Values associated to all keys will be set to 23.
+        //elem[0] = "Don't do this"; // Never modify the key in this way, or the map may become unusable.
     }
     ```
 1. `DynamicData` represents a `StringType`.
@@ -457,12 +503,21 @@ There exists two kinds of iterators:
 - Collection iterators: Allows to iterate through collections in the same way of native C++11 types. They can be
   accessed from `ReadableDynamicDataRef::Iterator` (for read-only operations) or `WritableDynamicDataRef::Iterator`
   (for read-write operations).
-
   ```cpp
   ReadableDynamicDataRef::Iterator it = data.begin();
   WritableDynamicDataRef::Iterator wit = data.begin();
   for (ReadableDynamicDataRef&& elem : data) { [...] }
   for (WritableDynamicDataRef&& elem : data) { [...] }
+  ```
+  In a similar way as in the C++11 map iterator, a `PairType` instance is returned.
+  To access the elements of the pair (the map's key)
+  the `operator[](size_t)` must be used. Only indexes `0` and `1` are allowed.
+  ```cpp
+  DynamicData map(MapType(key_type, value_type);
+  map[key_type_data] = value_type_data;
+  ReadableDynamicDataRef::Iterator it = map.begin();
+  std::cout << "Key: " << (*it)[0].cast<std::string>() << std::endl;
+  std::cout << "Value: " << (*it)[1].cast<std::string>() << std::endl;
   ```
 
 - Aggregation iterator: Allows to iterate through members of an aggregation.

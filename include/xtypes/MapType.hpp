@@ -212,8 +212,6 @@ public:
     }
 
 protected:
-    DynamicType::Ptr key_;
-
     virtual DynamicType* clone() const override
     {
         return new MapType(*this);
