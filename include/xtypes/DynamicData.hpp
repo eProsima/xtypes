@@ -146,6 +146,9 @@ public:
         if(type_.is_collection_type())
         {
             const CollectionType& collection = static_cast<const CollectionType&>(type_);
+            // The following assert exists because it may be confusing by the user, it will return the pair instead of
+            // the value associated to the "key" representation of the index.
+            xtypes_assert(type_.kind() != TypeKind::MAP_TYPE, "Cannot access a MapType by index");
             return ReadableDynamicDataRef(collection.content_type(), collection.get_instance_at(instance_, index));
         }
 

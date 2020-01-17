@@ -91,6 +91,39 @@ int main()
         std::cout << "Sequence Check_sum is: " << check_sum << " and its double is: " << double_check_sum << std::endl;
     }
 
+    std::cout << "--- Iterate map ---" << std::endl;
+    {
+        MapType map_type(primitive_type<uint32_t>(), primitive_type<int32_t>());
+        DynamicData map(map_type);
+
+        DynamicData key(primitive_type<uint32_t>());
+        for (uint32_t i = 0; i < 10; ++i)
+        {
+            key = i;
+            map[key] = int32_t(5 * i);
+        }
+
+
+        int32_t check_sum = 0;
+        // The map returns an iterator to its pairs, which doesn't follow the insertion order!
+        for (ReadableDynamicDataRef&& elem : map)
+        {
+            check_sum += elem[1].value<int32_t>();
+        }
+
+        for (WritableDynamicDataRef&& elem : map)
+        {
+            elem[1] = elem[1].value<int32_t>() * 2;
+        }
+
+        int32_t double_check_sum = 0;
+        for (ReadableDynamicDataRef&& elem : map)
+        {
+            double_check_sum += elem[1].value<int32_t>();
+        }
+        std::cout << "Map Check_sum is: " << check_sum << " and its double is: " << double_check_sum << std::endl;
+    }
+
     std::cout << "--- Iterate struct data (wide) ---" << std::endl;
     {
         StructType my_struct("MyStruct");
@@ -168,7 +201,8 @@ int main()
 
         StructType l0 = StructType("Level0")
             .add_member("l0m1", l1)
-            .add_member("l0m2", l2);
+            .add_member("l0m2", l2)
+            .add_member("l0m3", MapType(primitive_type<uint32_t>(), StringType()));
 
         l0.for_each([&](const DynamicType::TypeNode& node)
         {
@@ -201,7 +235,8 @@ int main()
 
         StructType l0 = StructType("Level0")
             .add_member("l0m1", l1)
-            .add_member("l0m2", l2);
+            .add_member("l0m2", l2)
+            .add_member("l0m3", MapType(primitive_type<uint32_t>(), StringType()));
 
         uint32_t uint_value = 0;
         DynamicData data(l0);
@@ -239,16 +274,24 @@ int main()
         data["l0m2"]["l2m2"] = 12345.f;
         data["l0m2"]["l2m3"] = "l2m3_bis_3";
 
+        DynamicData key(primitive_type<uint32_t>());
+        // Maps alter the internal storage of their elements, so they will be printed in a different order.
+        for (uint32_t i = 0; i < 5; ++i)
+        {
+            key = i;
+            data["l0m3"][key] = "Map element: " + std::to_string(i);
+        }
+
 
         data.for_each([&](const DynamicData::ReadableNode& node)
         {
             if (!node.has_parent()) return; // Ignore the root
-            for (size_t tabs = 0; tabs < node.deep(); ++tabs)
-            {
-                std::cout << "  ";
-            }
             if (node.from_member() != nullptr)
             {
+                for (size_t tabs = 0; tabs < node.deep(); ++tabs)
+                {
+                    std::cout << "  ";
+                }
                 std::cout << node.from_member()->name();
                 if (node.type().is_primitive_type() || node.type().kind() == TypeKind::STRING_TYPE)
                 {

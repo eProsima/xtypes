@@ -101,6 +101,9 @@ inline std::string ReadableDynamicDataRef::to_string() const
             case TypeKind::SEQUENCE_TYPE:
                 ss << "<" << type_name << "[" << node.data().size() << "]>";
                 break;
+            case TypeKind::MAP_TYPE:
+                ss << "<" << type_name << "[" << node.data().size() << "]>";
+                break;
             case TypeKind::STRUCTURE_TYPE:
                 ss << "Structure: <" << type_name << ">";
                 break;

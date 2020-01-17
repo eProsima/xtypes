@@ -393,9 +393,13 @@ private:
     size_t get_key_index(
             const uint8_t* instance) const
     {
-        uint8_t* place = find_place(instance, true);
-        xtypes_assert(place != nullptr, "Key doesn't exists.");
-        return (place - memory_) / block_size_;
+        if (memory_ != nullptr)
+        {
+            uint8_t* place = find_place(instance, true);
+            xtypes_assert(place != nullptr, "Key doesn't exists.");
+            return (place - memory_) / block_size_;
+        }
+        return 0;
     }
 
     uint64_t hash(

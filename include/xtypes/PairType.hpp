@@ -144,9 +144,18 @@ public:
             TypeVisitor visitor) const override
     {
         visitor(node);
-        TypeNode f(node, first(), 0, nullptr);
+        Member* from_member = nullptr;
+        if (node.from_member() != nullptr)
+        {
+            from_member = const_cast<Member*>(node.from_member());
+        }
+        else if (node.has_parent())
+        {
+            from_member = const_cast<Member*>(node.parent().from_member());
+        }
+        TypeNode f(node, first(), 0, from_member);
         first_->for_each_type(f, visitor);
-        TypeNode s(node, second(), 1, nullptr);
+        TypeNode s(node, second(), 1, from_member);
         second_->for_each_type(s, visitor);
     }
 
@@ -155,9 +164,18 @@ public:
             InstanceVisitor visitor) const override
     {
         visitor(node);
-        InstanceNode f(node, first(), node.instance, 0, nullptr);
+        Member* from_member = nullptr;
+        if (node.from_member != nullptr)
+        {
+            from_member = const_cast<Member*>(node.from_member);
+        }
+        else if (node.parent != nullptr)
+        {
+            from_member = const_cast<Member*>(node.parent->from_member);
+        }
+        InstanceNode f(node, first(), node.instance, 0, from_member);
         first_->for_each_instance(f, visitor);
-        InstanceNode s(node, second(), node.instance + first_->memory_size(), 1, nullptr);
+        InstanceNode s(node, second(), node.instance + first_->memory_size(), 1, from_member);
         second_->for_each_instance(s, visitor);
     }
 

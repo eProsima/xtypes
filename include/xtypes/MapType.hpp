@@ -114,8 +114,7 @@ public:
             uint8_t* instance,
             size_t index) const override
     {
-        xtypes_assert(false, "Cannot access a MapType by index");
-        return nullptr;
+        return reinterpret_cast<MapInstance*>(instance)->operator[](uint32_t(index));
     }
 
     virtual uint8_t* get_instance_at(
