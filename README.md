@@ -338,7 +338,7 @@ The following methods are available when:
     data = L"Hello again! \u263A"; // set string value
     ```
 1. `DynamicData` represents a `PairType`. Similar to *C++* `std::pair`, but using `operator[](size_t)`
-    to access each member, but using 0 to access `first` and 1 to access `second`.
+    to access each member, using 0 to access `first` and 1 to access `second`.
     ```c++
     data[0] = first_value; // set "first" member value to "first_value".
     data[1] = second_value; // set "second" member value to "second_value".
@@ -390,6 +390,8 @@ The following methods are available when:
     access to the pair stored at the index position?
     These pairs are ordered internally using a hashing the key's value, so the order while iterating may change
     after any modification of the map.
+
+    **IMPORTANT: Don't modify the key value while iterating the pairs of a map, it probably makes the map unusable.**
     ```c++
     StringType key_type;
     MapType map_type(key_type, primitive_type<uint64_t>());
