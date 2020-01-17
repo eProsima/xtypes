@@ -91,7 +91,7 @@ The API is divided into two different and yet related conceps.
 
 ### Type definition
 All types inherit from the base abstract type `DynamicType` as shown in the following diagram:
-![](https://www.plantuml.com/plantuml/img/ZP912i8m44NtSufUe3UGqg8k1Q4LrzDqA84ahSb4A7XuBK9iGgjk_ty_-JD9wHWjUwtWRAMMBE_KJ2DbkH_pHv4T9eDQYbc2gkyjzSXoC5l8Vb2An3S2AYNHRRerMozuQIUtmiKafwS0LDRYj2JYLd3oZAsYzQu9EnUIfbyIgt6u_WlMTFDa1FqcuMYy9ejCtHAEtYamoHXn501RnnO5HziEOhh2O2IDWhvUM2XqBkwtQufFAYurM-z4CiDib6IwrwTy0W00)
+![](https://www.plantuml.com/plantuml/img/ZP912i8m44NtSufUe3SGiQXBGMZ5zJGTIY1DwsGY53oy1g4seLMtyzydRvBid22Bxmp0cNMdHT-f6WVASZ_aZsrs62rsMeKH56tBrABetguX-zuOKj-8mcXqQ-4PDQzbK0fx9VCu4OABJGvE0IYOSPmJiJ2Sl61jQ7cDX0r2shPpOh4Ert_1acwUhABVv0c7tn0ShU-8KQYPmz4xJqooQrm5mDe9evBeIQPXUizJa1XDysLXPT2vs6zJRJ-jM2f4xqQoGmXsP9lNhtu2)
 
 #### PrimitiveType
 Represents the system's basic types.
