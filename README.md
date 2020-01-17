@@ -165,8 +165,8 @@ size_t m2_bounds = m2.bounds(); // As m2 is a bounded map, its bounds are 10.
 ```
 
 ##### PairType
-The `MapType` is a specialization of `CollectionType` which content is a set of *pairs*.
-This *pairs* are represented internally by an auxiliar type named `PairType`.
+`MapType` is a specialization of `CollectionType` which content is a set of *pairs*.
+These *pairs* are represented internally by an auxiliar type named `PairType`.
 ```cpp
 PairType pair(StringType(), primitive_type<uint32_t>);
 std::cout << pair.first().name() << std::endl; // Prints "std::string".
@@ -337,6 +337,12 @@ The following methods are available when:
     data = "Hello again!"; // set string value
     data = L"Hello again! \u263A"; // set string value
     ```
+1. `DynamicData` represents a `PairType`. Similar to *C++* `std::pair`, but using `operator[](size_t)`
+    to access each member, but using 0 to access `first` and 1 to access `second`.
+    ```c++
+    data[0] = first_value; // set "first" member value to "first_value".
+    data[1] = second_value; // set "second" member value to "second_value".
+    ```
 1. `DynamicData` represents an `AggregationType`
     ```c++
     data["member_name"] = 42; //set value 42 to the int member called "member_name"
@@ -379,10 +385,10 @@ The following methods are available when:
 1. `DynamicData` represents a `MapType`.
     The map must be accessed by its key (using always a DynamicData instance of the key type)
     or iterated through its pairs.
-    Accesing the map using the index is forbiden because if the map's key is a numeral type, this may lead to
-    confusion to the user. For example, do the user want to access the value associated to that index value, or
+    Accessing the map using the index is forbidden because if the map's key is a numeral type, this may lead to
+    confusion to the user. For example, does the user want to access the value associated with that index value, or
     access to the pair stored at the index position?
-    This pairs are ordered internally using a hashing the key's value, so the order while iterating may change
+    These pairs are ordered internally using a hashing the key's value, so the order while iterating may change
     after any modification of the map.
     ```c++
     StringType key_type;
