@@ -35,28 +35,14 @@ public:
     /// \brief Construct a StructType given a name.
     /// \param[in] name Name of the structure.
     StructType(
-            const std::string& name)
-        : AggregationType(TypeKind::STRUCTURE_TYPE, name)
-        , memory_size_(0)
+            const std::string& name,
+            const StructType* parent = nullptr)
+        : AggregationType(TypeKind::STRUCTURE_TYPE, name, parent)
+        , memory_size_(parent == nullptr ? 0 : parent->memory_size_)
     {}
 
     StructType(const StructType& other) = default;
     StructType(StructType&& other) = default;
-
-    /// \brief Check for a parent existence.
-    /// \returns true if found.
-    bool has_parent() const { return parent_.get() != nullptr; }
-
-    /// \brief Get the parent.
-    /// \pre has_parent()
-    /// \returns The parent StructType.
-    const StructType& parent() const
-    {
-        xtypes_assert(has_parent(),
-            "Called 'parent()' from a StructType without parent. Call 'has_parent()' to ensure that the "
-            << "StructType has parent.");
-        return static_cast<const StructType&>(*parent_);
-    }
 
     /// \brief Add a member to the structure.
     /// \param[in] member Member to add
@@ -271,7 +257,6 @@ protected:
     }
 
 private:
-    DynamicType::Ptr parent_;
     size_t memory_size_;
 };
 

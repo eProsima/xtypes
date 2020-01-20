@@ -64,12 +64,40 @@ public:
         return members_[indexes_.at(name)];
     }
 
+    /// \brief Check for a parent existence.
+    /// \returns true if found.
+    bool has_parent() const { return parent_.get() != nullptr; }
+
+    /// \brief Get the parent.
+    /// \pre has_parent()
+    /// \returns The parent type.
+    const AggregationType& parent() const
+    {
+        xtypes_assert(has_parent(),
+            "Called 'parent()' from a type without parent. Call 'has_parent()' to ensure that the "
+            << "type has parent.");
+        return static_cast<const AggregationType&>(*parent_);
+    }
+
 protected:
+    DynamicType::Ptr parent_;
+
     AggregationType(
             TypeKind kind,
-            const std::string& name)
+            const std::string& name,
+            const AggregationType* parent = nullptr)
         : DynamicType(kind, name)
-    {}
+    {
+        if (parent != nullptr)
+        {
+            parent_ = DynamicType::Ptr(*parent);
+            // Copy the parent's members directly
+            for (const Member& mem : parent->members())
+            {
+                insert_member(mem);
+            }
+        }
+    }
 
     /// \brief Insert a member into the aggregation.
     /// \param[in] member Member to add.
