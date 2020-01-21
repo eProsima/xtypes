@@ -508,7 +508,8 @@ If the visitor callback implementation does not call an exception, `for_each` fu
 #### Iterators of `DynamicData`
 
 There exists two kinds of iterators:
-- Collection iterators: Allows to iterate through collections in the same way of native C++11 types. They can be
+- Collection iterators: Allows to iterate through collections (`ArrayType`, `SequenceType`, and `MapType`)
+  in the same way of native C++11 types. They can be
   accessed from `ReadableDynamicDataRef::Iterator` (for read-only operations) or `WritableDynamicDataRef::Iterator`
   (for read-write operations).
   ```cpp
@@ -517,7 +518,7 @@ There exists two kinds of iterators:
   for (ReadableDynamicDataRef&& elem : data) { [...] }
   for (WritableDynamicDataRef&& elem : data) { [...] }
   ```
-  In a similar way as in the C++11 map iterator, a `PairType` instance is returned.
+  While iterating a `MapType`, similarly as in the C++11 map iterator, a `PairType` instance is returned.
   To access the elements of the pair (the map's key)
   the `operator[](size_t)` must be used. Only indexes `0` and `1` are allowed.
   ```cpp

@@ -1286,6 +1286,7 @@ TEST (IDLParser, map_tests)
             map<string, MyChar> map_3;
             map<MyChar, float> map_4;
             map<MyEnum, KeyStruct> map_5;
+            map<string, map<uint32, string>> map_6;
         };
 
                    )");
@@ -1305,6 +1306,8 @@ TEST (IDLParser, map_tests)
     DynamicData map_3_key(str_type);
     DynamicData map_4_key(my_alias);
     DynamicData map_5_key(my_enum);
+    DynamicData map_6_key(str_type);
+    DynamicData map_6_inner_key(primitive_type<uint32_t>());
 
     DynamicData key_data(my_key);
     DynamicData enum_data(my_enum);
@@ -1337,6 +1340,13 @@ TEST (IDLParser, map_tests)
     map_5_key = my_enum.value("BBB");
     data["map_5"][map_5_key] = key_data;
 
+    map_6_key = "OuterMapKey_1";
+    map_6_inner_key = 550u;
+    data["map_6"][map_6_key][map_6_inner_key] = "I'm a map of maps!";
+    map_6_key = "OuterMapKey_2";
+    map_6_inner_key = 666u;
+    data["map_6"][map_6_key][map_6_inner_key] = "I'm a map of maps, but infernal!";
+
     // Check everything worked as expected.
     map_1_key = uint32_t(55);
     EXPECT_EQ(data["map_1"][map_1_key].value<std::string>(), "This is a simple map");
@@ -1364,6 +1374,14 @@ TEST (IDLParser, map_tests)
     key_data["my_string"] = "BBB String";
     map_5_key = my_enum.value("BBB");
     EXPECT_EQ(data["map_5"][map_5_key]["my_string"].value<std::string>(), "BBB String");
+
+    map_6_key = "OuterMapKey_1";
+    map_6_inner_key = 550u;
+    EXPECT_EQ(data["map_6"][map_6_key][map_6_inner_key].value<std::string>(), "I'm a map of maps!");
+    map_6_key = "OuterMapKey_2";
+    map_6_inner_key = 666u;
+    EXPECT_EQ(data["map_6"][map_6_key][map_6_inner_key].value<std::string>(), "I'm a map of maps, but infernal!");
+
 }
 
 int main(int argc, char** argv)

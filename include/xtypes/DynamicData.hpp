@@ -194,7 +194,7 @@ public:
     {
         xtypes_assert(
             type_.kind() == TypeKind::MAP_TYPE,
-            "operator[const DynamicData&] is only available for MapType.");
+            "'at()' method is only available for MapType.");
 
         const MapType& map = static_cast<const MapType&>(type_);
         const PairType& pair = static_cast<const PairType&>(map.content_type());
@@ -792,19 +792,8 @@ public:
         uint8_t* instance = map.get_instance_at(instance_, p_instance(data));
         if (instance == nullptr)
         {
-            uint8_t new_entry[pair.memory_size()] = {0};
-            if (pair.first().is_constructed_type())
-            {
-                pair.first().copy_instance(new_entry, p_instance(data));
-            }
-            else // Primitive Type
-            {
-                std::memcpy(new_entry, p_instance(data), pair.first().memory_size()); // Don't copy the "second" part.
-            }
-            uint8_t* result = map.insert_instance(instance_, new_entry);
-            xtypes_assert(result != nullptr, "Cannot insert new element into map.");
-            instance = result;
-            pair.second().construct_instance(instance + pair.first().memory_size()); // "second" part initilized here!
+            instance = map.insert_instance(instance_, p_instance(data));
+            xtypes_assert(instance != nullptr, "Cannot insert new element into map.");
         }
         return WritableDynamicDataRef(pair.second(), instance + pair.first().memory_size());
     }

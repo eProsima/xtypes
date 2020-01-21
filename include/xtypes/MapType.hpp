@@ -88,12 +88,13 @@ public:
             const uint8_t* source,
             const DynamicType& other) const override
     {
-        xtypes_assert(other.kind() == TypeKind::MAP_TYPE,
+        xtypes_assert(
+            other.kind() == TypeKind::MAP_TYPE
+                && content_type().name() == static_cast<const MapType&>(other).content_type().name(),
             "Cannot copy data from different types: From '" << other.name() << "' to '" << name() << "'.");
         (void) other;
         new (target) MapInstance(
             *reinterpret_cast<const MapInstance*>(source),
-            static_cast<const PairType&>(content_type()),
             bounds());
     }
 
@@ -182,16 +183,16 @@ public:
 
     /// \brief Push a value to a map instance.
     /// \param[in, out] instance Memory instance representing a MapInstance.
-    /// \param[in] value to add into the map.
+    /// \param[in] new key instance to add into the map.
     /// \returns a instance location representing the new value added
     /// or nullptr if the map reach the limit.
     uint8_t* insert_instance(
             uint8_t* instance,
-            const uint8_t* value) const
+            const uint8_t* key_instance) const
     {
         if(get_instance_size(instance) < bounds() || bounds() == 0)
         {
-            return reinterpret_cast<MapInstance*>(instance)->insert(value);
+            return reinterpret_cast<MapInstance*>(instance)->insert(key_instance);
         }
         return nullptr;
     }

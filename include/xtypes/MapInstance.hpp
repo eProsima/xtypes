@@ -59,15 +59,13 @@ public:
 
     /// \brief Copy constructor from a MapInstance with other but compatible content.
     /// \param[in] other Map from copy the values.
-    /// \param[in] content Content of the map
     /// \param[in] bounds Max copied elements.
     /// \pre content and other.content compatibles (see dds::core::xtypes::DynamicType::is_compatible())
     MapInstance(
             const MapInstance& other,
-            const PairType& content,
             uint32_t bounds)
-        : content_(content)
-        , block_size_(content.memory_size())
+        : content_(other.content_)
+        , block_size_(content_.memory_size())
         , capacity_(bounds == 0 ? other.capacity_ : std::min(other.capacity_, bounds))
         , memory_(capacity_ > 0 ? new uint8_t[capacity_ * block_size_] : nullptr)
         , size_(bounds == 0 ? other.size_ : std::min(other.size_, bounds))
@@ -131,7 +129,7 @@ public:
         }
     }
 
-    /// \brief Inserts an instance into the map
+    /// \brief Inserts a key instance into the map, allocating the needed space.
     /// A reallocation can be done in order to allocate this new value.
     /// A reorder can be done in order to keep the keys in order.
     /// \param[in] instance Instance of the pair to insert into the map.
@@ -145,7 +143,8 @@ public:
         }
 
         uint8_t* place = create_place(instance);
-        content_.copy_instance(place, instance);
+        content_.first().copy_instance(place, instance); // Only copies the key
+        content_.second().construct_instance(place + content_.first().memory_size()); // Initializes the value
 
         size_++;
 
@@ -189,12 +188,16 @@ public:
 
     uint64_t map_hash() const
     {
-        uint64_t h = content_.hash(memory_);
-        for (uint32_t i = 1; i < size_; ++i)
+        if (size_ > 0)
         {
-            Instanceable::hash_combine(h, content_.hash(get_element(i)));
+            uint64_t h = content_.hash(memory_);
+            for (uint32_t i = 1; i < size_; ++i)
+            {
+                Instanceable::hash_combine(h, content_.hash(get_element(i)));
+            }
+            return h;
         }
-        return h;
+        return 0;
     }
 
 private:

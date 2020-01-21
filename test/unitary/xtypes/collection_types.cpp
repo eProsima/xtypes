@@ -531,7 +531,7 @@ TEST (CollectionTypes, map)
     EXPECT_EQ(10, d.size());
     EXPECT_EQ(10, d.bounds());
 
-    ASSERT_OR_EXCEPTION({DynamicData fails(d, m20_1);}, "Cannot copy data from type");
+    ASSERT_OR_EXCEPTION({DynamicData fails(d, m20_1);}, "Cannot copy data from different types");
 
     DynamicData dd(d, m20_2);
     EXPECT_EQ(10, dd.size());
