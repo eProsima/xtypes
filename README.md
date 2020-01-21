@@ -221,7 +221,7 @@ parent.add_member(Member("parent_uint32", primitive_type<uint32_t>()));
 parent.add_member(Member("parent_string", StringType()));
 StructType child("ChildStruct", &parent);
 child.add_member(Member("child_string", StringType()));
-StructType grand_child("GrandChildStruct", &parent);
+StructType grand_child("GrandChildStruct", &child);
 grand_child.add_member(Member("grand_child_float", primitive_type<float>()));
 grand_child.add_member(Member("grand_child_double", primitive_type<double>()));
 if (grand_child.has_parent())

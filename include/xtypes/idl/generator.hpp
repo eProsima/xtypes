@@ -186,7 +186,7 @@ inline size_t inherit_members(const AggregationType& type)
 {
     if (type.has_parent())
     {
-        return type.parent().members().size() + inherit_members(type.parent());
+        return type.parent().members().size();
     }
     return 0;
 }

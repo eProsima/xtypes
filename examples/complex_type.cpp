@@ -127,7 +127,7 @@ int main()
     parent.add_member(Member("parent_string", StringType()));
     StructType child("ChildStruct", &parent);
     child.add_member(Member("child_string", StringType()));
-    StructType grand_child("GrandChildStruct", &parent);
+    StructType grand_child("GrandChildStruct", &child);
     grand_child.add_member(Member("grand_child_float", primitive_type<float>()));
     grand_child.add_member(Member("grand_child_double", primitive_type<double>()));
     std::cout << idl::generate(parent) << std::endl;
@@ -135,7 +135,13 @@ int main()
     std::cout << idl::generate(grand_child) << std::endl;
     DynamicData grand_child_data(grand_child);
     grand_child_data["parent_string"] = "I'm the grand child!";
+    grand_child_data["child_string"] = "I'm the grand child again!";
+    grand_child_data["grand_child_float"] = 55.5f;
     std::cout << "grand_child_data[\"parent_string\"] = " << grand_child_data["parent_string"].value<std::string>()
+              << std::endl;
+    std::cout << "grand_child_data[\"child_string\"] = " << grand_child_data["child_string"].value<std::string>()
+              << std::endl;
+    std::cout << "grand_child_data[\"grand_child_float\"] = " << grand_child_data["grand_child_float"].value<float>()
               << std::endl;
 
     return 0;
