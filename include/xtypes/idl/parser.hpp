@@ -1184,9 +1184,10 @@ private:
         using namespace peg::udl;
         std::string name;
         std::vector<Member> member_list;
+        std::string parent_name;
         for (const auto& node : ast->nodes)
         {
-            switch (node->tag)
+            switch (node->original_tag)
             {
                 case "IDENTIFIER"_:
                 {
@@ -1196,7 +1197,17 @@ private:
                     break;
                 }
                 case "INHERITANCE"_:
-                    // parent = outer.structs[node->token]; // TODO Check if it doesn't exists
+                    if (outer->has_structure(node->token))
+                    {
+                        parent_name = node->token;
+                    }
+                    else
+                    {
+                        std::string message =  "Struct \"" + name + "\" cannot inherit from \""
+                                + node->token + "\": Struct was not found.";
+                        context_->log(log::LogLevel::ERROR, "STRUCT_DEF", message, ast);
+                        throw exception(message, ast);
+                    }
                     break;
                 case "MEMBER"_:
                     member_def(node, outer, member_list);
@@ -1204,8 +1215,8 @@ private:
             }
         }
 
-        StructType& struct_type = outer->structure(name);
-        if (!struct_type.members().empty())
+        StructType* struct_type = &outer->structure(name);
+        if (!struct_type->members().empty())
         {
             const std::string msg = "Struct \"" + name + "\" redefinition.";
             if (context_->ignore_redefinition)
@@ -1223,12 +1234,21 @@ private:
         context_->log(log::LogLevel::DEBUG, "STRUCT_DEF",
             "Struct \"" + name + "\" definition.",
             ast);
+
+        if (!parent_name.empty())
+        {
+            // Replace already existing struct with a new one which inherits
+            StructType replace_struct(name, &outer->structure(parent_name));
+            outer->structure(std::move(replace_struct), true);
+            struct_type = &outer->structure(name);
+        }
+
         for (auto& member : member_list)
         {
             context_->log(log::LogLevel::DEBUG, "STRUCT_DEF_MEMBER",
                 "Struct \"" + name + "\" member: " + member.name(),
                 ast);
-            struct_type.add_member(std::move(member));
+            struct_type->add_member(std::move(member));
         }
     }
 

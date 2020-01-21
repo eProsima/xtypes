@@ -474,4 +474,22 @@ TEST (StructType, inheritance)
     EXPECT_EQ(data["seq"][0].value<std::string>(), "This is a string!");
     EXPECT_EQ(data["int"].value<int32_t>(), 786);
     EXPECT_EQ(data["str"].value<std::string>(), "Hey!");
+
+    StructType son("SonStruct", &my_struct);
+    son.add_member(Member("grandparent", parent));
+
+    EXPECT_TRUE(son.has_parent());
+    EXPECT_EQ(son.parent().name(), "MyStruct");
+    EXPECT_TRUE(son.has_member("seq"));
+    EXPECT_TRUE(son.has_member("int"));
+    EXPECT_TRUE(son.has_member("str"));
+    EXPECT_TRUE(son.has_member("grandparent"));
+    EXPECT_EQ(son.member(0).name(), "seq");
+    EXPECT_EQ(son.member(1).name(), "int");
+    EXPECT_EQ(son.member(2).name(), "str");
+    EXPECT_EQ(son.member(3).name(), "grandparent");
+    EXPECT_EQ(son.member(3).type().name(), "ParentStruct");
+    EXPECT_EQ(son.member(3).type().kind(), TypeKind::STRUCTURE_TYPE);
+
+
 }

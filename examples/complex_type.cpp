@@ -120,5 +120,23 @@ int main()
     union_data["um1"] = data["om2"];
     std::cout << "union::um1::im2: " << union_data["um1"]["im2"].value<float>() << std::endl;
 
+    // Inheritance example
+    std::cout << "-----------------------" << std::endl;
+    StructType parent("ParentStruct");
+    parent.add_member(Member("parent_uint32", primitive_type<uint32_t>()));
+    parent.add_member(Member("parent_string", StringType()));
+    StructType child("ChildStruct", &parent);
+    child.add_member(Member("child_string", StringType()));
+    StructType grand_child("GrandChildStruct", &parent);
+    grand_child.add_member(Member("grand_child_float", primitive_type<float>()));
+    grand_child.add_member(Member("grand_child_double", primitive_type<double>()));
+    std::cout << idl::generate(parent) << std::endl;
+    std::cout << idl::generate(child) << std::endl;
+    std::cout << idl::generate(grand_child) << std::endl;
+    DynamicData grand_child_data(grand_child);
+    grand_child_data["parent_string"] = "I'm the grand child!";
+    std::cout << "grand_child_data[\"parent_string\"] = " << grand_child_data["parent_string"].value<std::string>()
+              << std::endl;
+
     return 0;
 }

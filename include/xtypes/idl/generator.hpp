@@ -182,14 +182,28 @@ inline std::string label_value(size_t value, const DynamicType& type)
     }
 }
 
+inline size_t inherit_members(const AggregationType& type)
+{
+    if (type.has_parent())
+    {
+        return type.parent().members().size() + inherit_members(type.parent());
+    }
+    return 0;
+}
+
 inline std::string structure(const StructType& type, size_t tabs = 0)
 {
     std::stringstream ss;
-    ss << std::string(tabs * 4, ' ') << "struct " << type.name() << std::endl;
-    ss << std::string(tabs * 4, ' ') << "{" << std::endl;
-
-    for(const Member& member: type.members())
+    ss << std::string(tabs * 4, ' ') << "struct " << type.name();
+    if (type.has_parent())
     {
+        ss << " : " << type.parent().name();
+    }
+    ss << std::endl << std::string(tabs * 4, ' ') << "{" << std::endl;
+
+    for(size_t idx = inherit_members(type); idx < type.members().size(); ++idx)
+    {
+        const Member& member = type.member(idx);
         ss << std::string((tabs + 1) * 4, ' ');
         if(member.type().kind() == TypeKind::ARRAY_TYPE)
         {

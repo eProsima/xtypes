@@ -85,17 +85,12 @@ protected:
     AggregationType(
             TypeKind kind,
             const std::string& name,
-            const AggregationType* parent = nullptr)
+            const AggregationType* p= nullptr)
         : DynamicType(kind, name)
     {
-        if (parent != nullptr)
+        if (p != nullptr)
         {
-            parent_ = DynamicType::Ptr(*parent);
-            // Copy the parent's members directly
-            for (const Member& mem : parent->members())
-            {
-                insert_member(mem);
-            }
+            parent(*p);
         }
     }
 
@@ -110,6 +105,26 @@ protected:
         indexes_.emplace(member.name(), members_.size());
         members_.emplace_back(member);
         return members_.back();
+    }
+
+    /// \brief Set the parent
+    /// \pre !has_parent() && members().size() == 0
+    void parent(
+            const AggregationType& p)
+    {
+        xtypes_assert(!has_parent(),
+            "Only one parent is allowed.");
+        xtypes_assert(members().size() == 0,
+            "Cannot set parent to a type with already defined members.");
+        if (!has_parent() && members_.size() == 0)
+        {
+            parent_ = DynamicType::Ptr(p);
+            // Copy the parent's members directly
+            for (const Member& mem : p.members())
+            {
+                insert_member(mem);
+            }
+        }
     }
 
 private:

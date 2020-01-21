@@ -152,6 +152,20 @@ void check_result(
     ASSERT_EQ(labels.size(), 1);
     ASSERT_EQ(labels[0], root_enum.value("VALUE_4"));
     ASSERT_TRUE(root_union.is_default("union_float"));
+
+    // NOTE: Until dependency tree is implemented in the generator/Module, struct names
+    // shouldn't be modifies. This order works for now for checking purposes.
+    ASSERT_TRUE(root.has_structure("AParentStruct"));
+    const StructType& parent_struct = root.structure("AParentStruct");
+    ASSERT_EQ(parent_struct.member("parent_str").type().kind(), TypeKind::STRING_TYPE);
+    ASSERT_EQ(parent_struct.members().size(), 1);
+    ASSERT_TRUE(root.has_structure("ChildStruct"));
+    const StructType& child_struct = root.structure("ChildStruct");
+    ASSERT_EQ(child_struct.member("parent_str").type().kind(), TypeKind::STRING_TYPE);
+    ASSERT_EQ(child_struct.member("child_uint").type().kind(), TypeKind::UINT_32_TYPE);
+    ASSERT_EQ(child_struct.members().size(), 2);
+    ASSERT_TRUE(child_struct.has_parent());
+    ASSERT_EQ(child_struct.parent().name(), "AParentStruct");
 }
 
 TEST (IDLGenerator, roundtrip)
@@ -228,6 +242,16 @@ TEST (IDLGenerator, roundtrip)
             case VALUE_4:
             default:
                 float union_float;
+        };
+
+        struct AParentStruct
+        {
+            string parent_str;
+        };
+
+        struct ChildStruct : AParentStruct
+        {
+            uint32 child_uint;
         };
                    )");
 

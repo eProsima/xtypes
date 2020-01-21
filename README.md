@@ -208,6 +208,28 @@ Note: once a `DynamicType` is added to an struct, a copy is performed.
 This allows modifications to `DynamicType` to be performed without side effects.
 It also and facilitates the user's memory management duties.
 
+##### StructType inheritance
+A `StructType` can inherit from another `StructType` by using a pointer to the *parent* structure in the
+constructor of the *child* struct.
+The *child* struct will contain all the members defined by its *parent*, followed by its own members.
+A struct can check if inherit from another struct by calling the `has_parent()` method.
+The *child* struct can access to its *parent* using the `parent()` method, which should be called only if
+`has_parent()` returns `true`.
+```c++
+StructType parent("ParentStruct");
+parent.add_member(Member("parent_uint32", primitive_type<uint32_t>()));
+parent.add_member(Member("parent_string", StringType()));
+StructType child("ChildStruct", &parent);
+child.add_member(Member("child_string", StringType()));
+StructType grand_child("GrandChildStruct", &parent);
+grand_child.add_member(Member("grand_child_float", primitive_type<float>()));
+grand_child.add_member(Member("grand_child_double", primitive_type<double>()));
+if (grand_child.has_parent())
+{
+    std::cout << "Inherits from: " << grand_child.parent().name() << std::endl;
+}
+```
+
 #### UnionType
 Similar to a *C-like union* or a [StructType](#structtype) but with only one member active at the same time.
 It is defined by a *discriminator* and a list of labels allowing to identify the current active member.
