@@ -66,7 +66,7 @@ enum class TypeKind
     UNION_FWD_DECL_TYPE       = CONSTRUCTED_TYPE | AGGREGATION_TYPE | 0x000B, ///< Not supported
     STRUCTURE_FWD_DECL_TYPE   = CONSTRUCTED_TYPE | AGGREGATION_TYPE | 0x000C, ///< Not supported
 
-    PAIR_TYPE                 = CONSTRUCTED_TYPE | AGGREGATION_TYPE | 0x000F ///< Represents a PairType
+    PAIR_TYPE                 = CONSTRUCTED_TYPE | 0x000F ///< Represents a PairType
 };
 
 /// \brief OR operator

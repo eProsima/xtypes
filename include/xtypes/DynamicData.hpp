@@ -139,7 +139,7 @@ public:
     ReadableDynamicDataRef operator [] (
             size_t index) const
     {
-        xtypes_assert((type_.is_aggregation_type() || type_.is_collection_type()),
+        xtypes_assert(type_.is_aggregation_type() || type_.is_collection_type() || type_.kind() == TypeKind::PAIR_TYPE,
             "operator [size_t] isn't available for type '" << type_.name() << "'.");
         xtypes_assert(index < size(),
             "operator [" << index << "] is out of bounds.");
@@ -210,7 +210,7 @@ public:
     /// \returns Element size of the DynamicData.
     size_t size() const
     {
-        xtypes_assert(type_.is_collection_type() || type_.is_aggregation_type(),
+        xtypes_assert(type_.is_collection_type() || type_.is_aggregation_type() || type_.kind() == TypeKind::PAIR_TYPE,
             "size() isn't available for type '" << type_.name() << "'.");
         if(type_.is_collection_type())
         {
@@ -221,6 +221,10 @@ public:
         {
             const AggregationType& aggregation = static_cast<const AggregationType&>(type_);
             return aggregation.members().size();
+        }
+        if(type_.kind() == TypeKind::PAIR_TYPE)
+        {
+            return 2;
         }
         return 1;
     }
