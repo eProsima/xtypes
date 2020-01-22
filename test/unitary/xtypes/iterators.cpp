@@ -166,7 +166,6 @@ TEST (Iterators, dynamic_data)
             check_sum += elem[1].value<int32_t>();
         }
 
-        /*
         for (WritableDynamicDataRef&& elem : map)
         {
             elem[1] = elem[1].value<int32_t>() * 2;
@@ -178,7 +177,6 @@ TEST (Iterators, dynamic_data)
             double_check_sum += elem[1].value<int32_t>();
         }
         ASSERT_EQ(check_sum * 2, double_check_sum);
-        */
     }
 
     //SECTION("StructType")
