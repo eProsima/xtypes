@@ -166,12 +166,6 @@ void check_result(
     ASSERT_EQ(child_struct.members().size(), 2);
     ASSERT_TRUE(child_struct.has_parent());
     ASSERT_EQ(child_struct.parent().name(), "AParentStruct");
-    /*
-        struct GrandChildStruct : ChildStruct
-        {
-            float gc_float;
-        };
-    */
     const StructType& gchild_struct = root.structure("GrandChildStruct");
     ASSERT_EQ(gchild_struct.member("parent_str").type().kind(), TypeKind::STRING_TYPE);
     ASSERT_EQ(gchild_struct.member("child_uint").type().kind(), TypeKind::UINT_32_TYPE);
