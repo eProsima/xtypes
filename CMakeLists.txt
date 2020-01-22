@@ -107,6 +107,7 @@ macro(compile_test)
 endmacro()
 
 if(XTYPES_BUILD_TESTS)
+    include(CTest)
     include(test/gtest.cmake)
     enable_testing()
 
