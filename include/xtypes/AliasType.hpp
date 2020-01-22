@@ -150,6 +150,12 @@ public:
         return *t;
     }
 
+    virtual uint64_t hash(
+            const uint8_t* instance) const override
+    {
+        return aliased_->hash(instance);
+    }
+
 protected:
     virtual DynamicType* clone() const override
     {

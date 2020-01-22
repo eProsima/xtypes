@@ -47,6 +47,20 @@ inline std::string sequence_type_name(const DynamicType& type)
     return ss.str();
 }
 
+inline std::string map_type_name(const DynamicType& type)
+{
+    assert(type.kind() == TypeKind::MAP_TYPE);
+    const MapType& map_type = static_cast<const MapType&>(type);
+    const PairType& map_content = static_cast<const PairType&>(map_type.content_type());
+    size_t bounds = map_type.bounds();
+    std::stringstream ss;
+    ss << "map<";
+    ss << type_name(map_content.first()) << ", " << type_name(map_content.second());
+    ss << (bounds ? ", " + std::to_string(bounds) : "");
+    ss << ">";
+    return ss.str();
+}
+
 inline std::string array_member(const Member& member)
 {
     assert(member.type().kind() == TypeKind::ARRAY_TYPE);
@@ -100,6 +114,10 @@ inline std::string type_name(const DynamicType& type)
     else if(type.kind() == TypeKind::SEQUENCE_TYPE)
     {
         return sequence_type_name(type);
+    }
+    else if(type.kind() == TypeKind::MAP_TYPE)
+    {
+        return map_type_name(type);
     }
     else if(type.kind() == TypeKind::STRING_TYPE || type.kind() == TypeKind::WSTRING_TYPE)
     {

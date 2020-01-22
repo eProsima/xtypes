@@ -117,8 +117,74 @@ public:
     /// \param[in] visitor Function called each time a new node in the tree is visited.
     virtual void for_each_instance(const InstanceNode& node, InstanceVisitor visitor) const = 0;
 
+    virtual uint64_t hash(
+            const uint8_t* instance) const
+    {
+        // Default implementation valid for non_constructed types.
+        return hash64(instance, memory_size(), 0x2145654af87a5b6dULL);
+    }
+
+    static inline uint64_t hash64(
+            const uint8_t* buf,
+            size_t len,
+            uint64_t seed)
+    {
+        const uint64_t m = 0x880355f21e6d1965ULL;
+        const uint64_t* pos = reinterpret_cast<const uint64_t*>(buf);
+        const uint64_t* end = pos + (len / 8);
+        const uint8_t* pos2;
+        uint64_t h = seed ^ (len * m);
+        uint64_t v;
+
+        while (pos != end)
+        {
+            v = *pos++;
+            h ^= mix(v);
+            h *= m;
+        }
+
+        pos2 = reinterpret_cast<const uint8_t*>(pos);
+        v = 0;
+
+        switch (len & 7)
+        {
+        case 7: v ^= static_cast<uint64_t>(pos2[6]) << 48;
+        case 6: v ^= static_cast<uint64_t>(pos2[5]) << 40;
+        case 5: v ^= static_cast<uint64_t>(pos2[4]) << 32;
+        case 4: v ^= static_cast<uint64_t>(pos2[3]) << 24;
+        case 3: v ^= static_cast<uint64_t>(pos2[2]) << 16;
+        case 2: v ^= static_cast<uint64_t>(pos2[1]) << 8;
+        case 1: v ^= static_cast<uint64_t>(pos2[0]);
+            h ^= mix(v);
+            h *= m;
+        }
+
+        return mix(h);
+    }
+
+    // Similar to boost::hash_combine
+    static void hash_combine(
+            uint64_t& result,
+            const uint64_t& hash)
+    {
+        result ^= hash + 0x9e3779b9 + (result << 6) + (result >> 2);
+    }
+
 protected:
     Instanceable() = default;
+
+private:
+
+    // Hash function based on fasthash (https://github.com/ZilongTan/fast-hash)
+    static inline uint64_t& mix(
+            uint64_t& h)
+    {
+        h ^= (h >> 23);
+        h *= 0x2127599bf4325c37ULL;
+        h ^= (h >> 47);
+        return h;
+    }
+
 };
 
 } //namespace xtypes

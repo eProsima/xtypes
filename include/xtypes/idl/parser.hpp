@@ -1670,13 +1670,7 @@ private:
                 {
                     size = get_dimension(outer, node->nodes[2]);
                 }
-                context_->log(log::LogLevel::WARNING, "UNSUPPORTED",
-                    "Found \"map<" + key_type->name() + ", " + inner_type->name()
-                    + ((size > 0) ? (", " + std::to_string(size)) : "") + ">\" "
-                    + "but maps aren't supported. Ignoring.",
-                    node);
-                break;
-                // return MapType(*key_type, *inner_type, size); // TODO, uncomment when maps are implemented.
+                return MapType(*key_type, *inner_type, size);
             }
             default:
                 return type_spec(node, outer);

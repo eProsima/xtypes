@@ -403,6 +403,17 @@ public:
         }
     }
 
+    virtual uint64_t hash(
+            const uint8_t* instance) const override
+    {
+        uint64_t h = disc()->type().hash(instance);
+        if (active_member_ != nullptr)
+        {
+            Instanceable::hash_combine(h, active_member_->type().hash(instance + active_member_->offset()));
+        }
+        return h;
+    }
+
 protected:
     friend DynamicData;
     friend ReadableDynamicDataRef;

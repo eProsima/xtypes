@@ -54,6 +54,9 @@ enum class TypeConsistency
 
     /// \brief Ignore some members is required to interpret the types as equivalents.
     IGNORE_MEMBERS = 64,
+
+    /// \brief Ignore map bounds is required to interpret the types as equivalents.
+    IGNORE_MAP_BOUNDS = 128,
 };
 
 /// \brief OR operator

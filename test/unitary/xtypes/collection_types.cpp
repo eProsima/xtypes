@@ -229,8 +229,8 @@ TEST (CollectionTypes, sequence)
     DynamicData ddd(d, s10_2);
     EXPECT_FALSE(ddd != d);
 
-    DynamicData dddd(d, su_1); // This ctor isn't copying content, and it should!
-    EXPECT_EQ(10, dddd.size()); // This EXPECT will fail because the lack of content copy. Keep failing as a reminder.
+    DynamicData dddd(d, su_1);
+    EXPECT_EQ(10, dddd.size());
     EXPECT_EQ(0, dddd.bounds());
     EXPECT_FALSE(dddd != d);
 
@@ -238,7 +238,7 @@ TEST (CollectionTypes, sequence)
     {
         EXPECT_EQ(d[i].value<uint16_t>(), dd[i].value<uint16_t>());
         EXPECT_EQ(d[i].value<uint16_t>(), ddd[i].value<uint16_t>());
-        //EXPECT_EQ(d[i].value<uint16_t>(), dddd[i].value<uint16_t>()); // index < size() assert raising due to the lack of copy.
+        EXPECT_EQ(d[i].value<uint16_t>(), dddd[i].value<uint16_t>());
         EXPECT_EQ(d[i].value<uint16_t>(), uint16_t(i));
         uint16_t temp = dd[i];
         EXPECT_EQ(temp, uint16_t(i));
@@ -499,4 +499,189 @@ TEST (CollectionTypes, wstring)
     dt = L"01234567890123456789";
     EXPECT_EQ(dt.value<std::wstring>(), L"0123456789");
     EXPECT_EQ(dt.size(), 10);
+}
+
+TEST (CollectionTypes, map)
+{
+    MapType m10_1(primitive_type<uint32_t>(), primitive_type<uint16_t>(), 10);
+    MapType m10_2(primitive_type<uint32_t>(), primitive_type<uint16_t>(), 10);
+    MapType m10_3(StringType(), primitive_type<uint16_t>(), 10);
+    MapType m20_1(primitive_type<bool>(), primitive_type<uint16_t>(), 20);
+    MapType m20_2(primitive_type<uint32_t>(), primitive_type<uint16_t>(), 20);
+    MapType mu_1(primitive_type<uint32_t>(), primitive_type<uint16_t>());
+
+    DynamicData d(m10_1);
+    EXPECT_EQ(0, d.size());
+    EXPECT_EQ(10, d.bounds());
+
+    DynamicData uint32_data(primitive_type<uint32_t>());
+    // Fill the map
+    for(uint32_t i = 0; i < 10; ++i)
+    {
+        uint32_data = i;
+        d[uint32_data] = uint16_t(i);
+    }
+    // Check the map contents
+    for(uint32_t i = 0; i < 10; ++i)
+    {
+        uint32_data = i;
+        ASSERT_EQ(d.at(uint32_data).value<uint16_t>(), i);
+    }
+
+    EXPECT_EQ(10, d.size());
+    EXPECT_EQ(10, d.bounds());
+
+    ASSERT_OR_EXCEPTION({DynamicData fails(d, m20_1);}, "Cannot copy data from different types");
+
+    DynamicData dd(d, m20_2);
+    EXPECT_EQ(10, dd.size());
+    EXPECT_EQ(20, dd.bounds());
+    EXPECT_FALSE(d != dd);
+
+    DynamicData ddd(d, m10_2);
+    EXPECT_FALSE(ddd != d);
+
+    DynamicData dddd(d, mu_1);
+    EXPECT_EQ(10, dddd.size());
+    EXPECT_EQ(0, dddd.bounds());
+    EXPECT_FALSE(dddd != d);
+
+    ASSERT_OR_EXCEPTION({DynamicData fails(d, m10_3);}, "Incompatible types");
+
+    for (size_t idx = 0; idx < d.size(); ++idx)
+    {
+        uint32_data = uint32_t(idx);
+        uint16_t value = d[uint32_data];
+        EXPECT_EQ(value, dd[uint32_data].value<uint16_t>());
+        EXPECT_EQ(value, ddd[uint32_data].value<uint16_t>());
+        EXPECT_EQ(value, dddd[uint32_data].value<uint16_t>());
+        EXPECT_EQ(value, uint16_t(idx));
+        uint16_t temp = dd[uint32_data];
+        EXPECT_EQ(temp, uint16_t(idx));
+    }
+}
+
+TEST (CollectionTypes, map_bounds)
+{
+    //MapType map(StringType(), primitive_type<uint16_t>(), 100);
+    MapType map(primitive_type<uint8_t>(), primitive_type<uint16_t>(), 10);
+
+    DynamicData d(map);
+    EXPECT_EQ(0, d.size());
+    EXPECT_EQ(10, d.bounds());
+
+    //StringType str_type;
+    //DynamicData index(str_type);
+    DynamicData index(primitive_type<uint8_t>());
+    for(uint16_t i = 0; i < 10; ++i)
+    {
+        //index = std::to_string(i);
+        index = uint8_t(i);
+        d[index] = i;
+    }
+
+    EXPECT_EQ(10, d.size());
+
+    for (size_t i = 0; i < d.size(); ++i)
+    {
+        //index = std::to_string(i);
+        index = uint8_t(i);
+        EXPECT_EQ(d[index].value<uint16_t>(), i);
+    }
+
+    // Cannot grow over the bounds
+    ASSERT_OR_EXCEPTION({d.resize(1);}, "only available for sequence");
+    index = uint8_t(100); // The map if full already
+    ASSERT_OR_EXCEPTION({d[index] = 50;}, "Cannot insert new element into map.");
+}
+
+TEST (CollectionTypes, string_key_map)
+{
+    MapType map(StringType(), primitive_type<uint16_t>(), 100);
+
+    DynamicData d(map);
+    EXPECT_EQ(0, d.size());
+    EXPECT_EQ(100, d.bounds());
+
+    StringType str_type;
+    DynamicData index(str_type);
+    for(uint16_t i = 0; i < 10; ++i)
+    {
+        index = std::to_string(i);
+        d[index] = i;
+    }
+
+    EXPECT_EQ(10, d.size());
+
+    for (size_t i = 0; i < d.size(); ++i)
+    {
+        index = std::to_string(i);
+        EXPECT_EQ(d[index].value<uint16_t>(), i);
+    }
+}
+
+TEST (CollectionTypes, string_hash)
+{
+    StringType str;
+    DynamicData str1(str);
+    DynamicData str2(str);
+    DynamicData str3(str);
+    str1 = "Hola";
+    str2 = "Hola";
+    str3 = "Hola_";
+    EXPECT_EQ(str1.hash(), str2.hash());
+    EXPECT_NE(str1.hash(), str3.hash());
+    str3 = "Hola";
+    str2 = "_Hola";
+    EXPECT_NE(str1.hash(), str2.hash());
+    EXPECT_EQ(str1.hash(), str3.hash());
+}
+
+TEST (CollectionTypes, multi_map_struct_key)
+{
+    StructType key_type("KeyStruct");
+    key_type.add_member("st0", StringType());
+    key_type.add_member("st1", primitive_type<uint32_t>());
+
+    MapType simple_map(key_type, primitive_type<uint32_t>(), 5);
+    MapType map_map(key_type, simple_map, 4);
+    MapType map_map_map(key_type, map_map);
+
+    DynamicData data(map_map_map);
+
+    EXPECT_EQ(data.bounds(), 0);
+    EXPECT_EQ(data.size(), 0);
+
+    DynamicData index_1(key_type);
+    DynamicData index_2(key_type);
+    DynamicData index_3(key_type);
+    for (size_t i = 0; i < 3; ++i)
+    {
+        index_1["st0"] = std::to_string(i);
+        index_1["st1"] = uint32_t(i);
+        data[index_1] = DynamicData(map_map);
+        EXPECT_EQ(data[index_1].size(), 0);
+        for (size_t j = 0; j < 4; ++j)
+        {
+            index_2["st0"] = std::to_string(j);
+            index_2["st1"] = uint32_t(j);
+            data[index_1][index_2] = DynamicData(simple_map);
+            EXPECT_EQ(data[index_1][index_2].size(), 0);
+            for (size_t k = 0; k < 5; ++k)
+            {
+                index_3["st0"] = std::to_string(k);
+                index_3["st1"] = uint32_t(k);
+                data[index_1][index_2][index_3] = static_cast<uint32_t>(i + j + k);
+                uint32_t temp = data[index_1][index_2][index_3];
+                EXPECT_EQ(data[index_1][index_2][index_3].value<uint32_t>(), static_cast<uint32_t>(i + j + k));
+                EXPECT_EQ(temp, static_cast<uint32_t>(i + j + k));
+                EXPECT_EQ(data[index_1][index_2].size(), k + 1);
+            }
+            EXPECT_EQ(data[index_1][index_2].bounds(), 5);
+            EXPECT_EQ(data[index_1].size(), j + 1);
+        }
+        EXPECT_EQ(data[index_1].bounds(), 4);
+        EXPECT_EQ(data.size(), i + 1);
+    }
+    EXPECT_EQ(data.bounds(), 0);
 }

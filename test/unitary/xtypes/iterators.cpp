@@ -144,6 +144,41 @@ TEST (Iterators, dynamic_data)
         ASSERT_EQ(check_sum * 2, double_check_sum);
     }
 
+    //SECTION("MapType")
+    {
+        MapType map_type(primitive_type<uint32_t>(), primitive_type<int32_t>());
+        DynamicData map(map_type);
+
+        DynamicData key(primitive_type<uint32_t>());
+        for (uint32_t i = 0; i < 10; ++i)
+        {
+            key = i;
+            map[key] = int32_t(5 * i);
+        }
+
+
+        int32_t check_sum = 0;
+        // The map returns an iterator to its pairs, which doesn't follow the insertion order!
+        for (ReadableDynamicDataRef&& elem : map)
+        {
+            uint32_t check = elem[0];
+            EXPECT_EQ(elem[1].value<int32_t>(), check * 5);
+            check_sum += elem[1].value<int32_t>();
+        }
+
+        for (WritableDynamicDataRef&& elem : map)
+        {
+            elem[1] = elem[1].value<int32_t>() * 2;
+        }
+
+        int32_t double_check_sum = 0;
+        for (ReadableDynamicDataRef&& elem : map)
+        {
+            double_check_sum += elem[1].value<int32_t>();
+        }
+        ASSERT_EQ(check_sum * 2, double_check_sum);
+    }
+
     //SECTION("StructType")
     {
         StructType my_struct("MyStruct");
@@ -230,7 +265,8 @@ TEST (Iterators, for_each_types)
 
     StructType l0 = StructType("Level0")
         .add_member("l0m1", l1)
-        .add_member("l0m2", l2);
+        .add_member("l0m2", l2)
+        .add_member("l0m3", MapType(primitive_type<bool>(), StringType()));
 
     std::vector<std::string> expected_output =
     {
@@ -262,6 +298,10 @@ TEST (Iterators, for_each_types)
         "float",
         "std::string",
         "std::wstring",
+        "map_pair_bool_std::string",
+        "pair_bool_std::string",
+        "bool",
+        "std::string"
     };
 
     size_t i = 0;
@@ -291,7 +331,8 @@ TEST (Iterators, for_each_data)
 
     StructType l0 = StructType("Level0")
         .add_member("l0m1", l1)
-        .add_member("l0m2", l2);
+        .add_member("l0m2", l2)
+        .add_member("l0m3", MapType(primitive_type<uint32_t>(), StringType()));
 
     uint32_t uint_value = 0;
     DynamicData data(l0);
@@ -329,6 +370,11 @@ TEST (Iterators, for_each_data)
     data["l0m2"]["l2m2"] = 12345.f;
     data["l0m2"]["l2m3"] = "l2m3_bis_3";
 
+    DynamicData key(primitive_type<uint32_t>());
+    // As maps alter the internal storage of their elements, we will check only adding one element.
+    key = uint32_t(666);
+    data["l0m3"][key] = "This is a map";
+
     std::vector<std::string> expected_output =
     {
         "0",
@@ -360,6 +406,8 @@ TEST (Iterators, for_each_data)
         "8",
         std::to_string(12345.f),
         "l2m3_bis_3",
+        "666",
+        "This is a map"
     };
 
     size_t i = 0;

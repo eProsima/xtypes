@@ -31,6 +31,7 @@ int main()
     outer.add_member("om9", SequenceType(SequenceType(primitive_type<uint32_t>(), 5), 3));
     outer.add_member("om10", ArrayType(ArrayType(primitive_type<uint32_t>(), 2), 3));
     outer.add_member("om11", abool);
+    outer.add_member("om12", MapType(StringType(), inner));
 
     std::cout << idl::generate(inner) << std::endl;
     std::cout << idl::generate(outer) << std::endl;
@@ -50,6 +51,13 @@ int main()
     data["om7"][1] = 123u;                                 //ArrayType(PrimitiveType<uint32_t>)
     data["om8"][1] = data["om2"];                          //ArrayType(inner)
     data["om11"] = true;                                   //AliasType(PrimitiveType<bool>))
+    StringType str_type;
+    DynamicData map_key(str_type);
+    map_key = "first";
+    data["om12"][map_key] = data["om2"];                   //MapType(StringType(), inner)
+    map_key = "second";
+    data["om12"][map_key]["im1"] = 43u;                    //...
+    data["om12"][map_key]["im2"] = 35.9f;                  //...
 
     std::cout << data.to_string() << std::endl; //See to_string() implementation as an example of data instrospection
 

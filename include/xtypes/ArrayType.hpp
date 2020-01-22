@@ -257,6 +257,29 @@ public:
         return dimension_;
     }
 
+    virtual uint64_t hash(
+            const uint8_t* c_instance) const override
+    {
+        if (dimension_ > 0)
+        {
+            uint8_t* instance = const_cast<uint8_t*>(c_instance);
+            if (content_type().is_constructed_type())
+            {
+                uint64_t h = content_type().hash(instance);
+                for (size_t i = 1; i < dimension_; ++i)
+                {
+                    Instanceable::hash_combine(h, content_type().hash(get_instance_at(instance, i)));
+                }
+                return h;
+            }
+            else
+            {
+                return Instanceable::hash(instance);
+            }
+        }
+        return 0;
+    }
+
 protected:
     virtual DynamicType* clone() const override
     {

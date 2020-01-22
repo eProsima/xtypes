@@ -93,6 +93,19 @@ void check_result(
         ASSERT_EQ(inner_inner_type.content_type().kind(), TypeKind::INT_64_TYPE);
         ASSERT_EQ(inner_inner_type.dimension(), 4);
     }
+    {
+        // map<RootEnum, sequence<int16>> my_map;
+        const Member& member = root_struct.member("my_map");
+        ASSERT_EQ(member.type().kind(), TypeKind::MAP_TYPE);
+        const MapType& inner_type = static_cast<const MapType&>(member.type());
+        const PairType& content_type = static_cast<const PairType&>(inner_type.content_type());
+        ASSERT_EQ(content_type.first().kind(), TypeKind::ENUMERATION_TYPE);
+        ASSERT_EQ(content_type.first().name(), "RootEnum");
+        ASSERT_EQ(content_type.second().kind(), TypeKind::SEQUENCE_TYPE);
+        const SequenceType& seq_type = static_cast<const SequenceType&>(content_type.second());
+        ASSERT_EQ(seq_type.content_type().kind(), TypeKind::INT_16_TYPE);
+        ASSERT_EQ(seq_type.bounds(), 0);
+    }
 
     ASSERT_TRUE(root.has_submodule("ModuleA"));
     const Module& mod_A = root["ModuleA"];
@@ -177,6 +190,7 @@ TEST (IDLGenerator, roundtrip)
             string my_string_array[VALUE_4];
             sequence<sequence<boolean, 5>, 3> my_nested_bool_seq5_3;
             int64 my_int64_nested_array[5][4];
+            map<RootEnum, sequence<int16>> my_map;
         };
 
         module ModuleA
