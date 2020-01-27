@@ -1311,7 +1311,6 @@ TEST (IDLParser, map_tests)
 
     DynamicData key_data(my_key);
     DynamicData enum_data(my_enum);
-
     // Set values
     map_1_key = uint32_t(55);
     data["map_1"][map_1_key] = "This is a simple map";
@@ -1381,7 +1380,6 @@ TEST (IDLParser, map_tests)
     map_6_key = "OuterMapKey_2";
     map_6_inner_key = 666u;
     EXPECT_EQ(data["map_6"][map_6_key][map_6_inner_key].value<std::string>(), "I'm a map of maps, but infernal!");
-
 }
 
 int main(int argc, char** argv)

@@ -501,6 +501,16 @@ TEST (CollectionTypes, wstring)
     EXPECT_EQ(dt.size(), 10);
 }
 
+TEST (CollectionTypes, DISABLED_map_asserts_NO_MEMORY_CHECK)
+{
+    MapType m10_1(primitive_type<uint32_t>(), primitive_type<uint16_t>(), 10);
+    MapType m10_3(StringType(), primitive_type<uint16_t>(), 10);
+    MapType m20_1(primitive_type<bool>(), primitive_type<uint16_t>(), 20);
+    DynamicData d(m10_1);
+    ASSERT_OR_EXCEPTION({DynamicData fails(d, m20_1);}, "Cannot copy data from different types");
+    ASSERT_OR_EXCEPTION({DynamicData fails(d, m10_3);}, "Incompatible types");
+}
+
 TEST (CollectionTypes, map)
 {
     MapType m10_1(primitive_type<uint32_t>(), primitive_type<uint16_t>(), 10);
@@ -531,8 +541,6 @@ TEST (CollectionTypes, map)
     EXPECT_EQ(10, d.size());
     EXPECT_EQ(10, d.bounds());
 
-    ASSERT_OR_EXCEPTION({DynamicData fails(d, m20_1);}, "Cannot copy data from different types");
-
     DynamicData dd(d, m20_2);
     EXPECT_EQ(10, dd.size());
     EXPECT_EQ(20, dd.bounds());
@@ -545,8 +553,6 @@ TEST (CollectionTypes, map)
     EXPECT_EQ(10, dddd.size());
     EXPECT_EQ(0, dddd.bounds());
     EXPECT_FALSE(dddd != d);
-
-    ASSERT_OR_EXCEPTION({DynamicData fails(d, m10_3);}, "Incompatible types");
 
     for (size_t idx = 0; idx < d.size(); ++idx)
     {
@@ -637,7 +643,7 @@ TEST (CollectionTypes, string_hash)
     EXPECT_EQ(str1.hash(), str3.hash());
 }
 
-TEST (CollectionTypes, multi_map_struct_key)
+TEST (CollectionTypes, multi_map_map_struct_key)
 {
     StructType key_type("KeyStruct");
     key_type.add_member("st0", StringType());
@@ -684,4 +690,104 @@ TEST (CollectionTypes, multi_map_struct_key)
         EXPECT_EQ(data.size(), i + 1);
     }
     EXPECT_EQ(data.bounds(), 0);
+}
+
+TEST (CollectionTypes, multi_map_struct_key)
+{
+    StructType key_type("KeyStruct");
+    key_type.add_member("st0", primitive_type<float>());
+    key_type.add_member("st1", primitive_type<uint32_t>());
+
+    MapType simple_map(key_type, primitive_type<uint32_t>(), 5);
+    MapType map_map(key_type, simple_map, 4);
+
+    DynamicData data(map_map);
+
+    EXPECT_EQ(data.bounds(), 4);
+    EXPECT_EQ(data.size(), 0);
+
+    DynamicData index_2(key_type);
+    DynamicData index_3(key_type);
+    for (size_t j = 0; j < 4; ++j)
+    {
+        index_2["st0"] = float(j);
+        index_2["st1"] = uint32_t(j);
+        data[index_2] = DynamicData(simple_map);
+        EXPECT_EQ(data[index_2].size(), 0);
+        for (size_t k = 0; k < 5; ++k)
+        {
+            index_3["st0"] = float(k);
+            index_3["st1"] = uint32_t(k);
+            data[index_2][index_3] = static_cast<uint32_t>(j + k);
+            uint32_t temp = data[index_2][index_3];
+            EXPECT_EQ(data[index_2][index_3].value<uint32_t>(), static_cast<uint32_t>(j + k));
+            EXPECT_EQ(temp, static_cast<uint32_t>(j + k));
+            EXPECT_EQ(data[index_2].size(), k + 1);
+        }
+        EXPECT_EQ(data[index_2].bounds(), 5);
+        EXPECT_EQ(data.size(), j + 1);
+    }
+}
+
+TEST (CollectionTypes, multi_map_simple_key)
+{
+    const DynamicType& key_type = primitive_type<int32_t>();
+
+    MapType simple_map(key_type, primitive_type<uint32_t>(), 5);
+    MapType map_map(key_type, simple_map, 4);
+
+    DynamicData data(map_map);
+
+    EXPECT_EQ(data.bounds(), 4);
+    EXPECT_EQ(data.size(), 0);
+
+    DynamicData index_2(key_type);
+    DynamicData index_3(key_type);
+    for (size_t j = 0; j < 4; ++j)
+    {
+        index_2 = int32_t(j);
+        data[index_2] = DynamicData(simple_map);
+        EXPECT_EQ(data[index_2].size(), 0);
+        for (size_t k = 0; k < 5; ++k)
+        {
+            index_3 = int32_t(k);
+            data[index_2][index_3] = static_cast<uint32_t>(j + k);
+            uint32_t temp = data[index_2][index_3];
+            EXPECT_EQ(data[index_2][index_3].value<uint32_t>(), static_cast<uint32_t>(j + k));
+            EXPECT_EQ(temp, static_cast<uint32_t>(j + k));
+            EXPECT_EQ(data[index_2].size(), k + 1);
+        }
+        EXPECT_EQ(data[index_2].bounds(), 5);
+        EXPECT_EQ(data.size(), j + 1);
+    }
+}
+
+TEST (CollectionTypes, map_struct_key)
+{
+    StructType key_type("KeyStruct");
+    key_type.add_member("st0", primitive_type<float>());
+    key_type.add_member("st1", primitive_type<uint32_t>());
+
+    MapType simple_map(key_type, primitive_type<uint32_t>(), 3);
+
+    DynamicData data(simple_map);
+
+    EXPECT_EQ(data.bounds(), 3);
+    EXPECT_EQ(data.size(), 0);
+
+    DynamicData index(key_type);
+    for (size_t i = 0; i < 3; ++i)
+    {
+        index["st0"] = float(i);
+        index["st1"] = uint32_t(i);
+        data[index] = uint32_t(i + 2);
+        EXPECT_EQ(data.size(), i + 1);
+    }
+
+    for (size_t i = 0; i < 3; ++i)
+    {
+        index["st0"] = float(i);
+        index["st1"] = uint32_t(i);
+        EXPECT_EQ(data[index].value<uint32_t>(), uint32_t(i + 2));
+    }
 }

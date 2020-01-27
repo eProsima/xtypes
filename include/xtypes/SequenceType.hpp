@@ -94,6 +94,7 @@ public:
             uint8_t* target,
             uint8_t* source) const override
     {
+        destroy_instance(target);
         new (target) SequenceInstance(std::move(*reinterpret_cast<const SequenceInstance*>(source)));
     }
 
@@ -177,7 +178,7 @@ public:
     {
         if(get_instance_size(instance) < bounds() || bounds() == 0)
         {
-            return reinterpret_cast<SequenceInstance*>(instance)->push(value);
+            return reinterpret_cast<SequenceInstance*>(instance)->push(value, bounds());
         }
         return nullptr;
     }
@@ -190,7 +191,7 @@ public:
             uint8_t* instance,
             size_t size) const
     {
-        reinterpret_cast<SequenceInstance*>(instance)->resize(size);
+        reinterpret_cast<SequenceInstance*>(instance)->resize(size, bounds());
     }
 
     virtual uint64_t hash(

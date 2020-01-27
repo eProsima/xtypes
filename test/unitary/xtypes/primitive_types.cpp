@@ -148,7 +148,7 @@ TEST (PrimitiveTypes, primitive_type_double)
     assignCheck<double>(DOUBLE);
 }
 
-TEST (PrimitiveTypes, primitive_type_longdouble)
+TEST (PrimitiveTypes, DISABLED_primitive_type_longdouble)
 {
     EXPECT_TRUE(singleCheck<long double>(5.55e1200l, 5.55e1200l));
     EXPECT_FALSE(singleCheck<long double>(5.550000001e1200l, 5.55e1200l));

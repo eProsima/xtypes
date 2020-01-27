@@ -66,6 +66,10 @@ public:
     bool operator == (
             const ReadableDynamicDataRef& other) const
     {
+        if (type_.kind() == TypeKind::ARRAY_TYPE)
+        {
+            return type_.name() == other.type().name() && type_.compare_instance(instance_, other.instance_);
+        }
         return type_.compare_instance(instance_, other.instance_);
     }
 
@@ -1141,6 +1145,7 @@ public:
             const DynamicType& type)
         : WritableDynamicDataRef(type, new uint8_t[type.memory_size()])
     {
+        memset(instance_, 0, type.memory_size());
         type_.construct_instance(instance_);
     }
 
@@ -1160,7 +1165,7 @@ public:
 
     /// \brief Construct a DynamicData from another DynamicData with a compatible type.
     /// (see DynamicType::is_compatible())
-    /// \param[in] other A compatible DynamicData from which de data will be copies.
+    /// \param[in] other A compatible DynamicData from which de data will be copied.
     /// \param[in] type DynamicType from which the DynamicData is created.
     DynamicData(
             const ReadableDynamicDataRef& other,
@@ -1169,7 +1174,8 @@ public:
     {
         xtypes_assert(type_.is_compatible(other.type()) != TypeConsistency::NONE,
             "Incompatible types in DynamicData(const ReadableDynamicDataRef&, const DynamicType&): '"
-            << type_.name() << "' isn't compatible with '" << other.type().name() << "'.");
+              << type_.name() << "' isn't compatible with '" << other.type().name() << "'.");
+        memset(instance_, 0, type.memory_size());
         type_.copy_instance_from_type(instance_, p_instance(other), other.type());
     }
 
@@ -1177,6 +1183,7 @@ public:
     DynamicData(const DynamicData& other)
         : WritableDynamicDataRef(other.type_, new uint8_t[other.type_.memory_size()])
     {
+        memset(instance_, 0, other.type().memory_size());
         type_.copy_instance(instance_, p_instance(other));
     }
 
@@ -1184,6 +1191,7 @@ public:
     DynamicData(DynamicData&& other)
         : WritableDynamicDataRef(other.type_, new uint8_t[other.type_.memory_size()])
     {
+        memset(instance_, 0, other.type().memory_size());
         type_.move_instance(instance_, p_instance(other));
     }
 
