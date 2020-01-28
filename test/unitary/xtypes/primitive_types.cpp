@@ -28,7 +28,6 @@ static const int64_t INT64          = -9223372036854775800;
 static const uint64_t UINT64        = 18446744073709551610ULL;
 static const float FLOAT            = 3.1415927410125732421875f;
 static const double DOUBLE          = 3.1415926535897931159979631875;
-static const long double LDOUBLE    = 3.14159265358979321159979631875l;
 static const char CHAR              = 'f';
 static const wchar_t WCHAR          = 34590;
 
@@ -148,12 +147,7 @@ TEST (PrimitiveTypes, primitive_type_double)
     assignCheck<double>(DOUBLE);
 }
 
-TEST (PrimitiveTypes, DISABLED_primitive_type_longdouble)
-{
-    EXPECT_TRUE(singleCheck<long double>(5.55e1200l, 5.55e1200l));
-    EXPECT_FALSE(singleCheck<long double>(5.550000001e1200l, 5.55e1200l));
-    assignCheck<long double>(LDOUBLE);
-}
+// TEST (PrimitiveTypes, primitive_type_longdouble) moved to no_memcheck_tests.cpp
 
 TEST (PrimitiveTypes, primitive_type_char)
 {

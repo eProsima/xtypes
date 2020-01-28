@@ -68,6 +68,8 @@ public:
     {
         if (type_.kind() == TypeKind::ARRAY_TYPE)
         {
+            // If the data is Array, a fast way to discard equality is that the content or size of the array
+            // is different. We can check both without casting the type by comparing the type (array) name.
             return type_.name() == other.type().name() && type_.compare_instance(instance_, other.instance_);
         }
         return type_.compare_instance(instance_, other.instance_);

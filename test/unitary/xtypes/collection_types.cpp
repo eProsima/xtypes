@@ -501,15 +501,7 @@ TEST (CollectionTypes, wstring)
     EXPECT_EQ(dt.size(), 10);
 }
 
-TEST (CollectionTypes, DISABLED_map_asserts_NO_MEMORY_CHECK)
-{
-    MapType m10_1(primitive_type<uint32_t>(), primitive_type<uint16_t>(), 10);
-    MapType m10_3(StringType(), primitive_type<uint16_t>(), 10);
-    MapType m20_1(primitive_type<bool>(), primitive_type<uint16_t>(), 20);
-    DynamicData d(m10_1);
-    ASSERT_OR_EXCEPTION({DynamicData fails(d, m20_1);}, "Cannot copy data from different types");
-    ASSERT_OR_EXCEPTION({DynamicData fails(d, m10_3);}, "Incompatible types");
-}
+// TEST (CollectionTypes, map_asserts) moved to no_memcheck_tests.cpp
 
 TEST (CollectionTypes, map)
 {
