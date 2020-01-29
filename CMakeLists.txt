@@ -124,9 +124,16 @@ if(XTYPES_BUILD_TESTS)
         test/unitary/xtypes/alias_type.cpp
         )
 
+    compile_test(${PROJECT_NAME}_test_unitary_no_memcheck SOURCE
+        test/unitary/xtypes/main.cpp
+        test/unitary/xtypes/no_memcheck_tests.cpp)
+
     compile_test(${PROJECT_NAME}_idl_parser_test_unitary SOURCE test/unitary/parser/parser_test.cpp)
     compile_test(${PROJECT_NAME}_idl_parser_roundtrip SOURCE test/unitary/parser/roundtrip.cpp)
     # ...
+
+    # Set test with label NoMemoryCheck
+    set_property(TEST ${PROJECT_NAME}_test_unitary_no_memcheck PROPERTY LABELS "NoMemoryCheck")
 
     # Copy IDL files
     configure_file(

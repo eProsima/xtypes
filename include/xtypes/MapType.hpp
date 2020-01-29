@@ -93,15 +93,14 @@ public:
                 && content_type().name() == static_cast<const MapType&>(other).content_type().name(),
             "Cannot copy data from different types: From '" << other.name() << "' to '" << name() << "'.");
         (void) other;
-        new (target) MapInstance(
-            *reinterpret_cast<const MapInstance*>(source),
-            bounds());
+        new (target) MapInstance(*reinterpret_cast<const MapInstance*>(source), bounds());
     }
 
     virtual void move_instance(
             uint8_t* target,
             uint8_t* source) const override
     {
+        destroy_instance(target);
         new (target) MapInstance(std::move(*reinterpret_cast<const MapInstance*>(source)));
     }
 
@@ -192,7 +191,7 @@ public:
     {
         if(get_instance_size(instance) < bounds() || bounds() == 0)
         {
-            return reinterpret_cast<MapInstance*>(instance)->insert(key_instance);
+            return reinterpret_cast<MapInstance*>(instance)->insert(key_instance, bounds());
         }
         return nullptr;
     }

@@ -39,21 +39,23 @@ public:
         : content_(content)
         , block_size_(content.memory_size())
         , capacity_(capacity)
-        , memory_(capacity > 0 ? new uint8_t[capacity * block_size_] : nullptr)
         , size_(0)
-    {}
+    {
+        init_memory(memory_, capacity_);
+    }
 
     SequenceInstance(
             const SequenceInstance& other)
         : content_(other.content_)
         , block_size_(other.block_size_)
         , capacity_(other.capacity_)
-        , memory_(capacity_ > 0 ? new uint8_t[capacity_ * block_size_] : nullptr)
         , size_(other.size_)
     {
+        init_memory(memory_, capacity_);
+
         if(memory_ != nullptr)
         {
-            copy_content(memory_, other.memory_);
+            copy_content(other, size_);
         }
     }
 
@@ -69,12 +71,13 @@ public:
         : content_(content)
         , block_size_(content.memory_size())
         , capacity_(bounds == 0 ? other.capacity_ : std::min(other.capacity_, bounds))
-        , memory_(capacity_ > 0 ? new uint8_t[capacity_ * block_size_] : nullptr)
         , size_(bounds == 0 ? other.size_ : std::min(other.size_, bounds))
     {
+        init_memory(memory_, capacity_);
+
         if(memory_ != nullptr)
         {
-            copy_content_from_type(memory_, other.memory_, other.content_);
+            copy_content(other, size_);
         }
     }
 
@@ -115,20 +118,7 @@ public:
 
     virtual ~SequenceInstance()
     {
-        if(memory_ != nullptr)
-        {
-            if(content_.is_constructed_type())
-            {
-                uint32_t block_size = block_size_;
-                for(int32_t i = size_ - 1; i >= 0; i--)
-                {
-                    content_.destroy_instance(memory_ + i * block_size);
-                }
-            }
-
-            delete[] memory_;
-            memory_ = nullptr;
-        }
+        free_memory();
     }
 
     /// \brief Push a instance into the sequence
@@ -136,11 +126,12 @@ public:
     /// \param[in] instance Instance to push into the sequence.
     /// \returns Returns the location of the new instance added.
     uint8_t* push(
-            const uint8_t* instance)
+            const uint8_t* instance,
+            uint32_t bounds)
     {
-        if(size_ == capacity_)
+        if(memory_ == nullptr || size_ == capacity_)
         {
-            realloc((capacity_ > 0) ? capacity_ * 2 : 1);
+            realloc((capacity_ > 0) ? capacity_ * 2 : 1, bounds);
         }
 
         uint8_t* place = memory_ + size_ * block_size_;
@@ -155,14 +146,15 @@ public:
     /// If the new size is equal or less than the current size, nothing happens.
     /// \param[in] new_size New sequence size.
     void resize(
-            size_t new_size)
+            size_t new_size,
+            uint32_t bounds)
     {
         if(size_ >= new_size)
         {
             return;
         }
 
-        realloc(new_size);
+        realloc(new_size, bounds);
 
         for(size_t i = size_; i < new_size; i++)
         {
@@ -189,78 +181,131 @@ public:
     uint32_t size() const { return size_; }
 
 private:
+    friend class SequenceType;
+
     const DynamicType& content_;
     uint32_t block_size_;
     uint32_t capacity_;
     uint8_t* memory_;
     uint32_t size_;
 
-    void realloc(size_t new_capacity)
+    void realloc(
+            size_t desired_capacity,
+            uint32_t bounds)
     {
-        uint8_t* new_memory = new uint8_t[new_capacity * block_size_];
+        size_t new_capacity = bounds == 0 ? desired_capacity : std::min(desired_capacity, size_t(bounds));
+        uint8_t* new_memory = nullptr;
+        init_memory(new_memory, new_capacity);
 
         move_content(new_memory, memory_);
 
-        delete[] memory_;
+        free_memory();
         memory_ = new_memory;
         capacity_ = new_capacity;
     }
 
-    void copy_content(
-            uint8_t* target,
-            const uint8_t* source) const
+    void init_memory(
+            uint8_t*& memory,
+            uint32_t size)
     {
-        if(content_.is_constructed_type())
+        if (memory == nullptr || size != capacity_)
         {
-            for(uint32_t i = 0; i < size_; i++)
+            if (memory != nullptr)
             {
-                content_.copy_instance(target + i * block_size_, source + i * block_size_);
+                free_memory();
             }
-        }
-        else //optimization when the type is primitive
-        {
-            std::memcpy(target, source, size_ * block_size_);
+            memory = size > 0 ? new uint8_t[size * block_size_] : nullptr;
+            if (memory != nullptr)
+            {
+                memset(memory, 0, size * block_size_);
+                for (uint32_t idx = 0; idx < size; ++idx)
+                {
+                    content_.construct_instance(memory + idx * block_size_);
+                }
+            }
         }
     }
 
-    void copy_content_from_type(
-            uint8_t* target,
-            const uint8_t* source,
-            const DynamicType& other_content) const
+    void copy_content(
+            const SequenceInstance& other,
+            uint32_t bounds)
     {
-        size_t other_block_size = other_content.memory_size();
+        size_t other_block_size = other.content_.memory_size();
+
+        // Check bytes to copy
+        uint32_t min_capacity = std::min(capacity_, other.capacity_);
+        if (min_capacity == 0)
+        {
+            min_capacity = std::max(capacity_, other.capacity_);
+        }
+        uint32_t min_size = min_capacity == 0 ? other.size_ : std::min(min_capacity, other.size_);
+
+        if (bounds != 0)
+        {
+            // Keep in mind our bounds
+            min_size = std::min(min_size, bounds);
+        }
+
+        if (memory_ == nullptr || // Unbounded sequences could reach this point without reserving memory yet.
+                min_size > capacity_)
+        {
+            realloc(min_size, bounds);
+        }
+
         if(content_.is_constructed_type() || block_size_ != other_block_size)
         {
-            for(uint32_t i = 0; i < size_; i++)
+            for(uint32_t i = 0; i < min_size; i++)
             {
                 content_.copy_instance_from_type(
-                        target + i * block_size_,
-                        source + i * other_block_size,
-                        other_content);
+                        memory_ + i * block_size_,
+                        other.memory_ + i * other_block_size,
+                        other.content_);
             }
         }
         else //optimization when the type is primitive with same block_size
         {
-            std::memcpy(target, source, size_ * block_size_);
+            std::memcpy(memory_, other.memory_, min_size * block_size_);
         }
+        size_ = min_size;
     }
 
     void move_content(
             uint8_t* target,
             uint8_t* source)
     {
-        if(content_.is_constructed_type())
+        if (source != nullptr)
         {
-            for(uint32_t i = 0; i < size_; i++)
+            if(content_.is_constructed_type())
             {
-                content_.move_instance(target + i * block_size_, source + i * block_size_);
+                for(uint32_t i = 0; i < size_; i++)
+                {
+                    content_.move_instance(target + i * block_size_, source + i * block_size_);
+                }
+            }
+            else //optimization when the type is primitive
+            {
+                std::memmove(target, source, size_ * block_size_);
             }
         }
-        else //optimization when the type is primitive
+    }
+
+    void free_memory()
+    {
+        if(memory_ != nullptr)
         {
-            std::memcpy(target, source, size_ * block_size_);
+            if(content_.is_constructed_type())
+            {
+                for(int32_t i = capacity_ - 1; i >= 0; i--)
+                {
+                    content_.destroy_instance(memory_ + i * block_size_);
+                }
+            }
+
+            delete[] memory_;
+            memory_ = nullptr;
         }
     }
+
 };
 
 } //namespace xtypes

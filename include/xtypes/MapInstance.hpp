@@ -39,21 +39,23 @@ public:
         : content_(content)
         , block_size_(content.memory_size())
         , capacity_(capacity)
-        , memory_(capacity > 0 ? new uint8_t[capacity * block_size_] : nullptr)
         , size_(0)
-    {}
+    {
+        init_memory(memory_, capacity_);
+    }
 
     MapInstance(
             const MapInstance& other)
         : content_(other.content_)
         , block_size_(other.block_size_)
         , capacity_(other.capacity_)
-        , memory_(capacity_ > 0 ? new uint8_t[capacity_ * block_size_] : nullptr)
         , size_(other.size_)
     {
+        init_memory(memory_, capacity_);
+
         if(memory_ != nullptr)
         {
-            copy_content(memory_, other.memory_);
+            copy_content(other, size_);
         }
     }
 
@@ -67,12 +69,13 @@ public:
         : content_(other.content_)
         , block_size_(content_.memory_size())
         , capacity_(bounds == 0 ? other.capacity_ : std::min(other.capacity_, bounds))
-        , memory_(capacity_ > 0 ? new uint8_t[capacity_ * block_size_] : nullptr)
         , size_(bounds == 0 ? other.size_ : std::min(other.size_, bounds))
     {
+        init_memory(memory_, capacity_);
+
         if(memory_ != nullptr)
         {
-            copy_content_from_type(memory_, other.memory_, other.content_);
+            copy_content(other, size_);
         }
     }
 
@@ -113,20 +116,7 @@ public:
 
     virtual ~MapInstance()
     {
-        if(memory_ != nullptr)
-        {
-            if(content_.is_constructed_type())
-            {
-                uint32_t block_size = block_size_;
-                for(int32_t i = size_ - 1; i >= 0; i--)
-                {
-                    content_.destroy_instance(memory_ + i * block_size);
-                }
-            }
-
-            delete[] memory_;
-            memory_ = nullptr;
-        }
+        free_memory();
     }
 
     /// \brief Inserts a key instance into the map, allocating the needed space.
@@ -135,16 +125,16 @@ public:
     /// \param[in] instance Instance of the pair to insert into the map.
     /// \returns Returns the location of the new instance added.
     uint8_t* insert(
-            const uint8_t* instance)
+            const uint8_t* instance,
+            uint32_t bounds)
     {
-        if(size_ == capacity_)
+        if(memory_ == nullptr || size_ == capacity_)
         {
-            realloc((capacity_ > 0) ? capacity_ * 2 : 1);
+            realloc((capacity_ > 0) ? capacity_ * 2 : 1, bounds);
         }
 
         uint8_t* place = create_place(instance);
         content_.first().copy_instance(place, instance); // Only copies the key
-        content_.second().construct_instance(place + content_.first().memory_size()); // Initializes the value
 
         size_++;
 
@@ -201,64 +191,96 @@ public:
     }
 
 private:
+    friend class MapType;
+
     const PairType& content_;
     uint32_t block_size_;
     uint32_t capacity_;
     uint8_t* memory_;
     uint32_t size_;
 
-    void realloc(size_t new_capacity)
+    void realloc(
+            size_t desired_capacity,
+            uint32_t bounds)
     {
-        uint8_t* new_memory = new uint8_t[new_capacity * block_size_];
+        size_t new_capacity = bounds == 0 ? desired_capacity : std::min(desired_capacity, size_t(bounds));
+        uint8_t* new_memory = nullptr;
+        init_memory(new_memory, new_capacity);
 
-        move_content(new_memory, memory_);
+        move_content(new_memory, memory_, true);
 
-        delete[] memory_;
+        free_memory();
         memory_ = new_memory;
         capacity_ = new_capacity;
     }
 
-    void copy_content(
-            uint8_t* target,
-            const uint8_t* source) const
+    void init_memory(
+            uint8_t*& memory,
+            uint32_t size)
     {
-        if(content_.is_constructed_type())
+        if (memory == nullptr || size != capacity_)
         {
-            for(uint32_t i = 0; i < size_; i++)
+            if (memory != nullptr)
             {
-                content_.copy_instance(target + i * block_size_, source + i * block_size_);
+                free_memory();
             }
-        }
-        else //optimization when the type is primitive
-        {
-            std::memcpy(target, source, size_ * block_size_);
+            memory = size > 0 ? new uint8_t[size * block_size_] : nullptr;
+            if (memory != nullptr)
+            {
+                memset(memory, 0, size * block_size_);
+                for (uint32_t idx = 0; idx < size; ++idx)
+                {
+                    content_.construct_instance(memory + idx * block_size_);
+                }
+            }
         }
     }
 
-    void copy_content_from_type(
-            uint8_t* target,
-            const uint8_t* source,
-            const PairType& other_content) const
+    void copy_content(
+            const MapInstance& other,
+            uint32_t bounds)
     {
-        size_t other_first_size = other_content.first().memory_size();
-        size_t other_second_size = other_content.second().memory_size();
+        size_t other_first_size = other.content_.first().memory_size();
+        size_t other_second_size = other.content_.second().memory_size();
+
+        // Check bytes to copy
+        uint32_t min_capacity = std::min(capacity_, other.capacity_);
+        if (min_capacity == 0)
+        {
+            min_capacity = std::max(capacity_, other.capacity_);
+        }
+        uint32_t min_size = min_capacity == 0 ? other.size_ : std::min(min_capacity, other.size_);
+
+        if (bounds != 0)
+        {
+            // Keep in mind our bounds
+            min_size = std::min(min_size, bounds);
+        }
+
+        if (memory_ == nullptr || // Unbounded maps could reach this point without reserving memory yet.
+                min_size > capacity_)
+        {
+            realloc(min_size, bounds);
+        }
+
         if(content_.first().is_constructed_type()
             || content_.second().is_constructed_type()
             || content_.first().memory_size() != other_first_size
             || content_.second().memory_size() != other_second_size)
         {
-            for(uint32_t i = 0; i < size_; i++)
+            for(uint32_t i = 0; i < min_size; i++)
             {
                 content_.copy_instance_from_type(
-                        target + i * block_size_,
-                        source + i * other_content.memory_size(),
-                        other_content);
+                        memory_ + i * block_size_,
+                        other.memory_ + i * other.content_.memory_size(),
+                        other.content_);
             }
         }
         else //optimization when the pair are both primitive with same size
         {
-            std::memcpy(target, source, size_ * block_size_);
+            std::memcpy(memory_, other.memory_, min_size * block_size_);
         }
+        size_ = min_size;
     }
 
     void move_content(
@@ -266,29 +288,32 @@ private:
             uint8_t* source,
             bool overlap = false)
     {
-        if(content_.first().is_constructed_type() || content_.second().is_constructed_type())
+        if (source != nullptr)
         {
-            if (overlap && check_overlap(target, source))
+            if(content_.first().is_constructed_type() || content_.second().is_constructed_type())
             {
-                // Creating a place
-                uint32_t to_move = size_ - get_key_index(source);
-                for(uint32_t i = to_move; i > 0; --i)
+                if (overlap && check_overlap(target, source))
                 {
-                    content_.move_instance(target + (i - 1) * block_size_, source + (i - 1) * block_size_);
+                    // Creating a place
+                    uint32_t to_move = size_ - get_key_index(source);
+                    for(uint32_t i = to_move; i > 0; --i)
+                    {
+                        content_.move_instance(target + (i - 1) * block_size_, source + (i - 1) * block_size_);
+                    }
+                }
+                else
+                {
+                    // Moving full memory
+                    for(uint32_t i = 0; i < size_; ++i)
+                    {
+                        content_.move_instance(target + i * block_size_, source + i * block_size_);
+                    }
                 }
             }
-            else
+            else //optimization when the pair are both primitive
             {
-                // Moving full memory
-                for(uint32_t i = 0; i < size_; ++i)
-                {
-                    content_.move_instance(target + i * block_size_, source + i * block_size_);
-                }
+                std::memmove(target, source, (size_ - get_key_index(source)) * block_size_);
             }
-        }
-        else //optimization when the pair are both primitive
-        {
-            std::memmove(target, source, (size_ - get_key_index(source)) * block_size_);
         }
     }
 
@@ -297,7 +322,7 @@ private:
             const uint8_t* source) const
     {
         uint8_t* end = get_element(size_);
-        return source >= memory_ && target > source && end > target; // target and source are inside the block of memory
+        return source >= memory_ && target > source && end >= target; // target and source are inside the block of memory
     }
 
     uint8_t* create_place(
@@ -409,6 +434,23 @@ private:
             const uint8_t* instance) const
     {
         return content_.first().hash(instance);
+    }
+
+    void free_memory()
+    {
+        if(memory_ != nullptr)
+        {
+            if(content_.is_constructed_type())
+            {
+                for(int32_t i = capacity_ - 1; i >= 0; i--)
+                {
+                    content_.destroy_instance(memory_ + i * block_size_);
+                }
+            }
+
+            delete[] memory_;
+            memory_ = nullptr;
+        }
     }
 
 };
