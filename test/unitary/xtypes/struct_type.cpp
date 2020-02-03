@@ -444,3 +444,52 @@ TEST (StructType, simple_string_sequence_struct)
     the_data["seq"].push(dstr);
     EXPECT_EQ("all_this_stuff", the_data["seq"][0].value<std::string>());
 }
+
+TEST (StructType, inheritance)
+{
+    StructType parent("ParentStruct");
+    parent.add_member(Member("seq", SequenceType(StringType())));
+    parent.add_member(Member("int", primitive_type<int32_t>()));
+
+    StructType my_struct("MyStruct", &parent);
+    my_struct.add_member(Member("str", StringType()));
+
+    EXPECT_TRUE(my_struct.has_parent());
+    EXPECT_EQ(my_struct.parent().name(), "ParentStruct");
+    EXPECT_TRUE(my_struct.has_member("seq"));
+    EXPECT_TRUE(my_struct.has_member("int"));
+    EXPECT_TRUE(my_struct.has_member("str"));
+    EXPECT_EQ(my_struct.member(0).name(), "seq");
+    EXPECT_EQ(my_struct.member(1).name(), "int");
+    EXPECT_EQ(my_struct.member(2).name(), "str");
+
+    StringType str;
+    DynamicData dstr(str);
+    dstr = "This is a string!";
+    DynamicData data(my_struct);
+    data["seq"].push(dstr);
+    data["int"] = int32_t(786);
+    data["str"] = "Hey!";
+
+    EXPECT_EQ(data["seq"][0].value<std::string>(), "This is a string!");
+    EXPECT_EQ(data["int"].value<int32_t>(), 786);
+    EXPECT_EQ(data["str"].value<std::string>(), "Hey!");
+
+    StructType son("SonStruct", &my_struct);
+    son.add_member(Member("grandparent", parent));
+
+    EXPECT_TRUE(son.has_parent());
+    EXPECT_EQ(son.parent().name(), "MyStruct");
+    EXPECT_TRUE(son.has_member("seq"));
+    EXPECT_TRUE(son.has_member("int"));
+    EXPECT_TRUE(son.has_member("str"));
+    EXPECT_TRUE(son.has_member("grandparent"));
+    EXPECT_EQ(son.member(0).name(), "seq");
+    EXPECT_EQ(son.member(1).name(), "int");
+    EXPECT_EQ(son.member(2).name(), "str");
+    EXPECT_EQ(son.member(3).name(), "grandparent");
+    EXPECT_EQ(son.member(3).type().name(), "ParentStruct");
+    EXPECT_EQ(son.member(3).type().kind(), TypeKind::STRUCTURE_TYPE);
+
+
+}

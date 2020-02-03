@@ -1382,6 +1382,39 @@ TEST (IDLParser, map_tests)
     EXPECT_EQ(data["map_6"][map_6_key][map_6_inner_key].value<std::string>(), "I'm a map of maps, but infernal!");
 }
 
+TEST (IDLParser, struct_inheritance)
+{
+    Context context = parse(R"(
+        struct ParentStruct
+        {
+            string my_str;
+            uint32 my_uint;
+        };
+
+        struct ChildStruct : ParentStruct
+        {
+            string my_child_str;
+        };
+                   )");
+
+    std::map<std::string, DynamicType::Ptr> result = context.get_all_types();
+    EXPECT_EQ(2, result.size());
+
+    const StructType* my_struct = static_cast<const StructType*>(result["ChildStruct"].get());
+
+    ASSERT_TRUE(my_struct->has_parent());
+    ASSERT_EQ(my_struct->parent().name(), "ParentStruct");
+
+    DynamicData data(*my_struct);
+
+    data["my_str"] = "I'm parent's string.";
+    data["my_uint"] = 765u;
+    data["my_child_str"] = "I'm child's string.";
+    ASSERT_EQ(data["my_str"].value<std::string>(), "I'm parent's string.");
+    ASSERT_EQ(data["my_uint"].value<uint32_t>(), 765);
+    ASSERT_EQ(data["my_child_str"].value<std::string>(), "I'm child's string.");
+}
+
 int main(int argc, char** argv)
 {
     testing::InitGoogleTest(&argc, argv);

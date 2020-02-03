@@ -64,12 +64,35 @@ public:
         return members_[indexes_.at(name)];
     }
 
+    /// \brief Check for a parent existence.
+    /// \returns true if found.
+    bool has_parent() const { return parent_.get() != nullptr; }
+
+    /// \brief Get the parent.
+    /// \pre has_parent()
+    /// \returns The parent type.
+    const AggregationType& parent() const
+    {
+        xtypes_assert(has_parent(),
+            "Called 'parent()' from a type without parent. Call 'has_parent()' to ensure that the "
+            << "type has parent.");
+        return static_cast<const AggregationType&>(*parent_);
+    }
+
 protected:
+    DynamicType::Ptr parent_;
+
     AggregationType(
             TypeKind kind,
-            const std::string& name)
+            const std::string& name,
+            const AggregationType* p= nullptr)
         : DynamicType(kind, name)
-    {}
+    {
+        if (p != nullptr)
+        {
+            parent(*p);
+        }
+    }
 
     /// \brief Insert a member into the aggregation.
     /// \param[in] member Member to add.
@@ -82,6 +105,26 @@ protected:
         indexes_.emplace(member.name(), members_.size());
         members_.emplace_back(member);
         return members_.back();
+    }
+
+    /// \brief Set the parent
+    /// \pre !has_parent() && members().size() == 0
+    void parent(
+            const AggregationType& p)
+    {
+        xtypes_assert(!has_parent(),
+            "Only one parent is allowed.");
+        xtypes_assert(members().size() == 0,
+            "Cannot set parent to a type with already defined members.");
+        if (!has_parent() && members_.size() == 0)
+        {
+            parent_ = DynamicType::Ptr(p);
+            // Copy the parent's members directly
+            for (const Member& mem : p.members())
+            {
+                insert_member(mem);
+            }
+        }
     }
 
 private:
