@@ -1235,16 +1235,99 @@ public:
     /// \pre The DynamicData must represent a numeric value.
     inline DynamicData operator - () const;
 
+    /// \brief Returns a new DynamicData, bitwise negated.
+    /// \pre The DynamicData must represent a numeric value.
+    inline DynamicData operator ~ () const;
+
+    /// \brief Pre-increments the current DynamicData in one unit.
+    /// \pre The DynamicData must represent a numeric integer value.
+    /// \return A reference to the incremented DynamicData.
+    inline DynamicData& operator ++ ();
+
+    /// \brief Post-increments the current DynamicData in one unit.
+    /// \pre The DynamicData must represent a numeric integer value.
+    /// \param[in] int Dummy value.
+    /// returns The incremented DynamicData.
+    inline DynamicData operator ++ (int);
+
+    /// \brief Pre-decrements the current DynamicData in one unit.
+    /// \pre The DynamicData must represent a numeric integer value.
+    /// \return A reference to the decremented DynamicData.
+    inline DynamicData& operator -- ();
+
+    /// \brief Post-decrements the current DynamicData in one unit.
+    /// \pre The DynamicData must represent a numeric integer value.
+    /// \param[in] int Dummy value.
+    /// returns The decremented DynamicData.
+    inline DynamicData operator -- (int);
+
+    /// \brief Performs logical NOT operation upon a DynamicData.
+    /// \pre The DynamicData must represent a numeric or boolean value.
+    /// \returns boolean NOT operation result.
+    inline bool operator ! () const;
+
+    /// \brief Performs logical AND operation between two DynamicData.
+    /// \pre The DynamicData must represent logical or numeric values.
+    /// \returns logical AND operation result.
+    inline bool operator && (const ReadableDynamicDataRef&) const;
+
+    /// \brief Performs logical OR operation between two DynamicData.
+    /// \pre The DynamicData must represent logical or numeric values.
+    /// \returns logical OR operation result.
+    inline bool operator || (const ReadableDynamicDataRef&) const;
+
     inline DynamicData operator * (const ReadableDynamicDataRef&) const;
     inline DynamicData operator / (const ReadableDynamicDataRef&) const;
     inline DynamicData operator % (const ReadableDynamicDataRef&) const;
     inline DynamicData operator + (const ReadableDynamicDataRef&) const;
     inline DynamicData operator - (const ReadableDynamicDataRef&) const;
+    inline DynamicData operator < (const ReadableDynamicDataRef&) const;
+    inline DynamicData operator > (const ReadableDynamicDataRef&) const;
     inline DynamicData operator << (const ReadableDynamicDataRef&) const;
     inline DynamicData operator >> (const ReadableDynamicDataRef&) const;
     inline DynamicData operator & (const ReadableDynamicDataRef&) const;
     inline DynamicData operator ^ (const ReadableDynamicDataRef&) const;
     inline DynamicData operator | (const ReadableDynamicDataRef&) const;
+
+    inline DynamicData& operator *= (const ReadableDynamicDataRef&);
+    inline DynamicData& operator /= (const ReadableDynamicDataRef&);
+    inline DynamicData& operator %= (const ReadableDynamicDataRef&);
+    inline DynamicData& operator += (const ReadableDynamicDataRef&);
+    inline DynamicData& operator -= (const ReadableDynamicDataRef&);
+    inline DynamicData& operator <= (const ReadableDynamicDataRef&);
+    inline DynamicData& operator >= (const ReadableDynamicDataRef&);
+    inline DynamicData& operator <<= (const ReadableDynamicDataRef&);
+    inline DynamicData& operator >>= (const ReadableDynamicDataRef&);
+    inline DynamicData& operator &= (const ReadableDynamicDataRef&);
+    inline DynamicData& operator ^= (const ReadableDynamicDataRef&);
+    inline DynamicData& operator |= (const ReadableDynamicDataRef&);
+    template <typename B>
+    using isBaseDynamicDataCRef = std::enable_if<!std::is_base_of<ReadableDynamicDataRef, B>::value>;
+
+    template <typename T, typename = typename isBaseDynamicDataCRef<T>::type>
+    inline DynamicData& operator *= (const T&);
+    template <typename T, typename = typename isBaseDynamicDataCRef<T>::type>
+    inline DynamicData& operator /= (const T&);
+    template <typename T, typename = typename isBaseDynamicDataCRef<T>::type>
+    inline DynamicData& operator %= (const T&);
+    template <typename T, typename = typename isBaseDynamicDataCRef<T>::type>
+    inline DynamicData& operator += (const T&);
+    template <typename T, typename = typename isBaseDynamicDataCRef<T>::type>
+    inline DynamicData& operator -= (const T&);
+    template <typename T, typename = typename isBaseDynamicDataCRef<T>::type>
+    inline DynamicData& operator <= (const T&);
+    template <typename T, typename = typename isBaseDynamicDataCRef<T>::type>
+    inline DynamicData& operator >= (const T&);
+    template <typename T, typename = typename isBaseDynamicDataCRef<T>::type>
+    inline DynamicData& operator <<= (const T&);
+    template <typename T, typename = typename isBaseDynamicDataCRef<T>::type>
+    inline DynamicData& operator >>= (const T&);
+    template <typename T, typename = typename isBaseDynamicDataCRef<T>::type>
+    inline DynamicData& operator &= (const T&);
+    template <typename T, typename = typename isBaseDynamicDataCRef<T>::type>
+    inline DynamicData& operator ^= (const T&);
+    template <typename T, typename = typename isBaseDynamicDataCRef<T>::type>
+    inline DynamicData& operator |= (const T&);
 
     virtual ~DynamicData() override
     {
@@ -1253,7 +1336,7 @@ public:
     }
 
     /// \brief Request a writable reference from this DynamicData.
-    /// \returns a WritableDynamicDataRef identifying th DynamicData.
+    /// \returns a WritableDynamicDataRef identifying the DynamicData.
     WritableDynamicDataRef ref() const { return WritableDynamicDataRef(*this); }
 
 };
