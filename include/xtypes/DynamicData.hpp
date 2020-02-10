@@ -1276,13 +1276,31 @@ public:
     /// \returns logical OR operation result.
     inline bool operator || (const ReadableDynamicDataRef&) const;
 
+    /// \brief Performs logical LESS THAN operation between two DynamicData.
+    /// \pre The DynamicData must represent logical or numeric values.
+    /// \returns logical LESS THAN operation result.
+    inline bool operator < (const ReadableDynamicDataRef&) const;
+
+    /// \brief Performs logical GREATER THAN operation between two DynamicData.
+    /// \pre The DynamicData must represent logical or numeric values.
+    /// \returns logical GREATER THAN operation result.
+    inline bool operator > (const ReadableDynamicDataRef&) const;
+
+    /// \brief Performs logical LESS OR EQUAL THAN operation between two DynamicData.
+    /// \pre The DynamicData must represent logical or numeric values.
+    /// \returns logical LESS OR EQUAL THAN operation result.
+    inline bool operator <= (const ReadableDynamicDataRef&) const;
+
+    /// \brief Performs logical GREATER OR EQUAL THAN operation between two DynamicData.
+    /// \pre The DynamicData must represent logical or numeric values.
+    /// \returns logical GREATER OR EQUAL THAN operation result.
+    inline bool operator >= (const ReadableDynamicDataRef&) const;
+
     inline DynamicData operator * (const ReadableDynamicDataRef&) const;
     inline DynamicData operator / (const ReadableDynamicDataRef&) const;
     inline DynamicData operator % (const ReadableDynamicDataRef&) const;
     inline DynamicData operator + (const ReadableDynamicDataRef&) const;
     inline DynamicData operator - (const ReadableDynamicDataRef&) const;
-    inline DynamicData operator < (const ReadableDynamicDataRef&) const;
-    inline DynamicData operator > (const ReadableDynamicDataRef&) const;
     inline DynamicData operator << (const ReadableDynamicDataRef&) const;
     inline DynamicData operator >> (const ReadableDynamicDataRef&) const;
     inline DynamicData operator & (const ReadableDynamicDataRef&) const;
@@ -1294,8 +1312,6 @@ public:
     inline DynamicData& operator %= (const ReadableDynamicDataRef&);
     inline DynamicData& operator += (const ReadableDynamicDataRef&);
     inline DynamicData& operator -= (const ReadableDynamicDataRef&);
-    inline DynamicData& operator <= (const ReadableDynamicDataRef&);
-    inline DynamicData& operator >= (const ReadableDynamicDataRef&);
     inline DynamicData& operator <<= (const ReadableDynamicDataRef&);
     inline DynamicData& operator >>= (const ReadableDynamicDataRef&);
     inline DynamicData& operator &= (const ReadableDynamicDataRef&);
