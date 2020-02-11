@@ -26,31 +26,39 @@
 namespace eprosima {
 namespace xtypes {
 
-#define DYNAMIC_DATA_NUMERIC_INT_SWITCH(MACRO, OPERATOR) \
+#define DYNAMIC_DATA_NUMERIC_SIGNED_INT_SWITCH(MACRO, OPERATOR) \
 {\
     switch(type_.kind())\
     {\
         case TypeKind::INT_8_TYPE:\
             MACRO(int8_t, OPERATOR);\
-        case TypeKind::UINT_8_TYPE:\
-            MACRO(uint8_t, OPERATOR);\
         case TypeKind::INT_16_TYPE:\
             MACRO(int16_t, OPERATOR);\
-        case TypeKind::UINT_16_TYPE:\
-            MACRO(uint16_t, OPERATOR);\
         case TypeKind::INT_32_TYPE:\
             MACRO(int32_t, OPERATOR);\
-        case TypeKind::UINT_32_TYPE:\
-            MACRO(uint32_t, OPERATOR);\
         case TypeKind::INT_64_TYPE:\
             MACRO(int64_t, OPERATOR);\
-        case TypeKind::UINT_64_TYPE:\
-            MACRO(uint64_t, OPERATOR);\
         default:\
             xtypes_assert(false,\
                 "Operator" << #OPERATOR << "() isn't available for type '" << type_.name() << "'.");\
-                return *this;\
+            return *this;\
     }\
+}
+
+#define DYNAMIC_DATA_NUMERIC_INT_SWITCH(MACRO, OPERATOR) \
+{\
+    switch(type_.kind())\
+    {\
+        case TypeKind::UINT_8_TYPE:\
+            MACRO(uint8_t, OPERATOR);\
+        case TypeKind::UINT_16_TYPE:\
+            MACRO(uint16_t, OPERATOR);\
+        case TypeKind::UINT_32_TYPE:\
+            MACRO(uint32_t, OPERATOR);\
+        case TypeKind::UINT_64_TYPE:\
+            MACRO(uint64_t, OPERATOR);\
+    }\
+    DYNAMIC_DATA_NUMERIC_SIGNED_INT_SWITCH(MACRO, OPERATOR);\
 }
 
 #define DYNAMIC_DATA_NUMERIC_FLT_SWITCH(MACRO, OPERATOR) \
@@ -65,6 +73,13 @@ namespace xtypes {
             MACRO(long double, OPERATOR);\
     }\
 }
+
+#define DYNAMIC_DATA_NUMERIC_SIGNED_SWITCH(MACRO, OPERATOR) \
+{\
+    DYNAMIC_DATA_NUMERIC_FLT_SWITCH(MACRO, OPERATOR);\
+    DYNAMIC_DATA_NUMERIC_SIGNED_INT_SWITCH(MACRO, OPERATOR);\
+}
+
 #define DYNAMIC_DATA_NUMERIC_SWITCH(MACRO, OPERATOR) \
 {\
     DYNAMIC_DATA_NUMERIC_FLT_SWITCH(MACRO, OPERATOR);\
@@ -247,18 +262,18 @@ inline std::string ReadableDynamicDataRef::cast<std::string>() const
 #define DYNAMIC_DATA_UNARY_OPERATOR_RESULT(TYPE, OPERATOR) \
 {\
     DynamicData result(primitive_type<TYPE>());\
-    result = OPERATOR(this->value<TYPE>());\
+    result = static_cast<TYPE>(OPERATOR(this->value<TYPE>()));\
     return result;\
 }
 
 inline DynamicData DynamicData::operator - () const
 {
-    DYNAMIC_DATA_NUMERIC_SWITCH(DYNAMIC_DATA_UNARY_OPERATOR_RESULT, -);
+    DYNAMIC_DATA_NUMERIC_SIGNED_SWITCH(DYNAMIC_DATA_UNARY_OPERATOR_RESULT, -);
 }
 
 inline DynamicData DynamicData::operator ~ () const
 {
-    DYNAMIC_DATA_NUMERIC_INT_SWITCH(DYNAMIC_DATA_UNARY_OPERATOR_RESULT, ~);
+    DYNAMIC_DATA_NUMERIC_SIGNED_INT_SWITCH(DYNAMIC_DATA_UNARY_OPERATOR_RESULT, ~);
 }
 
 #define DYNAMIC_DATA_NOT_OPERATOR_RESULT(TYPE, ...) \
@@ -336,8 +351,9 @@ DYNAMIC_DATA_LOGIC_OPERATOR_IMPLEMENTATION(>=);
 {\
     TYPE lho = *this;\
     TYPE rho = other;\
+    TYPE res = lho OPERATOR rho;\
     DynamicData result(primitive_type<TYPE>());\
-    result = lho OPERATOR rho;\
+    result = res;\
     return result;\
 }
 
@@ -391,7 +407,9 @@ DYNAMIC_DATA_NUMERIC_INT_OPERATOR_IMPLEMENTATION(|);
 }
 
 #define DYNAMIC_DATA_PRIMITIVE_SELF_ASSIGN_OPERATOR_RESULT(OPERATOR) { \
-    xtypes_assert(std::is_arithmetic<T>::value,\
+    bool self_assign_valid = std::is_arithmetic<T>::value && !std::is_same<T, bool>::value &&\
+            !std::is_same<T, char>::value && !std::is_same<T, wchar_t>::value;\
+    xtypes_assert(self_assign_valid,\
         "Operator" << #OPERATOR << "=() cannot be used with non-arithmetic types");\
     this->value<T>(this->value<T>() OPERATOR other);\
     return *this;\

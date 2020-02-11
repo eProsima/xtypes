@@ -545,7 +545,7 @@ Available operators are:
     - Logical: `&&`, `||`.
     - Comparison: `==`, `!=`, `<`, `>`, `<=`, `>=`.
 
-- **Binary self-assign operators:** perform same operations as binary operators, but  the result is assigned to
+- **Self-assign operators:** perform same operations as binary operators, but  the result is assigned to
 left-side operand, overriding its current value: `+=`, `-=`, `*=`, `/=`, `%=`, `&=`, `|=`, `^=`, `<<=`, `>>=`.
 
 #### Iterators of `DynamicData`
