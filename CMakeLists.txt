@@ -122,6 +122,7 @@ if(XTYPES_BUILD_TESTS)
         test/unitary/xtypes/consistency.cpp
         test/unitary/xtypes/integration.cpp
         test/unitary/xtypes/alias_type.cpp
+        test/unitary/xtypes/dynamicdata_operators.cpp
         )
 
     compile_test(${PROJECT_NAME}_test_unitary_no_memcheck SOURCE

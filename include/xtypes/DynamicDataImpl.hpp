@@ -26,6 +26,93 @@
 namespace eprosima {
 namespace xtypes {
 
+#define DYNAMIC_DATA_NUMERIC_SIGNED_INT_SWITCH(MACRO, OPERATOR) \
+{\
+    switch(type_.kind())\
+    {\
+        case TypeKind::INT_8_TYPE:\
+            MACRO(int8_t, OPERATOR);\
+        case TypeKind::INT_16_TYPE:\
+            MACRO(int16_t, OPERATOR);\
+        case TypeKind::INT_32_TYPE:\
+            MACRO(int32_t, OPERATOR);\
+        case TypeKind::INT_64_TYPE:\
+            MACRO(int64_t, OPERATOR);\
+        default:\
+            xtypes_assert(false,\
+                "Operator" << #OPERATOR << "() isn't available for type '" << type_.name() << "'.");\
+            return *this;\
+    }\
+}
+
+#define DYNAMIC_DATA_NUMERIC_INT_SWITCH(MACRO, OPERATOR) \
+{\
+    switch(type_.kind())\
+    {\
+        case TypeKind::UINT_8_TYPE:\
+            MACRO(uint8_t, OPERATOR);\
+        case TypeKind::UINT_16_TYPE:\
+            MACRO(uint16_t, OPERATOR);\
+        case TypeKind::UINT_32_TYPE:\
+            MACRO(uint32_t, OPERATOR);\
+        case TypeKind::UINT_64_TYPE:\
+            MACRO(uint64_t, OPERATOR);\
+    }\
+    DYNAMIC_DATA_NUMERIC_SIGNED_INT_SWITCH(MACRO, OPERATOR);\
+}
+
+#define DYNAMIC_DATA_NUMERIC_FLT_SWITCH(MACRO, OPERATOR) \
+{\
+    switch(type_.kind())\
+    {\
+        case TypeKind::FLOAT_32_TYPE:\
+            MACRO(float, OPERATOR);\
+        case TypeKind::FLOAT_64_TYPE:\
+            MACRO(double, OPERATOR);\
+        case TypeKind::FLOAT_128_TYPE:\
+            MACRO(long double, OPERATOR);\
+    }\
+}
+
+#define DYNAMIC_DATA_NUMERIC_SIGNED_SWITCH(MACRO, OPERATOR) \
+{\
+    DYNAMIC_DATA_NUMERIC_FLT_SWITCH(MACRO, OPERATOR);\
+    DYNAMIC_DATA_NUMERIC_SIGNED_INT_SWITCH(MACRO, OPERATOR);\
+}
+
+#define DYNAMIC_DATA_NUMERIC_SWITCH(MACRO, OPERATOR) \
+{\
+    DYNAMIC_DATA_NUMERIC_FLT_SWITCH(MACRO, OPERATOR);\
+    DYNAMIC_DATA_NUMERIC_INT_SWITCH(MACRO, OPERATOR);\
+}
+
+#define DYNAMIC_DATA_BASICTYPE_SWITCH(MACRO, OPERATOR) \
+{\
+    switch(type_.kind())\
+    {\
+        case TypeKind::CHAR_8_TYPE:\
+            MACRO(char, OPERATOR);\
+        case TypeKind::CHAR_16_TYPE:\
+            MACRO(wchar_t, OPERATOR);\
+        case TypeKind::BOOLEAN_TYPE:\
+            MACRO(bool, OPERATOR);\
+    }\
+    DYNAMIC_DATA_NUMERIC_SWITCH(MACRO, OPERATOR);\
+}
+
+#define DYNAMIC_DATA_BASICTYPE_INT_SWITCH(MACRO, OPERATOR) \
+{\
+    switch(type_.kind())\
+    {\
+        case TypeKind::CHAR_8_TYPE:\
+            MACRO(char, OPERATOR);\
+        case TypeKind::CHAR_16_TYPE:\
+            MACRO(wchar_t, OPERATOR);\
+        case TypeKind::BOOLEAN_TYPE:\
+            MACRO(bool, OPERATOR);\
+    }\
+    DYNAMIC_DATA_NUMERIC_INT_SWITCH(MACRO, OPERATOR);\
+}
 
 inline std::string ReadableDynamicDataRef::to_string() const
 {
@@ -109,6 +196,7 @@ inline std::string ReadableDynamicDataRef::to_string() const
                 break;
             case TypeKind::ENUMERATION_TYPE:
                 ss << "Enumeration: <" << type_name << ">";
+                break;
             default:
                 ss << "Unsupported type: " << type_name;
         }
@@ -116,6 +204,12 @@ inline std::string ReadableDynamicDataRef::to_string() const
     });
 
     return ss.str();
+}
+
+#define DYNAMIC_DATA_CAST(TYPE, ...) \
+{\
+    TYPE temp = *this;\
+    return std::to_string(temp);\
 }
 
 template<>
@@ -126,78 +220,9 @@ inline std::string ReadableDynamicDataRef::cast<std::string>() const
            type_.kind() == TypeKind::WSTRING_TYPE ||
            type_.is_enumerated_type(),
         "Expected a primitive or string type but '" << type_.name() << "' received while casting data to 'std::string'.");
+    // Custom switch-case statement for types not contained in the macros
     switch (type_.kind())
     {
-        case TypeKind::BOOLEAN_TYPE:
-        {
-            bool temp = *this;
-            return std::to_string(temp);
-        }
-        case TypeKind::INT_8_TYPE:
-        {
-            int8_t temp = *this;
-            return std::to_string(temp);
-        }
-        case TypeKind::UINT_8_TYPE:
-        {
-            uint8_t temp = *this;
-            return std::to_string(temp);
-        }
-        case TypeKind::INT_16_TYPE:
-        {
-            int16_t temp = *this;
-            return std::to_string(temp);
-        }
-        case TypeKind::UINT_16_TYPE:
-        {
-            uint16_t temp = *this;
-            return std::to_string(temp);
-        }
-        case TypeKind::INT_32_TYPE:
-        {
-            int32_t temp = *this;
-            return std::to_string(temp);
-        }
-        case TypeKind::UINT_32_TYPE:
-        {
-            uint32_t temp = *this;
-            return std::to_string(temp);
-        }
-        case TypeKind::INT_64_TYPE:
-        {
-            int64_t temp = *this;
-            return std::to_string(temp);
-        }
-        case TypeKind::UINT_64_TYPE:
-        {
-            uint64_t temp = *this;
-            return std::to_string(temp);
-        }
-        case TypeKind::FLOAT_32_TYPE:
-        {
-            float temp = *this;
-            return std::to_string(temp);
-        }
-        case TypeKind::FLOAT_64_TYPE:
-        {
-            double temp = *this;
-            return std::to_string(temp);
-        }
-        case TypeKind::FLOAT_128_TYPE:
-        {
-            long double temp = *this;
-            return std::to_string(temp);
-        }
-        case TypeKind::CHAR_8_TYPE:
-        {
-            char temp = *this;
-            return std::to_string(temp);
-        }
-        case TypeKind::CHAR_16_TYPE:
-        {
-            wchar_t temp = *this;
-            return std::to_string(temp);
-        }
         case TypeKind::ENUMERATION_TYPE:
         {
             // For checking the associated_type, check for its memory_size
@@ -230,361 +255,199 @@ inline std::string ReadableDynamicDataRef::cast<std::string>() const
         }
         */
     }
+    DYNAMIC_DATA_BASICTYPE_SWITCH(DYNAMIC_DATA_CAST, );
     return std::string();
 }
 
-#define DYNAMIC_DATA_NEGATE(TYPE) \
+#define DYNAMIC_DATA_UNARY_OPERATOR_RESULT(TYPE, OPERATOR) \
 {\
     DynamicData result(primitive_type<TYPE>());\
-    result = -(*this);\
+    result = static_cast<TYPE>(OPERATOR(this->value<TYPE>()));\
     return result;\
 }
 
 inline DynamicData DynamicData::operator - () const
 {
-    switch(type_.kind())
-    {
-        case TypeKind::INT_8_TYPE:
-            DYNAMIC_DATA_NEGATE(int8_t);
-        case TypeKind::UINT_8_TYPE:
-            DYNAMIC_DATA_NEGATE(uint8_t);
-        case TypeKind::INT_16_TYPE:
-            DYNAMIC_DATA_NEGATE(int16_t);
-        case TypeKind::UINT_16_TYPE:
-            DYNAMIC_DATA_NEGATE(uint16_t);
-        case TypeKind::INT_32_TYPE:
-            DYNAMIC_DATA_NEGATE(int32_t);
-        case TypeKind::UINT_32_TYPE:
-            DYNAMIC_DATA_NEGATE(uint32_t);
-        case TypeKind::INT_64_TYPE:
-            DYNAMIC_DATA_NEGATE(int64_t);
-        case TypeKind::UINT_64_TYPE:
-            DYNAMIC_DATA_NEGATE(uint64_t);
-        case TypeKind::FLOAT_32_TYPE:
-            DYNAMIC_DATA_NEGATE(float);
-        case TypeKind::FLOAT_64_TYPE:
-            DYNAMIC_DATA_NEGATE(double);
-        case TypeKind::FLOAT_128_TYPE:
-            DYNAMIC_DATA_NEGATE(long double);
-        default:
-            xtypes_assert(false, "operator-() isn't available for type '" << type_.name() << "'.");
-            break;
-    }
+    DYNAMIC_DATA_NUMERIC_SIGNED_SWITCH(DYNAMIC_DATA_UNARY_OPERATOR_RESULT, -);
+}
 
+inline DynamicData DynamicData::operator ~ () const
+{
+    DYNAMIC_DATA_NUMERIC_SIGNED_INT_SWITCH(DYNAMIC_DATA_UNARY_OPERATOR_RESULT, ~);
+}
+
+#define DYNAMIC_DATA_NOT_OPERATOR_RESULT(TYPE, ...) \
+{\
+    return !bool(this->value<TYPE>());\
+}
+
+#define DYNAMIC_DATA_SELF_DE_INCREMENT(TYPE, OPERATOR) \
+{\
+    TYPE pre = *this; \
+    this->value<TYPE>(OPERATOR(pre)); \
+    return *this; \
+}
+
+inline DynamicData DynamicData::operator ++ (int)
+{
+    DYNAMIC_DATA_NUMERIC_INT_SWITCH(DYNAMIC_DATA_SELF_DE_INCREMENT, ++);
+}
+
+inline DynamicData& DynamicData::operator ++ ()
+{
+    WritableDynamicDataRef wthis = this->ref();
+    wthis = DynamicData::operator++(1);
     return *this;
 }
+
+inline DynamicData DynamicData::operator -- (int)
+{
+    DYNAMIC_DATA_NUMERIC_INT_SWITCH(DYNAMIC_DATA_SELF_DE_INCREMENT, --);
+}
+
+inline DynamicData& DynamicData::operator -- ()
+{
+    WritableDynamicDataRef wthis = this->ref();
+    wthis = DynamicData::operator--(1);
+    return *this;
+}
+
+inline bool DynamicData::operator ! () const
+{
+    switch(type_.kind())
+    {
+        case TypeKind::STRING_TYPE:
+            return this->value<std::string>().empty();
+        case TypeKind::WSTRING_TYPE:
+            return this->value<std::wstring>().empty();
+    }
+    DYNAMIC_DATA_BASICTYPE_INT_SWITCH(DYNAMIC_DATA_NOT_OPERATOR_RESULT, !);  
+}
+
+#define DYNAMIC_DATA_LOGIC_OPERATION(TYPE, OPERATOR) \
+{\
+    return (this->value<TYPE>() OPERATOR other.value<TYPE>());\
+}
+
+#define DYNAMIC_DATA_LOGIC_OPERATOR_IMPLEMENTATION(OPERATOR)\
+inline bool DynamicData::operator OPERATOR (const ReadableDynamicDataRef& other) const\
+{\
+    DYNAMIC_DATA_BASICTYPE_SWITCH(DYNAMIC_DATA_LOGIC_OPERATION, OPERATOR);\
+}
+
+DYNAMIC_DATA_LOGIC_OPERATOR_IMPLEMENTATION(&&);
+
+DYNAMIC_DATA_LOGIC_OPERATOR_IMPLEMENTATION(||);
+
+DYNAMIC_DATA_LOGIC_OPERATOR_IMPLEMENTATION(<);
+
+DYNAMIC_DATA_LOGIC_OPERATOR_IMPLEMENTATION(>);
+
+DYNAMIC_DATA_LOGIC_OPERATOR_IMPLEMENTATION(<=);
+
+DYNAMIC_DATA_LOGIC_OPERATOR_IMPLEMENTATION(>=);
 
 #define DYNAMIC_DATA_OPERATOR_RESULT(TYPE, OPERATOR) \
 {\
     TYPE lho = *this;\
     TYPE rho = other;\
+    TYPE res = lho OPERATOR rho;\
     DynamicData result(primitive_type<TYPE>());\
-    result = lho OPERATOR rho;\
+    result = res;\
     return result;\
 }
 
-inline DynamicData DynamicData::operator * (const ReadableDynamicDataRef& other) const
-{
-    switch(type_.kind())
-    {
-        case TypeKind::INT_8_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int8_t, *);
-        case TypeKind::UINT_8_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint8_t, *);
-        case TypeKind::INT_16_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int16_t, *);
-        case TypeKind::UINT_16_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint16_t, *);
-        case TypeKind::INT_32_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int32_t, *);
-        case TypeKind::UINT_32_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint32_t, *);
-        case TypeKind::INT_64_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int64_t, *);
-        case TypeKind::UINT_64_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint64_t, *);
-        case TypeKind::FLOAT_32_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(float, *);
-        case TypeKind::FLOAT_64_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(double, *);
-        case TypeKind::FLOAT_128_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(long double, *);
-        default:
-            xtypes_assert(false,
-                "operator*() isn't available for types '" << type_.name() << "' and '" << other.type().name() << "'.");
-            return *this;
-    }
+#define DYNAMIC_DATA_NUMERIC_INT_OPERATOR_RESULT(OPERATOR) \
+{\
+    DYNAMIC_DATA_NUMERIC_INT_SWITCH(DYNAMIC_DATA_OPERATOR_RESULT, OPERATOR);\
 }
 
-inline DynamicData DynamicData::operator / (const ReadableDynamicDataRef& other) const
-{
-    switch(type_.kind())
-    {
-        case TypeKind::INT_8_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int8_t, /);
-        case TypeKind::UINT_8_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint8_t, /);
-        case TypeKind::INT_16_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int16_t, /);
-        case TypeKind::UINT_16_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint16_t, /);
-        case TypeKind::INT_32_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int32_t, /);
-        case TypeKind::UINT_32_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint32_t, /);
-        case TypeKind::INT_64_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int64_t, /);
-        case TypeKind::UINT_64_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint64_t, /);
-        case TypeKind::FLOAT_32_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(float, /);
-        case TypeKind::FLOAT_64_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(double, /);
-        case TypeKind::FLOAT_128_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(long double, /);
-        default:
-            xtypes_assert(false,
-                "operator/() isn't available for types '" << type_.name() << "' and '" << other.type().name() << "'.");
-            return *this;
-    }
-
+#define DYNAMIC_DATA_NUMERIC_OPERATOR_RESULT(OPERATOR)\
+{\
+    DYNAMIC_DATA_NUMERIC_FLT_SWITCH(DYNAMIC_DATA_OPERATOR_RESULT, OPERATOR);\
+    DYNAMIC_DATA_NUMERIC_INT_OPERATOR_RESULT(OPERATOR);\
 }
 
-inline DynamicData DynamicData::operator % (const ReadableDynamicDataRef& other) const
-{
-    switch(type_.kind())
-    {
-        case TypeKind::INT_8_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int8_t, %);
-        case TypeKind::UINT_8_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint8_t, %);
-        case TypeKind::INT_16_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int16_t, %);
-        case TypeKind::UINT_16_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint16_t, %);
-        case TypeKind::INT_32_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int32_t, %);
-        case TypeKind::UINT_32_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint32_t, %);
-        case TypeKind::INT_64_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int64_t, %);
-        case TypeKind::UINT_64_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint64_t, %);
-        default:
-            xtypes_assert(false,
-                "operator%() isn't available for types '" << type_.name() << "' and '" << other.type().name() << "'.");
-            return *this;
-    }
-
+#define DYNAMIC_DATA_NUMERIC_INT_OPERATOR_IMPLEMENTATION(OPERATOR)\
+inline DynamicData DynamicData::operator OPERATOR (const ReadableDynamicDataRef& other) const \
+{\
+    DYNAMIC_DATA_NUMERIC_INT_OPERATOR_RESULT(OPERATOR);\
 }
 
-inline DynamicData DynamicData::operator + (const ReadableDynamicDataRef& other) const
-{
-    switch(type_.kind())
-    {
-        case TypeKind::INT_8_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int8_t, +);
-        case TypeKind::UINT_8_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint8_t, +);
-        case TypeKind::INT_16_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int16_t, +);
-        case TypeKind::UINT_16_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint16_t, +);
-        case TypeKind::INT_32_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int32_t, +);
-        case TypeKind::UINT_32_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint32_t, +);
-        case TypeKind::INT_64_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int64_t, +);
-        case TypeKind::UINT_64_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint64_t, +);
-        case TypeKind::FLOAT_32_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(float, +);
-        case TypeKind::FLOAT_64_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(double, +);
-        case TypeKind::FLOAT_128_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(long double, +);
-        default:
-            xtypes_assert(false,
-                "operator<<() isn't available for types '" << type_.name() << "' and '" << other.type().name() << "'.");
-            return *this;
-    }
-
+#define DYNAMIC_DATA_NUMERIC_OPERATOR_IMPLEMENTATION(OPERATOR)\
+inline DynamicData DynamicData::operator OPERATOR (const ReadableDynamicDataRef& other) const \
+{\
+    DYNAMIC_DATA_NUMERIC_OPERATOR_RESULT(OPERATOR);\
 }
 
-inline DynamicData DynamicData::operator - (const ReadableDynamicDataRef& other) const
-{
-    switch(type_.kind())
-    {
-        case TypeKind::INT_8_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int8_t, -);
-        case TypeKind::UINT_8_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint8_t, -);
-        case TypeKind::INT_16_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int16_t, -);
-        case TypeKind::UINT_16_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint16_t, -);
-        case TypeKind::INT_32_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int32_t, -);
-        case TypeKind::UINT_32_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint32_t, -);
-        case TypeKind::INT_64_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int64_t, -);
-        case TypeKind::UINT_64_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint64_t, -);
-        case TypeKind::FLOAT_32_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(float, -);
-        case TypeKind::FLOAT_64_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(double, -);
-        case TypeKind::FLOAT_128_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(long double, -);
-        default:
-            xtypes_assert(false,
-                "operator-() isn't available for types '" << type_.name() << "' and '" << other.type().name() << "'.");
-            return *this;
-    }
+DYNAMIC_DATA_NUMERIC_OPERATOR_IMPLEMENTATION(*);
 
+DYNAMIC_DATA_NUMERIC_OPERATOR_IMPLEMENTATION(/);
+
+DYNAMIC_DATA_NUMERIC_INT_OPERATOR_IMPLEMENTATION(%);
+
+DYNAMIC_DATA_NUMERIC_OPERATOR_IMPLEMENTATION(+);
+
+DYNAMIC_DATA_NUMERIC_OPERATOR_IMPLEMENTATION(-);
+
+DYNAMIC_DATA_NUMERIC_INT_OPERATOR_IMPLEMENTATION(<<);
+
+DYNAMIC_DATA_NUMERIC_INT_OPERATOR_IMPLEMENTATION(>>);
+
+DYNAMIC_DATA_NUMERIC_INT_OPERATOR_IMPLEMENTATION(&);
+
+DYNAMIC_DATA_NUMERIC_INT_OPERATOR_IMPLEMENTATION(^);
+
+DYNAMIC_DATA_NUMERIC_INT_OPERATOR_IMPLEMENTATION(|);
+
+#define DYNAMIC_DATA_SELF_ASSIGN_OPERATOR_RESULT(OPERATOR) { \
+    WritableDynamicDataRef wthis = this->ref();\
+    wthis = DynamicData::operator OPERATOR(other);\
+    return *this;\
 }
 
-inline DynamicData DynamicData::operator << (const ReadableDynamicDataRef& other) const
-{
-    switch(type_.kind())
-    {
-        case TypeKind::INT_8_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int8_t, <<);
-        case TypeKind::UINT_8_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint8_t, <<);
-        case TypeKind::INT_16_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int16_t, <<);
-        case TypeKind::UINT_16_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint16_t, <<);
-        case TypeKind::INT_32_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int32_t, <<);
-        case TypeKind::UINT_32_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint32_t, <<);
-        case TypeKind::INT_64_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int64_t, <<);
-        case TypeKind::UINT_64_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint64_t, <<);
-        default:
-            xtypes_assert(false,
-                "operator<<() isn't available for types '" << type_.name() << "' and '" << other.type().name() << "'.");
-            return *this;
-    }
-
+#define DYNAMIC_DATA_PRIMITIVE_SELF_ASSIGN_OPERATOR_RESULT(OPERATOR) { \
+    bool self_assign_valid = std::is_arithmetic<T>::value && !std::is_same<T, bool>::value &&\
+            !std::is_same<T, char>::value && !std::is_same<T, wchar_t>::value;\
+    xtypes_assert(self_assign_valid,\
+        "Operator" << #OPERATOR << "=() cannot be used with non-arithmetic types");\
+    this->value<T>(this->value<T>() OPERATOR other);\
+    return *this;\
 }
 
-inline DynamicData DynamicData::operator >> (const ReadableDynamicDataRef& other) const
-{
-    switch(type_.kind())
-    {
-        case TypeKind::INT_8_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int8_t, >>);
-        case TypeKind::UINT_8_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint8_t, >>);
-        case TypeKind::INT_16_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int16_t, >>);
-        case TypeKind::UINT_16_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint16_t, >>);
-        case TypeKind::INT_32_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int32_t, >>);
-        case TypeKind::UINT_32_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint32_t, >>);
-        case TypeKind::INT_64_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int64_t, >>);
-        case TypeKind::UINT_64_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint64_t, >>);
-        default:
-            xtypes_assert(false,
-                "operator>>() isn't available for types '" << type_.name() << "' and '" << other.type().name() << "'.");
-            return *this;
-    }
+#define APPEND(OP1, OP2) OP1##OP2
 
+#define DYNAMIC_DATA_SELF_ASSIGN_OPERATOR_IMPLEMENTATION(OPERATOR) \
+inline DynamicData& DynamicData::operator APPEND(OPERATOR,=) (const ReadableDynamicDataRef& other)\
+{\
+    DYNAMIC_DATA_SELF_ASSIGN_OPERATOR_RESULT(OPERATOR);\
+}\
+\
+template <typename T, typename>\
+    inline DynamicData& DynamicData::operator APPEND(OPERATOR,=) (const T& other)\
+{\
+    DYNAMIC_DATA_PRIMITIVE_SELF_ASSIGN_OPERATOR_RESULT(OPERATOR);\
 }
 
-inline DynamicData DynamicData::operator & (const ReadableDynamicDataRef& other) const
-{
-    switch(type_.kind())
-    {
-        case TypeKind::INT_8_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int8_t, &);
-        case TypeKind::UINT_8_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint8_t, &);
-        case TypeKind::INT_16_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int16_t, &);
-        case TypeKind::UINT_16_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint16_t, &);
-        case TypeKind::INT_32_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int32_t, &);
-        case TypeKind::UINT_32_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint32_t, &);
-        case TypeKind::INT_64_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int64_t, &);
-        case TypeKind::UINT_64_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint64_t, &);
-        default:
-            xtypes_assert(false,
-                "operator&() isn't available for types '" << type_.name() << "' and '" << other.type().name() << "'.");
-            return *this;
-    }
+DYNAMIC_DATA_SELF_ASSIGN_OPERATOR_IMPLEMENTATION(*);
 
-}
+DYNAMIC_DATA_SELF_ASSIGN_OPERATOR_IMPLEMENTATION(/);
 
-inline DynamicData DynamicData::operator ^ (const ReadableDynamicDataRef& other) const
-{
-    switch(type_.kind())
-    {
-        case TypeKind::INT_8_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int8_t, ^);
-        case TypeKind::UINT_8_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint8_t, ^);
-        case TypeKind::INT_16_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int16_t, ^);
-        case TypeKind::UINT_16_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint16_t, ^);
-        case TypeKind::INT_32_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int32_t, ^);
-        case TypeKind::UINT_32_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint32_t, ^);
-        case TypeKind::INT_64_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int64_t, ^);
-        case TypeKind::UINT_64_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint64_t, ^);
-        default:
-            xtypes_assert(false,
-                "operator^() isn't available for types '" << type_.name() << "' and '" << other.type().name() << "'.");
-            return *this;
-    }
+DYNAMIC_DATA_SELF_ASSIGN_OPERATOR_IMPLEMENTATION(%);
 
-}
+DYNAMIC_DATA_SELF_ASSIGN_OPERATOR_IMPLEMENTATION(+);
 
-inline DynamicData DynamicData::operator | (const ReadableDynamicDataRef& other) const
-{
-    switch(type_.kind())
-    {
-        case TypeKind::INT_8_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int8_t, |);
-        case TypeKind::UINT_8_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint8_t, |);
-        case TypeKind::INT_16_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int16_t, |);
-        case TypeKind::UINT_16_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint16_t, |);
-        case TypeKind::INT_32_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int32_t, |);
-        case TypeKind::UINT_32_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint32_t, |);
-        case TypeKind::INT_64_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(int64_t, |);
-        case TypeKind::UINT_64_TYPE:
-            DYNAMIC_DATA_OPERATOR_RESULT(uint64_t, |);
-        default:
-            xtypes_assert(false,
-                "operator|() isn't available for types '" << type_.name() << "' and '" << other.type().name() << "'.");
-            return *this;
-    }
+DYNAMIC_DATA_SELF_ASSIGN_OPERATOR_IMPLEMENTATION(-);
 
-}
+DYNAMIC_DATA_SELF_ASSIGN_OPERATOR_IMPLEMENTATION(<<);
+
+DYNAMIC_DATA_SELF_ASSIGN_OPERATOR_IMPLEMENTATION(>>);
+
+DYNAMIC_DATA_SELF_ASSIGN_OPERATOR_IMPLEMENTATION(&);
+
+DYNAMIC_DATA_SELF_ASSIGN_OPERATOR_IMPLEMENTATION(^);
+
+DYNAMIC_DATA_SELF_ASSIGN_OPERATOR_IMPLEMENTATION(|);
 
 } //namespace xtypes
 } //namespace eprosima

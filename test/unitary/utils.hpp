@@ -13,7 +13,7 @@
             }                                                                                               \
             catch(const std::runtime_error& exc)                                                            \
             {                                                                                               \
-                if (std::string(exc.what()).find(msg) == std::string::npos)                                 \
+                if (!std::regex_search(exc.what(), std::regex(msg, std::regex::extended)))                  \
                 {                                                                                           \
                     FAIL() << "Unexpected exception: " << exc.what();                                       \
                 }                                                                                           \

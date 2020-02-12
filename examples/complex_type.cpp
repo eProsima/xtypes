@@ -120,6 +120,14 @@ int main()
     union_data["um1"] = data["om2"];
     std::cout << "union::um1::im2: " << union_data["um1"]["im2"].value<float>() << std::endl;
 
+    // Operators example
+    DynamicData op_data(primitive_type<uint32_t>());
+    op_data.value(5u);
+    std::cout << "-----------------------" << std::endl;
+    std::cout << "'op_data': " << op_data.value<uint32_t>();
+    op_data++;
+    std::cout << ", 'op_data++': " << op_data.value<uint32_t>() << std::endl;
+
     // Inheritance example
     std::cout << "-----------------------" << std::endl;
     StructType parent("ParentStruct");
