@@ -61,18 +61,31 @@ inline std::string map_type_name(const DynamicType& type)
     return ss.str();
 }
 
+inline std::vector<uint32_t> array_dimensions(const ArrayType& array)
+{
+    std::vector<uint32_t> dimensions;
+    dimensions.push_back(array.dimension());
+    DynamicType::Ptr inner(array.content_type());
+    while (inner->kind() == TypeKind::ARRAY_TYPE)
+    {
+        const ArrayType& inner_array = static_cast<const ArrayType&>(*inner);
+        dimensions.push_back(inner_array.dimension());
+        inner = inner_array.content_type();
+    }
+    return dimensions;
+}
+
 inline std::string array_member(const Member& member)
 {
     assert(member.type().kind() == TypeKind::ARRAY_TYPE);
     const DynamicType* type = &member.type();
     std::stringstream dimensions;
-    do
+
+    std::vector<uint32_t> array_dims = array_dimensions(static_cast<const ArrayType&>(*type));
+    for (uint32_t dimension : array_dims)
     {
-        const ArrayType& array_type = static_cast<const ArrayType&>(*type);
-        dimensions << "[" << array_type.dimension() << "]";
-        type = &array_type.content_type();
+        dimensions << "[" << dimension << "]";
     }
-    while(type->kind() == TypeKind::ARRAY_TYPE);
 
     std::stringstream ss;
     ss << type_name(*type) << " " << member.name() << dimensions.str() << ";";
@@ -267,7 +280,7 @@ inline std::string aliase(const DynamicType& type, const std::string& name)
     ss << "typedef " << generator::type_name(type) << " " << name;
     if (type.kind() == TypeKind::ARRAY_TYPE)
     {
-        std::vector<uint32_t> array_dims = static_cast<const ArrayType&>(type).dimensions();
+        std::vector<uint32_t> array_dims = array_dimensions(static_cast<const ArrayType&>(type));
         for (uint32_t dimension : array_dims)
         {
             ss << "[" << dimension << "]";

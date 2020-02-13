@@ -90,20 +90,6 @@ public:
     /// \returns The dimension.
     uint32_t dimension() const { return dimension_; }
 
-    std::vector<uint32_t> dimensions() const
-    {
-        std::vector<uint32_t> dimensions_;
-        dimensions_.push_back(dimension_);
-        DynamicType::Ptr inner(*content_);
-        while(inner->kind() == TypeKind::ARRAY_TYPE)
-        {
-            const ArrayType& inner_array = static_cast<const ArrayType&>(*inner);
-            dimensions_.push_back(inner_array.dimension_);
-            inner = *inner_array.content_;
-        }
-        return dimensions_;
-    }
-
     virtual size_t memory_size() const override
     {
         return dimension_ * content_type().memory_size();

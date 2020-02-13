@@ -22,6 +22,7 @@ using namespace eprosima::xtypes::idl;
 void check_result(
         const Module& root)
 {
+    ASSERT_TRUE(root.has_alias("ByteMultiArray"));
     ASSERT_TRUE(root.has_enum_32("RootEnum"));
     const EnumerationType<uint32_t>& root_enum = root.enum_32("RootEnum");
     ASSERT_EQ(root_enum.value("VALUE_1"), 0);
@@ -52,6 +53,21 @@ void check_result(
     ASSERT_EQ(root_struct.member("my_string").type().kind(), TypeKind::STRING_TYPE);
     ASSERT_EQ(root_struct.member("my_wstring").type().kind(), TypeKind::WSTRING_TYPE);
     // Complex members
+    {
+        const Member& member = root_struct.member("my_alias_array");
+        ASSERT_EQ(member.type().kind(), TypeKind::ALIAS_TYPE);
+        const AliasType& alias = static_cast<const AliasType&>(member.type());
+        ASSERT_EQ(alias.get().kind(), TypeKind::ARRAY_TYPE);
+        const ArrayType& aliased_array = static_cast<const ArrayType&>(*alias);
+        ASSERT_EQ(aliased_array.dimension(), 6);
+        ASSERT_EQ(aliased_array.content_type().kind(), TypeKind::ARRAY_TYPE);
+        const ArrayType& aliased_array_array = static_cast<const ArrayType&>(aliased_array.content_type());
+        ASSERT_EQ(aliased_array_array.dimension(), 7);
+        ASSERT_EQ(aliased_array_array.content_type().kind(), TypeKind::ARRAY_TYPE);
+        const ArrayType& aliased_array_array_array = static_cast<const ArrayType&>(aliased_array_array.content_type());
+        ASSERT_EQ(aliased_array_array_array.dimension(), 8);
+        ASSERT_EQ(aliased_array_array_array.content_type().kind(), TypeKind::UINT_8_TYPE);
+    }
     {
         const Member& member = root_struct.member("my_unbound_uint32_seq");
         ASSERT_EQ(member.type().kind(), TypeKind::SEQUENCE_TYPE);
@@ -178,6 +194,8 @@ void check_result(
 TEST (IDLGenerator, roundtrip)
 {
     Context context = parse(R"(
+        typedef uint8 ByteMultiArray[6][7][8];
+
         enum RootEnum
         {
             VALUE_1,
@@ -206,6 +224,7 @@ TEST (IDLGenerator, roundtrip)
             wchar my_wchar;
             string my_string;
             wstring my_wstring;
+            ByteMultiArray my_alias_array;
             sequence<uint32> my_unbound_uint32_seq;
             sequence<double, 10> my_bound10_double_seq;
             string my_string_array[VALUE_4];
