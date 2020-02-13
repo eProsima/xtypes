@@ -111,6 +111,10 @@ inline std::string type_name(const DynamicType& type)
     {
         return type.name();
     }
+    else if(type.kind() == TypeKind::ARRAY_TYPE)
+    {
+        return type_name(static_cast<const ArrayType&>(type).content_type());
+    }
     else if(type.kind() == TypeKind::SEQUENCE_TYPE)
     {
         return sequence_type_name(type);
@@ -260,8 +264,16 @@ inline std::string generate_union(const UnionType& type, size_t tabs = 0)
 inline std::string aliase(const DynamicType& type, const std::string& name)
 {
     std::stringstream ss;
-    ss << "typedef " << generator::type_name(type) << " ";
-    ss << name << ";" << std::endl;
+    ss << "typedef " << generator::type_name(type) << " " << name;
+    if (type.kind() == TypeKind::ARRAY_TYPE)
+    {
+        std::vector<uint32_t> array_dims = static_cast<const ArrayType&>(type).dimensions();
+        for (uint32_t dimension : array_dims)
+        {
+            ss << "[" << dimension << "]";
+        }
+    }
+    ss << ";" << std::endl;
     return ss.str();
 }
 
@@ -337,7 +349,7 @@ inline std::string module_contents(const Module& module_, size_t tabs = 0)
     // Aliases
     for (const auto& alias : module_.aliases_)
     {
-        ss << aliase(static_cast<const AliasType&>(*alias.second).get(), alias.first);
+        ss << std::string(tabs * 4, ' ') << aliase(static_cast<const AliasType&>(*alias.second).get(), alias.first);
     }
     // Enums
     for (const auto& pair : module_.enumerations_32_)
