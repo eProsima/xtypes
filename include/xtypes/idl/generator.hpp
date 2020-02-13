@@ -61,18 +61,31 @@ inline std::string map_type_name(const DynamicType& type)
     return ss.str();
 }
 
+inline std::vector<uint32_t> array_dimensions(const ArrayType& array)
+{
+    std::vector<uint32_t> dimensions;
+    dimensions.push_back(array.dimension());
+    DynamicType::Ptr inner(array.content_type());
+    while (inner->kind() == TypeKind::ARRAY_TYPE)
+    {
+        const ArrayType& inner_array = static_cast<const ArrayType&>(*inner);
+        dimensions.push_back(inner_array.dimension());
+        inner = inner_array.content_type();
+    }
+    return dimensions;
+}
+
 inline std::string array_member(const Member& member)
 {
     assert(member.type().kind() == TypeKind::ARRAY_TYPE);
     const DynamicType* type = &member.type();
     std::stringstream dimensions;
-    do
+
+    std::vector<uint32_t> array_dims = array_dimensions(static_cast<const ArrayType&>(*type));
+    for (uint32_t dimension : array_dims)
     {
-        const ArrayType& array_type = static_cast<const ArrayType&>(*type);
-        dimensions << "[" << array_type.dimension() << "]";
-        type = &array_type.content_type();
+        dimensions << "[" << dimension << "]";
     }
-    while(type->kind() == TypeKind::ARRAY_TYPE);
 
     std::stringstream ss;
     ss << type_name(*type) << " " << member.name() << dimensions.str() << ";";
@@ -110,6 +123,10 @@ inline std::string type_name(const DynamicType& type)
     else if(type.is_aggregation_type())
     {
         return type.name();
+    }
+    else if(type.kind() == TypeKind::ARRAY_TYPE)
+    {
+        return type_name(static_cast<const ArrayType&>(type).content_type());
     }
     else if(type.kind() == TypeKind::SEQUENCE_TYPE)
     {
@@ -260,8 +277,16 @@ inline std::string generate_union(const UnionType& type, size_t tabs = 0)
 inline std::string aliase(const DynamicType& type, const std::string& name)
 {
     std::stringstream ss;
-    ss << "typedef " << generator::type_name(type) << " ";
-    ss << name << ";" << std::endl;
+    ss << "typedef " << generator::type_name(type) << " " << name;
+    if (type.kind() == TypeKind::ARRAY_TYPE)
+    {
+        std::vector<uint32_t> array_dims = array_dimensions(static_cast<const ArrayType&>(type));
+        for (uint32_t dimension : array_dims)
+        {
+            ss << "[" << dimension << "]";
+        }
+    }
+    ss << ";" << std::endl;
     return ss.str();
 }
 
@@ -337,7 +362,7 @@ inline std::string module_contents(const Module& module_, size_t tabs = 0)
     // Aliases
     for (const auto& alias : module_.aliases_)
     {
-        ss << aliase(static_cast<const AliasType&>(*alias.second).get(), alias.first);
+        ss << std::string(tabs * 4, ' ') << aliase(static_cast<const AliasType&>(*alias.second).get(), alias.first);
     }
     // Enums
     for (const auto& pair : module_.enumerations_32_)

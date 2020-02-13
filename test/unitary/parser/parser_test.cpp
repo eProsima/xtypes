@@ -1159,12 +1159,14 @@ TEST(IDLParser, alias_test)
         typedef double longfloat;
         typedef longfloat lfloat;
         typedef lfloat lflt;
+        typedef uint8 ByteMultiArray[2][3];
         struct StructData
         {
             u32 st0;
             longfloat st1;
             lfloat st2;
             lflt st3;
+            ByteMultiArray st4;
         };
     )";
 
@@ -1176,22 +1178,26 @@ TEST(IDLParser, alias_test)
     EXPECT_TRUE(m_context.has_alias("longfloat"));
     EXPECT_TRUE(m_context.has_alias("lfloat"));
     EXPECT_TRUE(m_context.has_alias("lflt"));
+    EXPECT_TRUE(m_context.has_alias("ByteMultiArray"));
 
     const StructType& st = m_context.structure("StructData");
     const DynamicType& dst0 = st.member("st0").type();
     const DynamicType& dst1 = st.member("st1").type();
     const DynamicType& dst2 = st.member("st2").type();
     const DynamicType& dst3 = st.member("st3").type();
+    const DynamicType& dst4 = st.member("st4").type();
     EXPECT_EQ(dst0.kind(), TypeKind::ALIAS_TYPE);
     EXPECT_EQ(dst1.kind(), TypeKind::ALIAS_TYPE);
     EXPECT_EQ(dst2.kind(), TypeKind::ALIAS_TYPE);
     EXPECT_EQ(dst3.kind(), TypeKind::ALIAS_TYPE);
+    EXPECT_EQ(dst4.kind(), TypeKind::ALIAS_TYPE);
     EXPECT_EQ(static_cast<const AliasType&>(dst0).get().kind(), TypeKind::UINT_32_TYPE);
     EXPECT_EQ(static_cast<const AliasType&>(dst1).get().kind(), TypeKind::FLOAT_64_TYPE);
     EXPECT_EQ(static_cast<const AliasType&>(dst2).get().kind(), TypeKind::ALIAS_TYPE);
     EXPECT_EQ(static_cast<const AliasType&>(dst2).rget().kind(), TypeKind::FLOAT_64_TYPE);
     EXPECT_EQ(static_cast<const AliasType&>(dst3).get().kind(), TypeKind::ALIAS_TYPE);
     EXPECT_EQ(static_cast<const AliasType&>(dst3).rget().kind(), TypeKind::FLOAT_64_TYPE);
+    EXPECT_EQ(static_cast<const AliasType&>(dst4).get().kind(), TypeKind::ARRAY_TYPE);
 }
 
 TEST (IDLParser, union_tests)
