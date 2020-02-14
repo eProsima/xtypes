@@ -867,6 +867,14 @@ protected:
         return *active_member_;
     }
 
+    /// \brief This method allows to retrieve the current selected case member (const).
+    const Member& get_current_selection(
+            const uint8_t* instance) const
+    {
+        xtypes_assert(active_member_ != nullptr, "UnionType '" << name() << "' doesn't have a case member selected.");
+        return *active_member_;
+    }
+
     /// \brief This method destroys previous active member, if any, and constructs the new one,
     /// setting it as active.
     void activate_member(
