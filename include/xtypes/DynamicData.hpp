@@ -190,6 +190,16 @@ public:
         return ReadableDynamicDataRef(member.type(), instance_);
     }
 
+    /// \brief returns the current selected member of an UnionType.
+    /// \pre The DynamicData must represent an UnionType.
+    /// \return The current selected member.
+    const Member& current_case() const
+    {
+        xtypes_assert(type_.kind() == TypeKind::UNION_TYPE, "current_case is only available for UnionType.");
+        const UnionType& aggregation = static_cast<const UnionType&>(type_);
+        return aggregation.get_current_selection(instance_);
+    }
+
     /// \brief key access method by DynamicData.
     /// \param[in] data DynamicData representing a MapType key.
     /// \pre The DynamicData must represent a MapType.
