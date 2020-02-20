@@ -531,6 +531,7 @@ private:
                 const_dcl(ast, scope);
                 break;
             case "STRUCT_DEF"_:
+            case "IDENTIFIER"_: // An empty struct is reduced to an IDENTIFIER. No other type is allowed to be empty.
                 struct_def(ast, scope);
                 break;
             case "STRUCT_FORWARD_DCL"_:
@@ -1213,6 +1214,13 @@ private:
                     member_def(node, outer, member_list);
                     break;
             }
+        }
+
+        if (name.empty() && ast->tag == "IDENTIFIER"_)
+        {
+            name = resolve_identifier(ast, ast->token, outer, true);
+            StructType result(name);
+            outer->structure(std::move(result));
         }
 
         StructType* struct_type = &outer->structure(name);
