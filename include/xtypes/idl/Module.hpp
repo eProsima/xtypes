@@ -65,6 +65,28 @@ public:
         return inner_[submodule];
     }
 
+    using ModuleVisitor = std::function<void(const Module& mod)>;
+
+    void for_each_submodule(
+            ModuleVisitor visitor,
+            const bool recursive=true) const
+    {
+        for (const auto& inner : this->inner_)
+        {
+            visitor(*inner.second.get());
+            if (recursive)
+            {
+                for_each_submodule(visitor, inner.second.get());
+            }
+        }
+    }
+
+    void for_each(ModuleVisitor visitor) const
+    {
+        visitor(*this);
+        for_each_submodule(visitor);
+    }
+
     bool has_submodule(
             const std::string& submodule) const
     {
