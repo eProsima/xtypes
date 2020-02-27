@@ -152,14 +152,14 @@ void check_result(
     const UnionType& root_union = root.union_switch("MyUnion");
     ASSERT_EQ(root_union.discriminator().kind(), root_enum.kind());
     ASSERT_EQ(root_union.discriminator().name(), root_enum.name());
-    ASSERT_TRUE(root_union.has_member("union_struct"));
+    ASSERT_TRUE(root_union.has_member("union_enum"));
     ASSERT_TRUE(root_union.has_member("union_uint32"));
     ASSERT_TRUE(root_union.has_member("union_float"));
-    std::vector<int64_t> labels = root_union.get_labels("union_struct");
+    std::vector<int64_t> labels = root_union.get_labels("union_enum");
     ASSERT_EQ(labels.size(), 2);
     ASSERT_EQ(labels[0], root_enum.value("VALUE_1"));
     ASSERT_EQ(labels[1], root_enum.value("VALUE_2"));
-    ASSERT_FALSE(root_union.is_default("union_struct"));
+    ASSERT_FALSE(root_union.is_default("union_enum"));
     labels = root_union.get_labels("union_uint32");
     ASSERT_EQ(labels.size(), 1);
     ASSERT_EQ(labels[0], root_enum.value("VALUE_3"));
@@ -169,10 +169,23 @@ void check_result(
     ASSERT_EQ(labels[0], root_enum.value("VALUE_4"));
     ASSERT_TRUE(root_union.is_default("union_float"));
 
-    // NOTE: Until dependency tree is implemented in the generator/Module, struct names
-    // shouldn't be modifies. This order works for now for checking purposes.
-    ASSERT_TRUE(root.has_structure("AParentStruct"));
-    const StructType& parent_struct = root.structure("AParentStruct");
+    ASSERT_TRUE(root.has_union("MyScopedUnion"));
+    const UnionType& root_scoped_union = root.union_switch("MyScopedUnion");
+    ASSERT_EQ(root_scoped_union.discriminator().kind(), a_enum.kind());
+    ASSERT_EQ(root_scoped_union.discriminator().name(), a_enum.name());
+    ASSERT_TRUE(root_scoped_union.has_member("union_struct"));
+    ASSERT_TRUE(root_scoped_union.has_member("union_uint8"));
+    std::vector<int64_t> scoped_labels = root_scoped_union.get_labels("union_struct");
+    ASSERT_EQ(scoped_labels.size(), 1);
+    ASSERT_EQ(scoped_labels[0], a_enum.value("A1"));
+    ASSERT_FALSE(root_scoped_union.is_default("union_struct"));
+    scoped_labels = root_scoped_union.get_labels("union_uint8");
+    ASSERT_EQ(scoped_labels.size(), 1);
+    ASSERT_EQ(scoped_labels[0], a_enum.value("A2"));
+    ASSERT_TRUE(root_scoped_union.is_default("union_uint8"));
+
+    ASSERT_TRUE(root.has_structure("ParentStruct"));
+    const StructType& parent_struct = root.structure("ParentStruct");
     ASSERT_EQ(parent_struct.member("parent_str").type().kind(), TypeKind::STRING_TYPE);
     ASSERT_EQ(parent_struct.members().size(), 1);
     ASSERT_TRUE(root.has_structure("ChildStruct"));
@@ -181,7 +194,7 @@ void check_result(
     ASSERT_EQ(child_struct.member("child_uint").type().kind(), TypeKind::UINT_32_TYPE);
     ASSERT_EQ(child_struct.members().size(), 2);
     ASSERT_TRUE(child_struct.has_parent());
-    ASSERT_EQ(child_struct.parent().name(), "AParentStruct");
+    ASSERT_EQ(child_struct.parent().name(), "ParentStruct");
     const StructType& gchild_struct = root.structure("GrandChildStruct");
     ASSERT_EQ(gchild_struct.member("parent_str").type().kind(), TypeKind::STRING_TYPE);
     ASSERT_EQ(gchild_struct.member("child_uint").type().kind(), TypeKind::UINT_32_TYPE);
@@ -258,12 +271,11 @@ TEST (IDLGenerator, roundtrip)
             };
         };
 
-        union MyUnion switch (RootEnum) // (ModuleA::ModAEnum) TODO: Support add scope when needed.
+        union MyUnion switch (RootEnum)
         {
             case VALUE_1:
             case VALUE_2:
-                //RootStruct union_struct; // TODO: Support dependency tree. Unions are generated before Structs.
-                RootEnum union_struct;
+                RootEnum union_enum;
             case VALUE_3:
                 uint32 union_uint32;
             case VALUE_4:
@@ -271,12 +283,21 @@ TEST (IDLGenerator, roundtrip)
                 float union_float;
         };
 
-        struct AParentStruct
+        union MyScopedUnion switch (ModuleA::ModAEnum)
+        {
+            case A1:
+                RootStruct union_struct;
+            case A2:
+            default:
+                uint8 union_uint8;
+        };
+
+        struct ParentStruct
         {
             string parent_str;
         };
 
-        struct ChildStruct : AParentStruct
+        struct ChildStruct : ParentStruct
         {
             uint32 child_uint;
         };

@@ -797,6 +797,11 @@ public:
             {
                 const StructType& structure = static_cast<const StructType&>(node.type());
 
+                if (structure.has_parent())
+                {
+                    set_dynamic_type_dependency(node, structure.parent(), structure.parent().name());
+                }
+
                 structure.for_each([&](const DynamicType::TypeNode& tnode)
                 {
                     const DynamicType& type = tnode.type();
