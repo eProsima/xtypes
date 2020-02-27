@@ -1421,6 +1421,22 @@ TEST (IDLParser, struct_inheritance)
     ASSERT_EQ(data["my_child_str"].value<std::string>(), "I'm child's string.");
 }
 
+TEST (IDLParser, empty_struct)
+{
+    Context context = parse(R"(
+        struct EmptyStruct
+        {
+        };
+                   )");
+
+    std::map<std::string, DynamicType::Ptr> result = context.get_all_types();
+    EXPECT_EQ(1, result.size());
+
+    const StructType* my_struct = static_cast<const StructType*>(result["EmptyStruct"].get());
+    ASSERT_NE(my_struct, nullptr);
+    ASSERT_EQ(my_struct->members().size(), 0);
+}
+
 int main(int argc, char** argv)
 {
     testing::InitGoogleTest(&argc, argv);
