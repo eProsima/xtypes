@@ -42,7 +42,7 @@ namespace idl {
 namespace generator {
 
 inline std::string sequence_type_name(
-        const dependencytree::DependencyNode* node,
+        dependencytree::DependencyNode* node,
         const DynamicType& type)
 {
     assert(type.kind() == TypeKind::SEQUENCE_TYPE);
@@ -57,7 +57,7 @@ inline std::string sequence_type_name(
 }
 
 inline std::string map_type_name(
-        const dependencytree::DependencyNode* node,
+        dependencytree::DependencyNode* node,
         const DynamicType& type)
 {
     assert(type.kind() == TypeKind::MAP_TYPE);
@@ -88,7 +88,7 @@ inline std::vector<uint32_t> array_dimensions(
 }
 
 inline std::string array_member(
-        const dependencytree::DependencyNode* node,
+        dependencytree::DependencyNode* node,
         const Member& member)
 {
     assert(member.type().kind() == TypeKind::ARRAY_TYPE);
@@ -107,7 +107,7 @@ inline std::string array_member(
 }
 
 inline std::string type_scope(
-        const dependencytree::DependencyNode* node,
+        dependencytree::DependencyNode* node,
         const DynamicType& type)
 {
     if (node == nullptr)
@@ -115,17 +115,17 @@ inline std::string type_scope(
         return std::string();
     }
     using namespace dependencytree;
-    const std::shared_ptr<DependencyModule>& from = node->from();
+    DependencyModule* from = node->from();
 
     if (from->opts_for_dependency_setting(type) && !from->has_symbol(type.name(), false))
     {
-        const std::shared_ptr<DependencyModule> dep_mod = from->search_module_with_node(type.name());
+        const DependencyModule* dep_mod = from->search_module_with_node(type.name());
         return from->relative_scope(dep_mod);
     }
     return std::string();
 }
 
-inline std::string type_name(const dependencytree::DependencyNode* node, const DynamicType& type)
+inline std::string type_name(dependencytree::DependencyNode* node, const DynamicType& type)
 {
     static const std::map<TypeKind, std::string> mapping =
     {
