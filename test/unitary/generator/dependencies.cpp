@@ -14,7 +14,6 @@
 
 #include <gtest/gtest.h>
 #include <xtypes/idl/idl.hpp>
-#include <boost/tokenizer.hpp>
 #include <iostream>
 
 using namespace eprosima::xtypes;
