@@ -56,6 +56,7 @@ namespace dependencytree {
 /// \brief Alias given to some Module's content element (alias, struct, constant...).
 /// std::pair is used, as Module's contents are stored using std::map containers.
 using ModuleElement = std::pair<const std::string, DynamicType::Ptr>;
+using ModuleRefSet = std::vector<std::weak_ptr<DependencyModule>>;
 
 /// \brief Enumeration that describes the kind of a DependencyNode.
 /// This enumeration reflects all possible kinds for a Module's content element.
@@ -65,7 +66,9 @@ enum class ModuleElementKind
     CONST,
     ENUM,
     STRUCT,
-    UNION
+    UNION/*,
+    STRUCT_FW,
+    UNION_FW*/
 };
 
 /// \brief A class to set a hierarchy between Module's contents.
@@ -91,8 +94,6 @@ public:
         , node_(node)
         , kind_(std::move(kind))
         , iterated_(false)
-        , parent_module_(nullptr)
-        , child_module_(nullptr)
     {}
 
     /// \brief Check if this DependencyNode has been iterated.
@@ -171,62 +172,85 @@ public:
 
     /// \brief Ask this DependencyNode if any module depends on its existence.
     /// \returns A logic value indicating if a child DependencyModule has been set.
-    bool has_child_module() const
+    bool has_child_modules() const
     {
-        return child_module_ != nullptr;
+        return !child_modules_.empty();
     }
 
     /// \brief Ask this DependencyNode if its child module dependency is an specific one.
-    /// \param[in] child A pointer to the DependencyModule to be compared with the inner one.
+    /// \param[in] child A pointer to the DependencyModule to be compared with the inner ones.
     /// \returns The boolean result of the comparison.
     bool has_child_module(
             const DependencyModule* child) const
     {
-        return child_module_ == child;
+        for (const auto& child_ : child_modules_)
+        {
+            if (child_.lock().get() == child)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// \brief Get this node's child DependencyModule.
-    /// \returns A const pointer to the child module.
-    const DependencyModule* child_module() const
+    /// \returns A const reference to the child module set.
+    const ModuleRefSet& child_modules() const
     {
-        return child_module_;
+        return child_modules_;
     }
 
     /// \brief Set the child module pointer to an specific value.
     /// \param[in] child_module DependencyModule to be set.
     void set_child_module(
-            DependencyModule* child_module)
+            const std::weak_ptr<DependencyModule>&& child_module)
     {
-        child_module_ = child_module;
+        for (const auto& child_ : child_modules_)
+        {
+            if (child_.lock().get() == child_module.lock().get())
+            {
+                return;
+            }
+        }
+        child_modules_.emplace_back(std::move(child_module));
     }
 
     /// \brief Ask this DependencyNode if any module is required for it to exist.
     /// \returns A logic value indicating if a parent DependencyModule has been set.
-    bool has_parent_module() const
+    bool has_parent_modules() const
     {
-        return parent_module_ != nullptr;
+        return !parent_modules_.empty();
     }
 
-    /// \brief Get this node's parent DependencyModule.
-    /// \returns A const pointer to the parent module.
-    const DependencyModule* parent_module() const
+    /// \brief Get this node's parents DependencyModule.
+    /// \returns A const reference to the parent module set.
+    const ModuleRefSet& parent_modules() const
     {
-        return parent_module_;
+        return parent_modules_;
     }
 
-    /// \brief Get this node's parent DependencyModule.
-    /// \returns A non-const pointer to the parent module.
-    DependencyModule* parent_module()
+    /// \brief Get this node's parents DependencyModule.
+    /// \returns A non-const reference to the parent module set.
+    ModuleRefSet& parent_modules()
     {
-        return parent_module_;
+        return parent_modules_;
     }
 
-    /// \brief Set the parent module pointer to an specific value.
+    /// \brief Set a new parent module, if it did not exist.
     /// \param[in] parent_module DependencyModule to be set.
     void set_parent_module(
-            DependencyModule* parent_module)
+            const std::weak_ptr<DependencyModule>&& parent_module)
     {
-        parent_module_ = parent_module;
+        for (const auto& parent_ : parent_modules_)
+        {
+            if (parent_.lock().get() == parent_module.lock().get())
+            {
+                return;
+            }
+        }
+
+        parent_modules_.emplace_back(std::move(parent_module));
     }
 
     /// \brief Generates the corresponding IDL sentence for this node
@@ -254,7 +278,7 @@ public:
         {
             case ModuleElementKind::ALIAS:
             {
-                ss << aliase(this, static_cast<const AliasType&>(type()).get(), name());
+                ss << std::string(4 * tabs, ' ') << aliase(this, static_cast<const AliasType&>(type()).get(), name());
                 break;
             }
             case ModuleElementKind::CONST:
@@ -287,6 +311,10 @@ public:
                 ss << generate_union(this, tabs);
                 break;
             }
+            /*
+            case ModuleElementKind::STRUCT_FW:
+            case ModuleElementKind::UNION_FW:
+            */
         }
 
         iterated_ = true;
@@ -319,8 +347,8 @@ private:
     const ModuleElementKind kind_;
     bool iterated_;
     NodeRefSet ancestors_;
-    DependencyModule* child_module_;
-    DependencyModule* parent_module_;
+    ModuleRefSet parent_modules_;
+    ModuleRefSet child_modules_;
 };
 
 /// \brief Class to set and store hierarchical relationships between Module objects.
@@ -329,7 +357,6 @@ class DependencyModule : public Module
 public:
 
     using ModuleSet = std::vector<std::shared_ptr<DependencyModule>>;
-    using ModuleRefSet = std::vector<std::weak_ptr<DependencyModule>>;
     using NodeSet = std::vector<DependencyNode>;
 
     /// \brief Construct a new DependencyModule object.
@@ -616,7 +643,7 @@ public:
             }
             else
             {
-                d_root_->search_module_in_tree(module, false);
+                return d_root_->search_module_in_tree(module, false);
             }
         }
         else
@@ -628,8 +655,16 @@ public:
                     return std::weak_ptr<DependencyModule>(inner);
                 }
 
-                inner->search_module_in_tree(module, false);
+                std::weak_ptr<DependencyModule> inner_inner =
+                    inner->search_module_in_tree(module, false);
+
+                if (inner_inner.lock().get() != nullptr)
+                {
+                    return inner_inner;
+                }
             }
+
+            return std::weak_ptr<DependencyModule>(std::shared_ptr<DependencyModule>(nullptr));
         }
     }
 
@@ -660,7 +695,7 @@ public:
                 {
                     if (from_search != nullptr)
                     {
-                        node.set_child_module(from_search);
+                        node.set_child_module(search_module_in_tree(from_search));
                     }
 
                     return this;
@@ -721,7 +756,7 @@ public:
 
             if (is_submod != nullptr)
             {
-                dependent.set_parent_module(is_submod);
+                dependent.set_parent_module(search_module_in_tree(is_submod));
             }
             else
             {
@@ -795,6 +830,7 @@ public:
             }
             case ModuleElementKind::STRUCT:
             {
+                // TODO: detect if we are setting cyclical struct dependencies, and generate a forward declaration.
                 const StructType& structure = static_cast<const StructType&>(node.type());
 
                 if (structure.has_parent())
@@ -811,6 +847,7 @@ public:
             }
             case ModuleElementKind::UNION:
             {
+                // TODO: detect if we are setting cyclical union dependencies, and generate a forward declaration.
                 const UnionType& union_type = static_cast<const UnionType&>(node.type());
                 union_type.for_each([&](const DynamicType::TypeNode& tnode)
                 {
@@ -819,6 +856,10 @@ public:
                 });
                 break;
             }
+            /*
+            case ModuleElementKind::STRUCT_FW:
+            case ModuleElementKind::UNION_FW:
+            */
             default:
             {
                 xtypes_assert(false, "Type '" << node.name() << "' does not opt for dependency setting.");
@@ -898,18 +939,12 @@ public:
     /// the "is_child" DependencyModule reference.
     /// \returns An string with the generated IDL.
     std::string generate_idl_module(
-            unsigned int tabs=0,
-            const DependencyModule* is_child=nullptr)
+            unsigned int tabs=0)
     {
         std::stringstream ss;
 
         for (auto& node : node_set_)
         {
-            if (is_child != nullptr && !node.has_child_module(is_child))
-            {
-                continue;
-            }
-
             if (node.has_ancestors())
             {
                 for (const auto& ancestor : node.ancestors())
@@ -1016,8 +1051,10 @@ public:
             for (const auto& ancestor : dep_mod->ancestors())
             {
                 DependencyModule* p_ancestor = ancestor.lock().get();
-                ss << dep_mod->generate_idl_module(root ? 0 : tabs, p_ancestor);
-                ss << generate_idl(p_ancestor, root ? 0 : tabs);
+                if (!p_ancestor->iterated())
+                {
+                    ss << generate_idl(p_ancestor, root ? 0 : tabs) << std::endl;
+                }
             }
         }
 
@@ -1046,9 +1083,15 @@ public:
 
         for (auto& node : dep_mod->node_set())
         {
-            if (node.has_parent_module())
+            if (node.has_parent_modules())
             {
-                ss << generate_idl(node.parent_module(), root ? 0 : tabs + 1) << std::endl;
+                for (const auto& parent : node.parent_modules())
+                {
+                    if (!parent.lock().get()->iterated())
+                    {
+                        ss << generate_idl(parent.lock().get(), root ? 0 : tabs + 1) << std::endl;
+                    }
+                }
             }
         }
 
