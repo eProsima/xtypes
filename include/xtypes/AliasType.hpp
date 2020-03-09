@@ -105,7 +105,18 @@ public:
 
     virtual TypeConsistency is_compatible(const DynamicType& other) const override
     {
-        return aliased_->is_compatible(other);
+        TypeConsistency consistency = TypeConsistency::EQUALS;
+        if (other.kind() == TypeKind::ALIAS_TYPE)
+        {
+            const AliasType& other_alias = static_cast<const AliasType&>(other);
+            consistency |= rget().is_compatible(other_alias.rget());
+        }
+        else
+        {
+            consistency = rget().is_compatible(other);
+        }
+
+        return consistency;
     }
 
     virtual void for_each_type(
