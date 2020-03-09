@@ -109,11 +109,11 @@ public:
         if (other.kind() == TypeKind::ALIAS_TYPE)
         {
             const AliasType& other_alias = static_cast<const AliasType&>(other);
-            consistency |= aliased_->is_compatible(other_alias.rget());
+            consistency |= rget().is_compatible(other_alias.rget());
         }
         else
         {
-            consistency = aliased_->is_compatible(other);
+            consistency = rget().is_compatible(other);
         }
 
         return consistency;
