@@ -255,17 +255,17 @@ TEST (Consistency, testing_is_compatible_aliases)
 
     EXPECT_EQ(int32_alias.is_compatible(primitive_type<int32_t>()), TypeConsistency::EQUALS);
     EXPECT_EQ(int32_alias.is_compatible(int32_alias_2), TypeConsistency::EQUALS);
-    EXPECT_EQ(int32_alias.is_compatible(int32_alias_3), TypeConsistency::IGNORE_MEMBER_NAMES);
-    EXPECT_EQ(int32_alias.is_compatible(int32_alias_alias), TypeConsistency::IGNORE_MEMBER_NAMES);
-    EXPECT_EQ(int32_alias.is_compatible(int32_alias_alias_alias), TypeConsistency::IGNORE_MEMBER_NAMES);
-    EXPECT_EQ(int32_alias_alias.is_compatible(int32_alias), TypeConsistency::IGNORE_MEMBER_NAMES);
-    EXPECT_EQ(int32_alias_alias.is_compatible(int32_alias_2), TypeConsistency::IGNORE_MEMBER_NAMES);
-    EXPECT_EQ(int32_alias_alias.is_compatible(int32_alias_3), TypeConsistency::IGNORE_MEMBER_NAMES);
-    EXPECT_EQ(int32_alias_alias.is_compatible(int32_alias_alias_alias), TypeConsistency::IGNORE_MEMBER_NAMES);
-    EXPECT_EQ(int32_alias_alias_alias.is_compatible(int32_alias), TypeConsistency::IGNORE_MEMBER_NAMES);
-    EXPECT_EQ(int32_alias_alias_alias.is_compatible(int32_alias_2), TypeConsistency::IGNORE_MEMBER_NAMES);
-    EXPECT_EQ(int32_alias_alias_alias.is_compatible(int32_alias_3), TypeConsistency::IGNORE_MEMBER_NAMES);
-    EXPECT_EQ(int32_alias_alias_alias.is_compatible(int32_alias_alias), TypeConsistency::IGNORE_MEMBER_NAMES);
+    EXPECT_EQ(int32_alias.is_compatible(int32_alias_3), TypeConsistency::EQUALS);
+    EXPECT_EQ(int32_alias.is_compatible(int32_alias_alias), TypeConsistency::EQUALS);
+    EXPECT_EQ(int32_alias.is_compatible(int32_alias_alias_alias), TypeConsistency::EQUALS);
+    EXPECT_EQ(int32_alias_alias.is_compatible(int32_alias), TypeConsistency::EQUALS);
+    EXPECT_EQ(int32_alias_alias.is_compatible(int32_alias_2), TypeConsistency::EQUALS);
+    EXPECT_EQ(int32_alias_alias.is_compatible(int32_alias_3), TypeConsistency::EQUALS);
+    EXPECT_EQ(int32_alias_alias.is_compatible(int32_alias_alias_alias), TypeConsistency::EQUALS);
+    EXPECT_EQ(int32_alias_alias_alias.is_compatible(int32_alias), TypeConsistency::EQUALS);
+    EXPECT_EQ(int32_alias_alias_alias.is_compatible(int32_alias_2), TypeConsistency::EQUALS);
+    EXPECT_EQ(int32_alias_alias_alias.is_compatible(int32_alias_3), TypeConsistency::EQUALS);
+    EXPECT_EQ(int32_alias_alias_alias.is_compatible(int32_alias_alias), TypeConsistency::EQUALS);
 }
 
 TEST (Consistency , wstring_and_string_struct)

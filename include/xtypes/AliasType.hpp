@@ -109,10 +109,6 @@ public:
         if (other.kind() == TypeKind::ALIAS_TYPE)
         {
             const AliasType& other_alias = static_cast<const AliasType&>(other);
-            if (name_ != other_alias.name())
-            {
-                consistency |= TypeConsistency::IGNORE_MEMBER_NAMES;
-            }
             consistency |= aliased_->is_compatible(other_alias.rget());
         }
         else
