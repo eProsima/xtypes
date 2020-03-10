@@ -104,8 +104,8 @@ TEST (AliasType, alias_idl_generate)
 
     std::string gen_idl = idl::generate(m);
     std::stringstream expected_idl;
-    expected_idl << "typedef utf8string u8str;" << std::endl << std::endl;
     expected_idl << "typedef wstring utf8string;" << std::endl << std::endl;
+    expected_idl << "typedef utf8string u8str;" << std::endl << std::endl;
     expected_idl << "struct StructData" << std::endl;
     expected_idl << "{" << std::endl;
     expected_idl << "    utf8string st0;" << std::endl;
