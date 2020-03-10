@@ -810,7 +810,7 @@ public:
             case ModuleElementKind::ALIAS:
             {
                 const AliasType& alias = static_cast<const AliasType&>(node.type());
-                set_dynamic_type_dependency(node, *alias, alias.name());
+                set_dynamic_type_dependency(node, *alias, alias->name());
                 break;
             }
 
