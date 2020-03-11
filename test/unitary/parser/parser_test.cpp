@@ -938,7 +938,7 @@ TEST (IDLParser, enumerations_test)
                        )");
 
         std::map<std::string, DynamicType::Ptr> result = context.get_all_types();
-        EXPECT_EQ(1, result.size());
+        EXPECT_EQ(2, result.size());
 
         const DynamicType* my_struct = result["MyStruct"].get();
         DynamicData data(*my_struct);
@@ -1240,7 +1240,7 @@ TEST (IDLParser, union_tests)
                    )");
 
     std::map<std::string, DynamicType::Ptr> result = context.module().get_all_types();
-    EXPECT_EQ(3, result.size());
+    EXPECT_EQ(5, result.size());
 
     const UnionType& my_union = context.module().union_switch("MyUnion");
     DynamicData data(my_union);
@@ -1298,7 +1298,7 @@ TEST (IDLParser, map_tests)
                    )");
 
     std::map<std::string, DynamicType::Ptr> result = context.module().get_all_types();
-    EXPECT_EQ(2, result.size());
+    EXPECT_EQ(4, result.size());
 
     const StructType& my_struct = context.module().structure("MyStruct");
     const StructType& my_key = context.module().structure("KeyStruct");
