@@ -298,12 +298,22 @@ public:
             {
                 map.emplace(module_name + "::" + pair.first, pair.second);
             }
+            for (const auto& pair : aliases_)
+            {
+                map.emplace(module_name + "::" + pair.first, pair.second);
+            }
+            for (const auto& pair : enumerations_32_)
+            {
+                map.emplace(module_name + "::" + pair.first, pair.second);
+            }
             // TODO Add other types...
         }
         else
         {
             map.insert(structs_.begin(), structs_.end());
             map.insert(unions_.begin(), unions_.end());
+            map.insert(aliases_.begin(), aliases_.end());
+            map.insert(enumerations_32_.begin(), enumerations_32_.end());
             // TODO Add other types...
         }
 
