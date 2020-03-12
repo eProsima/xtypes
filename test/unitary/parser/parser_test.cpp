@@ -24,7 +24,8 @@ using namespace eprosima::xtypes::idl;
 
 TEST (IDLParser, simple_struct_test)
 {
-    Context context = parse(R"(
+    Context context = parse(
+        R"(
         struct SimpleStruct
         {
             boolean my_bool;
@@ -107,7 +108,8 @@ TEST (IDLParser, simple_struct_test)
 
 TEST (IDLParser, array_sequence_struct_test)
 {
-    Context context = parse(R"(
+    Context context = parse(
+        R"(
         struct SimpleStruct
         {
             boolean my_bool_5[5];
@@ -152,7 +154,7 @@ TEST (IDLParser, array_sequence_struct_test)
     EXPECT_EQ(data["my_string16"].bounds(), 16);
     // data["my_string16"] = "0123456789abcdefghijklmnopqrstuvwxyz" ;
     // EXPECT_EQ(data["my_string16"].size(), 16);
-    data["my_string16"] = "0123456789" ;
+    data["my_string16"] = "0123456789";
     EXPECT_EQ(data["my_string16"].size(), 10);
     EXPECT_EQ(data["my_string16"].bounds(), 16);
     EXPECT_EQ(data["my_string16"].value<std::string>(), "0123456789");
@@ -160,7 +162,7 @@ TEST (IDLParser, array_sequence_struct_test)
     EXPECT_EQ(data["my_wstring32"].bounds(), 32);
     // data["my_wstring32"] = L"0123456789abcdefghijklmnñopqrstuvwxyz" ;
     // EXPECT_EQ(data["my_wstring32"].size(), 32);
-    data["my_wstring32"] = L"0123456789" ;
+    data["my_wstring32"] = L"0123456789";
     EXPECT_EQ(data["my_wstring32"].size(), 10);
     EXPECT_EQ(data["my_wstring32"].bounds(), 32);
     EXPECT_EQ(data["my_wstring32"].value<std::wstring>(), L"0123456789");
@@ -184,7 +186,7 @@ TEST (IDLParser, array_sequence_struct_test)
         }
         else
         {
-            ASSERT_OR_EXCEPTION(data["my_char6_seq"][i].push(static_cast<char>(i));, "out of bounds");
+            ASSERT_OR_EXCEPTION(data["my_char6_seq"][i].push(static_cast<char>(i)); , "out of bounds");
         }
     }
     for (int32_t i = 0; i < 7; ++i)
@@ -195,7 +197,7 @@ TEST (IDLParser, array_sequence_struct_test)
         }
         else
         {
-            ASSERT_OR_EXCEPTION(data["my_char6_seq"][i];, "out of bounds");
+            ASSERT_OR_EXCEPTION(data["my_char6_seq"][i]; , "out of bounds");
         }
     }
     EXPECT_EQ(data["my_char6_seq"].size(), 6);
@@ -222,7 +224,8 @@ TEST (IDLParser, array_sequence_struct_test)
 
 TEST (IDLParser, inner_struct_test)
 {
-    Context context = parse(R"(
+    Context context = parse(
+        R"(
         struct InnerStruct
         {
             string message;
@@ -251,7 +254,8 @@ TEST (IDLParser, inner_struct_test)
 
 TEST (IDLParser, multiple_declarator_members_test)
 {
-    Context context = parse(R"(
+    Context context = parse(
+        R"(
         struct SimpleStruct
         {
             boolean my_bool_5[5], other[55], another, multi_array[2][3];
@@ -273,7 +277,7 @@ TEST (IDLParser, name_collision)
                     string STRUCT;
                 };
                            )"
-                );
+                            );
             FAIL() << " Exception wasn't thrown!" << std::endl;
         }
         catch (const Parser::exception& e)
@@ -299,8 +303,8 @@ TEST (IDLParser, name_collision)
                 string STRUCT;
             };
                        )",
-                       context
-            );
+                context
+                );
         std::map<std::string, DynamicType::Ptr> result = context.module().get_all_types();
         EXPECT_EQ(1, result.size());
         const DynamicType* my_struct = result["Struct"].get();
@@ -317,8 +321,8 @@ TEST (IDLParser, name_collision)
                 string string;
             };
                        )",
-                       context
-            );
+                context
+                );
         std::map<std::string, DynamicType::Ptr> result = context.module().get_all_types();
         EXPECT_EQ(1, result.size());
     }
@@ -332,7 +336,7 @@ TEST (IDLParser, name_collision)
                 string _struct;
             };
                        )"
-            );
+                        );
         std::map<std::string, DynamicType::Ptr> result = context.module().get_all_types();
         EXPECT_EQ(1, result.size());
 
@@ -352,7 +356,7 @@ TEST (IDLParser, name_collision)
                     uint32 MyStruct;
                 };
                            )"
-                );
+                            );
             FAIL() << " Exception wasn't thrown!" << std::endl;
         }
         catch (const Parser::exception& e)
@@ -379,7 +383,7 @@ TEST (IDLParser, name_collision)
                     string a;
                 };
                            )"
-                );
+                            );
             FAIL() << " Exception wasn't thrown!" << std::endl;
         }
         catch (const Parser::exception& e)
@@ -405,7 +409,7 @@ TEST (IDLParser, name_collision)
                     uint32 a, a;
                 };
                            )"
-                );
+                            );
             FAIL() << " Exception wasn't thrown!" << std::endl;
         }
         catch (const Parser::exception& e)
@@ -424,7 +428,8 @@ TEST (IDLParser, name_collision)
 
 TEST (IDLParser, module_scope_test)
 {
-    Context context = parse(R"(
+    Context context = parse(
+        R"(
         module A
         {
             struct StA;
@@ -487,12 +492,13 @@ TEST (IDLParser, constants)
 {
     try
     {
-        Context context = parse(R"(
+        Context context = parse(
+            R"(
             const uint32 MAX_SIZE = 32 / 2;
             const uint32 SUPER_MAX = MAX_SIZE * 1000 << 5;
                        )");
     }
-    catch(const Parser::exception& exc)
+    catch (const Parser::exception& exc)
     {
         FAIL() << exc.what() << std::endl;
     }
@@ -503,29 +509,30 @@ TEST (IDLParser, constants)
             const string C_STRING = "Hola";
                        )");
     }
-    catch(const Parser::exception& exc)
+    catch (const Parser::exception& exc)
     {
         FAIL() << exc.what() << std::endl;
     }
 
     ASSERT_OR_EXCEPTION(
-        {
-            Context context = parse(R"(
+    {
+        Context context = parse(R"(
                 const string C_STRING = "Hola" + 55;
             )");
-        },
+    },
         "Assertion failed");
 
     try
     {
-        Context context = parse(R"(
+        Context context = parse(
+            R"(
             const string C_STRING = "Hola";
             const string C_STRING_2 = C_STRING;
             const string C_STRING_3 = "Hey, " "Adios!!"
                 " Esto debe estar conca"   "tenado";
                        )");
     }
-    catch(const Parser::exception& exc)
+    catch (const Parser::exception& exc)
     {
         FAIL() << exc.what() << std::endl;
     }
@@ -537,11 +544,11 @@ TEST (IDLParser, constants)
                        )");
         FAIL() << "Exception not thown.";
     }
-    catch(const Parser::exception& exc)
+    catch (const Parser::exception& exc)
     {
         FAIL() << exc.what() << std::endl;
     }
-    catch(const std::exception& exc)
+    catch (const std::exception& exc)
     {
         std::string msg = exc.what();
         if (msg.find("stof") == std::string::npos)
@@ -556,13 +563,14 @@ TEST (IDLParser, constants)
             const uint64 BAD_TYPE = 55.8;
                        )");
     }
-    catch(const Parser::exception& exc)
+    catch (const Parser::exception& exc)
     {
         FAIL() << exc.what() << std::endl; // TODO?
     }
 
     {
-        Context context = parse(R"(
+        Context context = parse(
+            R"(
             const uint32 SIZE = 50;
 
             struct MyStruct
@@ -589,7 +597,8 @@ TEST (IDLParser, not_yet_supported)
 {
     try
     {
-        Context context = parse(R"(
+        Context context = parse(
+            R"(
             const uint32 MAX_SIZE = 32 / 2;
 
             module A
@@ -658,23 +667,24 @@ TEST (IDLParser, not_yet_supported)
             typedef FutureStruct future_is_now;
                        )");
     }
-    catch(const Parser::exception& exc)
+    catch (const Parser::exception& exc)
     {
         std::cout << exc.what() << std::endl;
     }
     /*
-    EXPECT_EQ(1, result.size());
+       EXPECT_EQ(1, result.size());
 
-    const DynamicType* my_struct = result["FutureStruct"].get();
-    DynamicData data(*my_struct);
-    */
+       const DynamicType* my_struct = result["FutureStruct"].get();
+       DynamicData data(*my_struct);
+     */
 }
 
 TEST (IDLParser, const_value_parser)
 {
     {
         uint32_t value = (998 + 8) * 8;
-        Context context = parse(R"(
+        Context context = parse(
+            R"(
             const uint32 SIZE = (998 + 8) * 8;
 
             struct MyStruct
@@ -710,7 +720,8 @@ TEST (IDLParser, parse_file)
 
 TEST (IDLParser, include_from_string)
 {
-    Context context = parse(R"(
+    Context context = parse(
+        R"(
         #include "idl/include/test_include.idl"
 
         module include
@@ -768,7 +779,8 @@ TEST (IDLParser, include_from_file_04_multi)
 
 TEST (IDLParser, real_world_parsing)
 {
-    std::string idl_content = R"(
+    std::string idl_content =
+            R"(
         module geometry_msgs {
             module msg {
                 struct Point {
@@ -919,7 +931,8 @@ TEST (IDLParser, real_world_parsing)
 TEST (IDLParser, enumerations_test)
 {
     {
-        Context context = parse(R"(
+        Context context = parse(
+            R"(
             enum MyEnum
             {
                 A,
@@ -965,7 +978,8 @@ TEST (IDLParser, bad_idl_logging)
         {
             323241 std_string;
         };
-        )~~", context);
+        )~~",
+            context);
 
     std::vector<log::LogEntry> log = context.log();
     ASSERT_GT(log.size(), 0);
@@ -1024,7 +1038,8 @@ TEST (IDLParser, logging)
         {
             int64 int64;
         };
-        )~~", context);
+        )~~",
+            context);
 
     std::vector<log::LogEntry> log = context.log();
     ASSERT_GT(log.size(), 0);
@@ -1098,40 +1113,41 @@ TEST (IDLParser, logging)
 }
 
 #define EXPECTED_LOG_RESULTS(LOG_LEVEL, N_ENTRIES, ASSERT, PRINT)                                                   \
-{                                                                                                                   \
-    Context context;                                                                                                \
-    context.log_level(log::LogLevel::LOG_LEVEL);                                                                    \
-    if(PRINT)                                                                                                       \
-    {                                                                                                               \
-        context.print_log(true);                                                                                    \
-    }                                                                                                               \
-    context.preprocess = false;                                                                                     \
-    context.allow_keyword_identifiers = true;                                                                       \
-    parse(idl_str, context);                                                                                        \
+    {                                                                                                                   \
+        Context context;                                                                                                \
+        context.log_level(log::LogLevel::LOG_LEVEL);                                                                    \
+        if (PRINT)                                                                                                       \
+        {                                                                                                               \
+            context.print_log(true);                                                                                    \
+        }                                                                                                               \
+        context.preprocess = false;                                                                                     \
+        context.allow_keyword_identifiers = true;                                                                       \
+        parse(idl_str, context);                                                                                        \
                                                                                                                     \
-    std::vector<log::LogEntry> log = context.log();                                                                 \
-    ASSERT(log.size(), N_ENTRIES);                                                                                  \
-}
+        std::vector<log::LogEntry> log = context.log();                                                                 \
+        ASSERT(log.size(), N_ENTRIES);                                                                                  \
+    }
 
 #define EXPECTED_LOG_RESULTS_FILTERED(LOG_LEVEL, N_ENTRIES, ASSERT, PRINT)                                          \
-{                                                                                                                   \
-    Context context;                                                                                                \
-    context.log_level(log::LogLevel::DEBUG);                                                                        \
-    if(PRINT)                                                                                                       \
-    {                                                                                                               \
-        context.print_log(true);                                                                                    \
-    }                                                                                                               \
-    context.preprocess = false;                                                                                     \
-    context.allow_keyword_identifiers = true;                                                                       \
-    parse(idl_str, context);                                                                                        \
+    {                                                                                                                   \
+        Context context;                                                                                                \
+        context.log_level(log::LogLevel::DEBUG);                                                                        \
+        if (PRINT)                                                                                                       \
+        {                                                                                                               \
+            context.print_log(true);                                                                                    \
+        }                                                                                                               \
+        context.preprocess = false;                                                                                     \
+        context.allow_keyword_identifiers = true;                                                                       \
+        parse(idl_str, context);                                                                                        \
                                                                                                                     \
-    std::vector<log::LogEntry> log = context.log(log::LogLevel::LOG_LEVEL, true);                                   \
-    ASSERT(log.size(), N_ENTRIES);                                                                                  \
-}
+        std::vector<log::LogEntry> log = context.log(log::LogLevel::LOG_LEVEL, true);                                   \
+        ASSERT(log.size(), N_ENTRIES);                                                                                  \
+    }
 
 TEST (IDLParser, severity_logging)
 {
-    const std::string idl_str = R"~~(
+    const std::string idl_str =
+            R"~~(
         struct MyStruct // DEBUG
         {
             int32 int32; // DEBUG + INFO
@@ -1154,7 +1170,8 @@ TEST (IDLParser, severity_logging)
 
 TEST(IDLParser, alias_test)
 {
-    std::string idl_spec = R"(
+    std::string idl_spec =
+            R"(
         typedef uint32 u32;
         typedef double longfloat;
         typedef longfloat lfloat;
@@ -1202,7 +1219,8 @@ TEST(IDLParser, alias_test)
 
 TEST (IDLParser, union_tests)
 {
-    Context context = parse(R"(
+    Context context = parse(
+        R"(
         enum MyEnum
         {
             AAA,
@@ -1270,7 +1288,8 @@ TEST (IDLParser, union_tests)
 
 TEST (IDLParser, map_tests)
 {
-    Context context = parse(R"(
+    Context context = parse(
+        R"(
         enum MyEnum
         {
             AAA,
@@ -1390,7 +1409,8 @@ TEST (IDLParser, map_tests)
 
 TEST (IDLParser, struct_inheritance)
 {
-    Context context = parse(R"(
+    Context context = parse(
+        R"(
         struct ParentStruct
         {
             string my_str;
@@ -1437,7 +1457,69 @@ TEST (IDLParser, empty_struct)
     ASSERT_EQ(my_struct->members().size(), 0);
 }
 
-int main(int argc, char** argv)
+TEST (IDLParser, same_struct_id_in_different_modules)
+{
+    DynamicType::Ptr first_struct;
+
+    {
+        Context context;
+        parse(R"(
+            module a
+            {
+                module b
+                {
+                    module c
+                    {
+                        struct MyStruct
+                        {
+                            long id;
+                        };
+                    };
+                };
+            };
+                       )",
+                context
+                );
+        std::map<std::string, DynamicType::Ptr> result = context.module().get_all_types();
+        EXPECT_EQ(1, result.size());
+        const DynamicType* my_struct = result["MyStruct"].get();
+        EXPECT_EQ(my_struct->name(), "MyStruct");
+        EXPECT_EQ(my_struct->parent()->scope(), "a::b::c");
+        first_struct = result["MyStruct"];
+        EXPECT_EQ(first_struct.get()->name(), "MyStruct");
+        EXPECT_EQ(first_struct.get()->parent()->scope(), "a::b::c");
+    }
+
+    {
+        Context context;
+        parse(R"(
+            module x
+            {
+                module y
+                {
+                    struct MyStruct
+                    {
+                        long id;
+                    };
+                };
+            };
+                       )",
+                context
+                );
+        std::map<std::string, DynamicType::Ptr> result = context.module().get_all_types();
+        EXPECT_EQ(1, result.size());
+        const DynamicType* my_struct = result["MyStruct"].get();
+        EXPECT_EQ(my_struct->name(), "MyStruct");
+        EXPECT_EQ(my_struct->parent()->scope(), "x::y");
+    }
+
+    EXPECT_EQ(first_struct.get()->name(), "MyStruct");
+    EXPECT_EQ(first_struct.get()->parent()->scope(), "a::b::c");
+}
+
+int main(
+        int argc,
+        char** argv)
 {
     testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
