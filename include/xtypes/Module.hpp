@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
-*/
+ */
 
 #ifndef EPROSIMA_XTYPES_MODULE_HPP_
 #define EPROSIMA_XTYPES_MODULE_HPP_
@@ -27,20 +27,25 @@ class Module;
 
 namespace idl {
 namespace generator {
-std::string module_contents(const Module& module, size_t tabs);
+std::string module_contents(
+        const Module& module,
+        size_t tabs);
 }
 }
 
 class Module
 {
 protected:
+
     using PairModuleSymbol = std::pair<const Module*, std::string>;
 
 public:
+
     Module()
         : outer_(nullptr)
         , name_("")
-    {}
+    {
+    }
 
     Module& create_submodule(
             const std::string& submodule)
@@ -55,7 +60,6 @@ public:
     {
         return inner_[submodule];
     }
-
 
     bool has_submodule(
             const std::string& submodule) const
@@ -74,20 +78,6 @@ public:
     {
         return *inner_.at(submodule);
     }
-
-    /* TODO - Probably should be removed.
-    bool emplace(
-            std::shared_ptr<Module>&& module)
-    {
-        if (module->name_.find("::") != std::string::npos)
-        {
-            return false; // Cannot add a module with scoped name.
-        }
-        module->outer_ = this;
-        auto result = inner_.emplace(module->name_, std::move(module));
-        return result.second;
-    }
-    */
 
     const std::string& name() const
     {
@@ -108,11 +98,11 @@ public:
             bool extend = true) const
     {
         bool has_it = structs_.count(ident) > 0
-            || unions_.count(ident) > 0
-            || aliases_.count(ident) > 0
-            || constants_.count(ident) > 0
-            || enumerations_32_.count(ident) > 0
-            || inner_.count(ident) > 0;
+                || unions_.count(ident) > 0
+                || aliases_.count(ident) > 0
+                || constants_.count(ident) > 0
+                || enumerations_32_.count(ident) > 0
+                || inner_.count(ident) > 0;
 
         if (has_it)
         {
@@ -165,13 +155,14 @@ public:
     }
 
     bool structure(
-            const StructType& struct_type)
+            StructType& struct_type)
     {
         if (struct_type.name().find("::") != std::string::npos)
         {
             return false; // Cannot add a symbol with scoped name.
         }
 
+        struct_type.attach_to_module(this);
         auto result = structs_.emplace(struct_type.name(), struct_type);
         return result.second;
     }
@@ -194,6 +185,7 @@ public:
             }
         }
 
+        struct_type.attach_to_module(this);
         auto result = structs_.emplace(struct_type.name(), std::move(struct_type));
         return result.second;
     }
@@ -239,13 +231,14 @@ public:
     }
 
     bool union_switch(
-            const UnionType& union_type)
+            UnionType& union_type)
     {
         if (union_type.name().find("::") != std::string::npos)
         {
             return false; // Cannot add a symbol with scoped name.
         }
 
+        union_type.attach_to_module(this);
         auto result = unions_.emplace(union_type.name(), union_type);
         return result.second;
     }
@@ -268,6 +261,7 @@ public:
             }
         }
 
+        union_type.attach_to_module(this);
         auto result = unions_.emplace(union_type.name(), std::move(union_type));
         return result.second;
     }
@@ -322,7 +316,6 @@ public:
             pair.second->fill_all_types(map, add_scope);
         }
     }
-
 
     DynamicData constant(
             const std::string& name) const
@@ -501,18 +494,22 @@ public:
             return false; // Cannot define alias with scoped name (or already defined).
         }
 
-        return aliases_.emplace(name, AliasType(type, name)).second;
+        AliasType alias(type, name);
+        alias.attach_to_module(this);
+        return aliases_.emplace(name, alias).second;
     }
 
     bool add_alias(
-            const AliasType& alias)
+            AliasType& alias)
     {
+        alias.attach_to_module(this);
         return aliases_.emplace(alias.name(), AliasType(alias)).second;
     }
 
     bool add_alias(
-            const AliasType&& alias)
+            AliasType&& alias)
     {
+        alias.attach_to_module(this);
         return aliases_.emplace(alias.name(), std::move(alias)).second;
     }
 
@@ -561,7 +558,10 @@ public:
     }
 
 protected:
-    friend std::string idl::generator::module_contents(const Module& module, size_t tabs);
+
+    friend std::string idl::generator::module_contents(
+            const Module& module,
+            size_t tabs);
 
     std::map<std::string, DynamicType::Ptr> aliases_;
     std::map<std::string, DynamicType::Ptr> constants_types_;
@@ -572,7 +572,7 @@ protected:
     std::map<std::string, DynamicType::Ptr> unions_;
     //std::map<std::string, std::shared_ptr<AnnotationType>> annotations_;
     Module* outer_;
-    std::map<std::string, std::shared_ptr<Module>> inner_;
+    std::map<std::string, std::shared_ptr<Module> > inner_;
     std::string name_;
 
     Module(
