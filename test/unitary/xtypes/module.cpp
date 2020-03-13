@@ -33,9 +33,9 @@ TEST (Modules, scope)
         .add_member("b_float", primitive_type<float>());
 
     Module root;
-    Module& submod_A = root.create_submodule("A");
-    Module& submod_B = root.create_submodule("B");
-    Module& submod_AA = submod_A.create_submodule("A");
+    Module submod_A = root.create_submodule("A");
+    Module submod_B = root.create_submodule("B");
+    Module submod_AA = submod_A.create_submodule("A");
     root.structure(inner);
     submod_AA.structure(outer);
     submod_B.structure(b);

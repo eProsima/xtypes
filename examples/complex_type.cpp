@@ -16,7 +16,7 @@ int main()
     )";
 
     idl::Context context = idl::parse(idl_spec);
-    const StructType& inner = context.module().structure("InnerType");
+    StructType& inner = context.module().structure("InnerType");
 
     AliasType abool(primitive_type<bool>(), "bool");
     StructType outer("OuterType");
@@ -62,9 +62,9 @@ int main()
     std::cout << data.to_string() << std::endl; //See to_string() implementation as an example of data instrospection
 
     Module root;
-    Module& submod_a = root.create_submodule("a");
-    Module& submod_b = root.create_submodule("b");
-    Module& submod_aa = submod_a.create_submodule("a");
+    Module submod_a = root.create_submodule("a");
+    Module submod_b = root.create_submodule("b");
+    Module submod_aa = submod_a.create_submodule("a");
     root.structure(inner);
     submod_aa.structure(outer);
 

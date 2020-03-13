@@ -355,23 +355,23 @@ inline std::string get_const_value(ReadableDynamicDataRef data)
 
 // TODO: module_contents (and maybe module) should generate a dependency tree and resolve them in the generated IDL,
 // including maybe the need of forward declarations.
-inline std::string module_contents(const Module& module_, size_t tabs = 0)
+inline std::string module_contents(Module module_, size_t tabs = 0)
 {
     std::stringstream ss;
 
     // Aliases
-    for (const auto& alias : module_.aliases_)
+    for (const auto& alias : module_->aliases_)
     {
         ss << std::string(tabs * 4, ' ') << aliase(static_cast<const AliasType&>(*alias.second).get(), alias.first);
     }
     // Enums
-    for (const auto& pair : module_.enumerations_32_)
+    for (const auto& pair : module_->enumerations_32_)
     {
         const EnumerationType<uint32_t>& enum_type = static_cast<const EnumerationType<uint32_t>&>(*pair.second);
         ss << enumeration32(enum_type, tabs);
     }
     // Consts
-    for (const auto& pair : module_.constants_)
+    for (const auto& pair : module_->constants_)
     {
         if (!module_.is_const_from_enum(pair.first)) // Don't add as const the "fake" enumeration consts.
         {
@@ -380,21 +380,21 @@ inline std::string module_contents(const Module& module_, size_t tabs = 0)
         }
     }
     // Unions
-    for (const auto& pair : module_.unions_)
+    for (const auto& pair : module_->unions_)
     {
         const UnionType& union_type = static_cast<const UnionType&>(*pair.second);
         ss << generate_union(union_type, tabs);
     }
     // Structs
-    for (const auto& pair : module_.structs_)
+    for (const auto& pair : module_->structs_)
     {
         const StructType& struct_type = static_cast<const StructType&>(*pair.second);
         ss << structure(struct_type, tabs);
     }
     // Submodules
-    for (const auto& pair : module_.inner_)
+    for (const auto& pair : module_->inner_)
     {
-        const Module& inner_module = *pair.second;
+        Module inner_module = pair.second;
         ss << std::string(tabs * 4, ' ') << "module " << inner_module.name() << std::endl;
         ss << std::string(tabs * 4, ' ') << "{" << std::endl;
         ss << module_contents(inner_module, tabs + 1);
@@ -404,7 +404,7 @@ inline std::string module_contents(const Module& module_, size_t tabs = 0)
     return ss.str();
 }
 
-inline std::string module(const Module& module, size_t tabs = 0)
+inline std::string module(Module module, size_t tabs = 0)
 {
     std::stringstream ss;
 

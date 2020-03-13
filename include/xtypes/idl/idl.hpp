@@ -88,7 +88,7 @@ inline std::string generate(const StructType& type)
 /// \brief Generates the IDL that represents a Module
 /// \param[in] module Module to represent into IDL
 /// \return An IDL that represents the Module given.
-inline std::string generate(const Module& module)
+inline std::string generate(Module module)
 {
     return generator::module(module);
 }

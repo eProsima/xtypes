@@ -144,7 +144,7 @@ struct Context
         std::map<std::string, DynamicType::Ptr> result;
         if (module_ != nullptr)
         {
-            module_->fill_all_types(result, scope);
+            module_.fill_all_types(result, scope);
         }
         return result;
     }
@@ -154,9 +154,9 @@ struct Context
         return get_all_types(true);
     }
 
-    Module& module()
+    Module module()
     {
-        return *module_;
+        return module_;
     }
 
     ~Context()
@@ -206,7 +206,7 @@ private:
 
     friend class Parser;
     Parser* instance_;
-    std::shared_ptr<Module> module_ = nullptr;
+    Module module_;
     std::vector<log::LogEntry> log_;
     log::LogLevel log_level_ = log::LogLevel::WARNING;
     bool print_log_ = false;
@@ -355,7 +355,7 @@ public:
     {
         if (root_scope_)
         {
-            root_scope_->fill_all_types(types_map);
+            root_scope_.fill_all_types(types_map);
         }
     }
 
@@ -414,7 +414,7 @@ private:
 
     peg::parser parser_;
     Context* context_;
-    std::shared_ptr<Module> root_scope_;
+    Module root_scope_;
 
     static Parser* get_instance()
     {
@@ -525,16 +525,16 @@ private:
         return output;
     }
 
-    std::shared_ptr<Module> build_on_ast(
+    Module build_on_ast(
             const std::shared_ptr<peg::Ast>& ast,
-            std::shared_ptr<Module> scope = nullptr)
+            Module scope = Module())
     {
         using namespace peg::udl;
         if (scope == nullptr)
         {
             if (context_->clear || root_scope_ == nullptr)
             {
-                root_scope_ = std::make_shared<Module>();
+                root_scope_ = Module();
             }
             scope = root_scope_;
         }
@@ -586,7 +586,7 @@ private:
     std::string resolve_identifier(
             const std::shared_ptr<peg::Ast>& ast,
             const std::string& identifier,
-            std::shared_ptr<Module>& scope,
+            Module& scope,
             bool ignore_already_used = false)
     {
         if (identifier.find("_") == 0)
@@ -612,7 +612,7 @@ private:
                     ast);
         }
 
-        if (scope->has_symbol(identifier))
+        if (scope.has_symbol(identifier))
         {
             if (!ignore_already_used)
             {
@@ -666,31 +666,31 @@ private:
 
     void module_dcl(
             const std::shared_ptr<peg::Ast>& ast,
-            std::shared_ptr<Module>& outer)
+            Module& outer)
     {
         using namespace peg::udl;
-        std::shared_ptr<Module> scope;
+        Module scope;
         for (auto& node : ast->nodes)
         {
             switch (node->tag){
                 case "IDENTIFIER"_:
                 {
                     std::string name = resolve_identifier(node, node->token, outer, true);
-                    if (!outer->has_submodule(name))
+                    if (!outer.has_submodule(name))
                     {
                         // New scope
-                        outer->create_submodule(name);
-                        scope = outer->submodule(name);
+                        outer.create_submodule(name);
+                        scope = outer.submodule(name);
                         context_->log(log::LogLevel::DEBUG, "MODULE_DCL",
-                                "New submodule: " + scope->scope(),
+                                "New submodule: " + scope.scope(),
                                 ast);
                     }
                     else
                     {
                         // Adding to an already defined scope
-                        scope = outer->submodule(name);
+                        scope = outer.submodule(name);
                         context_->log(log::LogLevel::DEBUG, "MODULE_DCL",
-                                "Existing submodule: " + scope->scope(),
+                                "Existing submodule: " + scope.scope(),
                                 ast);
                     }
                     break;
@@ -704,7 +704,7 @@ private:
 
     void alias_dcl(
             const std::shared_ptr<peg::Ast>& ast,
-            std::shared_ptr<Module>& outer)
+            Module& outer)
     {
         using namespace peg::udl;
 
@@ -727,12 +727,12 @@ private:
             type = get_array_type(dimensions, type);
         }
 
-        outer->create_alias(std::move(type), name);
+        outer.create_alias(std::move(type), name);
     }
 
     void const_dcl(
             const std::shared_ptr<peg::Ast>& ast,
-            std::shared_ptr<Module>& outer)
+            Module& outer)
     {
         using namespace peg::udl;
 
@@ -745,7 +745,7 @@ private:
                 "Found const " + type->name() + " " + identifier + " = " + expr.to_string(),
                 ast);
 
-        outer->create_constant(identifier, expr);
+        outer.create_constant(identifier, expr);
     }
 
     bool get_literal_value(
@@ -1002,7 +1002,7 @@ private:
     DynamicData solve_expr(
             const DynamicType& type,
             const std::shared_ptr<peg::Ast>& ast,
-            std::shared_ptr<Module>& outer) const
+            Module& outer) const
     {
         using namespace peg::udl;
         DynamicData result(type);
@@ -1023,7 +1023,7 @@ private:
                 break;
             }
             case "SCOPED_NAME"_:
-                result = outer->constant(ast->token);
+                result = outer.constant(ast->token);
                 break;
             case "UNARY_EXPR"_:
             {
@@ -1122,7 +1122,7 @@ private:
 
     void enum_dcl(
             const std::shared_ptr<peg::Ast>& ast,
-            std::shared_ptr<Module>& outer)
+            Module& outer)
     {
         using namespace peg::udl;
 
@@ -1141,20 +1141,20 @@ private:
             // Little hack. Don't judge me.
             DynamicData hack(primitive_type<uint32_t>());
             hack = result.value(token);
-            outer->create_constant(name + "::" + token, hack, false, true); // Mark it as "from_enum"
-            outer->create_constant(token, hack, false, true); // Typically both are accessible
+            outer.create_constant(name + "::" + token, hack, false, true); // Mark it as "from_enum"
+            outer.create_constant(token, hack, false, true); // Typically both are accessible
             // End of hack
         }
-        outer->enum_32(std::move(result));
+        outer.enum_32(std::move(result));
     }
 
     void struct_fw_dcl(
             const std::shared_ptr<peg::Ast>& ast,
-            std::shared_ptr<Module>& outer)
+            Module& outer)
     {
         using namespace peg::udl;
         std::string name = resolve_identifier(ast, ast->token, outer);
-        if (outer->has_symbol(name, false))
+        if (outer.has_symbol(name, false))
         {
             context_->log(log::LogLevel::ERROR, "EXCEPTION",
                     "Struct " + ast->token + " was already declared.",
@@ -1166,16 +1166,16 @@ private:
         context_->log(log::LogLevel::DEBUG, "STRUCT_FW_DCL",
                 "Found forward struct declaration: \"" + name + "\"",
                 ast);
-        outer->structure(std::move(result));
+        outer.structure(std::move(result));
     }
 
     void union_fw_dcl(
             const std::shared_ptr<peg::Ast>& ast,
-            std::shared_ptr<Module>& outer)
+            Module& outer)
     {
         using namespace peg::udl;
         std::string name = resolve_identifier(ast, ast->token, outer);
-        if (outer->has_symbol(name, false))
+        if (outer.has_symbol(name, false))
         {
             context_->log(log::LogLevel::ERROR, "EXCEPTION",
                     "Union " + ast->token + " was already declared.",
@@ -1190,12 +1190,12 @@ private:
         context_->log(log::LogLevel::DEBUG, "UNION_FW_DCL",
                 "Found forward union declaration: \"" + name + "\"",
                 ast);
-        outer->structure(std::move(result));
+        outer.structure(std::move(result));
     }
 
     void struct_def(
             const std::shared_ptr<peg::Ast>& ast,
-            std::shared_ptr<Module>& outer)
+            Module& outer)
     {
         using namespace peg::udl;
         std::string name;
@@ -1209,11 +1209,11 @@ private:
                 {
                     name = resolve_identifier(ast, node->token, outer, true);
                     StructType result(name);
-                    outer->structure(std::move(result));
+                    outer.structure(std::move(result));
                     break;
                 }
                 case "INHERITANCE"_:
-                    if (outer->has_structure(node->token))
+                    if (outer.has_structure(node->token))
                     {
                         parent_name = node->token;
                     }
@@ -1235,10 +1235,10 @@ private:
         {
             name = resolve_identifier(ast, ast->token, outer, true);
             StructType result(name);
-            outer->structure(std::move(result));
+            outer.structure(std::move(result));
         }
 
-        StructType* struct_type = &outer->structure(name);
+        StructType* struct_type = &outer.structure(name);
         if (!struct_type->members().empty())
         {
             const std::string msg = "Struct \"" + name + "\" redefinition.";
@@ -1261,9 +1261,9 @@ private:
         if (!parent_name.empty())
         {
             // Replace already existing struct with a new one which inherits
-            StructType replace_struct(name, &outer->structure(parent_name));
-            outer->structure(std::move(replace_struct), true);
-            struct_type = &outer->structure(name);
+            StructType replace_struct(name, &outer.structure(parent_name));
+            outer.structure(std::move(replace_struct), true);
+            struct_type = &outer.structure(name);
         }
 
         for (auto& member : member_list)
@@ -1277,7 +1277,7 @@ private:
 
     void union_def(
             const std::shared_ptr<peg::Ast>& ast,
-            std::shared_ptr<Module>& outer)
+            Module& outer)
     {
         using namespace peg::udl;
         std::string name;
@@ -1297,7 +1297,7 @@ private:
                 {
                     type = type_spec(node, outer);
                     UnionType result(name, *type);
-                    outer->union_switch(std::move(result));
+                    outer.union_switch(std::move(result));
                     break;
                 }
                 case "SWITCH_BODY"_:
@@ -1306,7 +1306,7 @@ private:
             }
         }
 
-        UnionType& union_type = outer->union_switch(name);
+        UnionType& union_type = outer.union_switch(name);
         if (union_type.members().size() > 1)
         {
             const std::string msg = "Union \"" + name + "\" redefinition.";
@@ -1337,7 +1337,7 @@ private:
 
     void switch_body(
             const std::shared_ptr<peg::Ast>& ast,
-            std::shared_ptr<Module>& outer,
+            Module& outer,
             std::vector<LabelsCaseMemberPair>& member_list,
             const DynamicType::Ptr type)
     {
@@ -1363,7 +1363,7 @@ private:
 
     void switch_case(
             const std::shared_ptr<peg::Ast>& ast,
-            std::shared_ptr<Module>& outer,
+            Module& outer,
             std::vector<LabelsCaseMemberPair>& member_list,
             const DynamicType::Ptr type)
     {
@@ -1378,9 +1378,9 @@ private:
                 case "CASE_LABEL"_:
                 {
                     std::string value = node->token;
-                    if (outer->has_constant(value))
+                    if (outer.has_constant(value))
                     {
-                        DynamicData constant = outer->constant(value);
+                        DynamicData constant = outer.constant(value);
                         value = constant.cast<std::string>();
                     }
                     labels.push_back(value);
@@ -1399,7 +1399,7 @@ private:
 
     void case_member_def(
             const std::shared_ptr<peg::Ast>& ast,
-            std::shared_ptr<Module>& outer,
+            Module& outer,
             std::vector<Member>& result)
     {
         using namespace peg::udl;
@@ -1458,7 +1458,7 @@ private:
 
     void annotation_dcl(
             const std::shared_ptr<peg::Ast>& ast,
-            std::shared_ptr<Module>& outer)
+            Module& outer)
     {
         using namespace peg::udl;
         std::string name;
@@ -1496,13 +1496,13 @@ private:
             annotation_type.add_member(std::move(member.second));
            }
            // Replace
-           outer->set_annotation(annotation_type));
+           outer.set_annotation(annotation_type));
          */
     }
 
     void bitset_dcl(
             const std::shared_ptr<peg::Ast>& ast,
-            std::shared_ptr<Module>& outer)
+            Module& outer)
     {
         using namespace peg::udl;
         std::string name;
@@ -1545,13 +1545,13 @@ private:
             bitset_type.add_member(std::move(member.second));
            }
            // Replace ?
-           outer->set_bitset(bitset_type);
+           outer.set_bitset(bitset_type);
          */
     }
 
     void bitmask_dcl(
             const std::shared_ptr<peg::Ast>& ast,
-            std::shared_ptr<Module>& outer)
+            Module& outer)
     {
         using namespace peg::udl;
         std::string name;
@@ -1590,13 +1590,13 @@ private:
             bitmask_type.add_member(std::move(member.second));
            }
            // Replace
-           outer->set_bitmask(bitmask_type);
+           outer.set_bitmask(bitmask_type);
          */
     }
 
     void member_def(
             const std::shared_ptr<peg::Ast>& ast,
-            std::shared_ptr<Module>& outer,
+            Module& outer,
             std::vector<Member>& result)
     {
         using namespace peg::udl;
@@ -1621,7 +1621,7 @@ private:
 
     DynamicType::Ptr type_spec(
             const std::shared_ptr<peg::Ast>& node, //ast,
-            std::shared_ptr<Module>& outer)
+            Module& outer)
     {
         using namespace peg::udl;
         switch (node->tag)
@@ -1629,7 +1629,7 @@ private:
             case "SCOPED_NAME"_: // Scoped name
             case "IDENTIFIER"_:
             {
-                DynamicType::Ptr type = outer->type(node->token);
+                DynamicType::Ptr type = outer.type(node->token);
                 if (type.get() == nullptr)
                 {
                     context_->log(log::LogLevel::ERROR, "EXCEPTION",
@@ -1681,13 +1681,13 @@ private:
             case "STRING_TYPE"_:
                 return StringType();
             case "STRING_SIZE"_:
-                if (outer->has_constant(node->token))
+                if (outer.has_constant(node->token))
                 {
                     return StringType(get_dimension(node->token, outer, node));
                 }
                 return StringType(std::atoi(node->token.c_str()));
             case "WIDE_STRING_TYPE"_:
-                if (outer->has_constant(node->token))
+                if (outer.has_constant(node->token))
                 {
                     return WStringType(get_dimension(node->token, outer, node));
                 }
@@ -1728,10 +1728,10 @@ private:
 
     size_t get_dimension(
             const std::string& value,
-            std::shared_ptr<Module>& outer,
+            Module& outer,
             const std::shared_ptr<peg::Ast>& node)
     {
-        DynamicData c_data = outer->constant(value);
+        DynamicData c_data = outer.constant(value);
         size_t dim = 0;
         switch (c_data.type().kind())
         {
@@ -1769,7 +1769,7 @@ private:
     }
 
     size_t get_dimension(
-            std::shared_ptr<Module>& outer,
+            Module& outer,
             const std::shared_ptr<peg::Ast>& node)
     {
         using namespace peg::udl;
@@ -1817,7 +1817,7 @@ private:
 
     void members(
             const std::shared_ptr<peg::Ast>& ast,
-            std::shared_ptr<Module>& outer,
+            Module& outer,
             const DynamicType::Ptr type,
             std::vector<Member>& result)
     {
@@ -1861,7 +1861,7 @@ private:
 
     std::vector<std::pair<std::string, std::vector<size_t> > > identifier_list(
             const std::shared_ptr<peg::Ast>& node,
-            std::shared_ptr<Module>& outer)
+            Module& outer)
     {
         using namespace peg::udl;
         std::vector<std::pair<std::string, std::vector<size_t> > > result;
@@ -1884,7 +1884,7 @@ private:
 
     void identifier(
             const std::shared_ptr<peg::Ast>& node,
-            std::shared_ptr<Module>& outer,
+            Module& outer,
             std::vector<std::pair<std::string, std::vector<size_t> > >& list)
     {
         using namespace peg::udl;
@@ -1913,7 +1913,7 @@ private:
                         }
                         case "SCOPED_NAME"_:
                         {
-                            DynamicData c_data = outer->constant(subnode->token);
+                            DynamicData c_data = outer.constant(subnode->token);
                             size_t dim = 0;
                             switch (c_data.type().kind())
                             {

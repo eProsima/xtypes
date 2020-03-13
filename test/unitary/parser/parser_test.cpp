@@ -1490,6 +1490,9 @@ TEST (IDLParser, same_struct_id_in_different_modules)
         EXPECT_EQ(first_struct.get()->parent()->scope(), "a::b::c");
     }
 
+    EXPECT_EQ(first_struct.get()->name(), "MyStruct");
+    EXPECT_EQ(first_struct.get()->parent()->scope(), "a::b::c");
+
     {
         Context context;
         parse(R"(
