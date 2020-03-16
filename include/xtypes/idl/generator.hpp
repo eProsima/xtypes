@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
-*/
+ */
 
 #ifndef EPROSIMA_XTYPES_IDL_GENERATOR_HPP_
 #define EPROSIMA_XTYPES_IDL_GENERATOR_HPP_
@@ -25,6 +25,8 @@
 #include <xtypes/EnumerationType.hpp>
 #include <xtypes/AliasType.hpp>
 
+#include <xtypes/idl/Module.hpp>
+
 #include <sstream>
 
 namespace eprosima {
@@ -32,9 +34,11 @@ namespace xtypes {
 namespace idl {
 namespace generator {
 
-inline std::string type_name(const DynamicType& type); //implementation below
+inline std::string type_name(
+        const DynamicType& type);                      //implementation below
 
-inline std::string sequence_type_name(const DynamicType& type)
+inline std::string sequence_type_name(
+        const DynamicType& type)
 {
     assert(type.kind() == TypeKind::SEQUENCE_TYPE);
     const SequenceType& sequence_type = static_cast<const SequenceType&>(type);
@@ -47,7 +51,8 @@ inline std::string sequence_type_name(const DynamicType& type)
     return ss.str();
 }
 
-inline std::string map_type_name(const DynamicType& type)
+inline std::string map_type_name(
+        const DynamicType& type)
 {
     assert(type.kind() == TypeKind::MAP_TYPE);
     const MapType& map_type = static_cast<const MapType&>(type);
@@ -61,7 +66,8 @@ inline std::string map_type_name(const DynamicType& type)
     return ss.str();
 }
 
-inline std::vector<uint32_t> array_dimensions(const ArrayType& array)
+inline std::vector<uint32_t> array_dimensions(
+        const ArrayType& array)
 {
     std::vector<uint32_t> dimensions;
     dimensions.push_back(array.dimension());
@@ -75,7 +81,8 @@ inline std::vector<uint32_t> array_dimensions(const ArrayType& array)
     return dimensions;
 }
 
-inline std::string array_member(const Member& member)
+inline std::string array_member(
+        const Member& member)
 {
     assert(member.type().kind() == TypeKind::ARRAY_TYPE);
     const DynamicType* type = &member.type();
@@ -92,7 +99,8 @@ inline std::string array_member(const Member& member)
     return ss.str();
 }
 
-inline std::string type_name(const DynamicType& type)
+inline std::string type_name(
+        const DynamicType& type)
 {
     static const std::map<TypeKind, std::string> mapping =
     {
@@ -112,31 +120,31 @@ inline std::string type_name(const DynamicType& type)
         { TypeKind::FLOAT_128_TYPE, "long double" },
     };
 
-    if(type.kind() == TypeKind::ALIAS_TYPE)
+    if (type.kind() == TypeKind::ALIAS_TYPE)
     {
         return static_cast<const AliasType&>(type).name();
     }
-    if(type.is_primitive_type())
+    if (type.is_primitive_type())
     {
         return mapping.at(type.kind());
     }
-    else if(type.is_aggregation_type())
+    else if (type.is_aggregation_type())
     {
         return type.name();
     }
-    else if(type.kind() == TypeKind::ARRAY_TYPE)
+    else if (type.kind() == TypeKind::ARRAY_TYPE)
     {
         return type_name(static_cast<const ArrayType&>(type).content_type());
     }
-    else if(type.kind() == TypeKind::SEQUENCE_TYPE)
+    else if (type.kind() == TypeKind::SEQUENCE_TYPE)
     {
         return sequence_type_name(type);
     }
-    else if(type.kind() == TypeKind::MAP_TYPE)
+    else if (type.kind() == TypeKind::MAP_TYPE)
     {
         return map_type_name(type);
     }
-    else if(type.kind() == TypeKind::STRING_TYPE || type.kind() == TypeKind::WSTRING_TYPE)
+    else if (type.kind() == TypeKind::STRING_TYPE || type.kind() == TypeKind::WSTRING_TYPE)
     {
         const MutableCollectionType& collection_type = static_cast<const MutableCollectionType&>(type);
         std::string type_name = type.kind() == TypeKind::STRING_TYPE ? "string" : "wstring";
@@ -149,7 +157,9 @@ inline std::string type_name(const DynamicType& type)
     }
 }
 
-inline std::string label_value(size_t value, const DynamicType& type)
+inline std::string label_value(
+        size_t value,
+        const DynamicType& type)
 {
     TypeKind kind = type.kind();
 
@@ -199,7 +209,8 @@ inline std::string label_value(size_t value, const DynamicType& type)
     }
 }
 
-inline size_t inherit_members(const AggregationType& type)
+inline size_t inherit_members(
+        const AggregationType& type)
 {
     if (type.has_parent())
     {
@@ -208,21 +219,24 @@ inline size_t inherit_members(const AggregationType& type)
     return 0;
 }
 
-inline std::string structure(const StructType& type, size_t tabs = 0)
+inline std::string structure(
+        const std::string& name,
+        const StructType& type,
+        size_t tabs = 0)
 {
     std::stringstream ss;
-    ss << std::string(tabs * 4, ' ') << "struct " << type.name();
+    ss << std::string(tabs * 4, ' ') << "struct " << name;
     if (type.has_parent())
     {
         ss << " : " << type.parent().name();
     }
     ss << std::endl << std::string(tabs * 4, ' ') << "{" << std::endl;
 
-    for(size_t idx = inherit_members(type); idx < type.members().size(); ++idx)
+    for (size_t idx = inherit_members(type); idx < type.members().size(); ++idx)
     {
         const Member& member = type.member(idx);
         ss << std::string((tabs + 1) * 4, ' ');
-        if(member.type().kind() == TypeKind::ARRAY_TYPE)
+        if (member.type().kind() == TypeKind::ARRAY_TYPE)
         {
             ss << generator::array_member(member); //Spetial member syntax
         }
@@ -236,10 +250,13 @@ inline std::string structure(const StructType& type, size_t tabs = 0)
     return ss.str();
 }
 
-inline std::string generate_union(const UnionType& type, size_t tabs = 0)
+inline std::string generate_union(
+        const std::string& name,
+        const UnionType& type,
+        size_t tabs = 0)
 {
     std::stringstream ss;
-    ss << std::string(tabs * 4, ' ') << "union " << type.name()
+    ss << std::string(tabs * 4, ' ') << "union " << name
        << " switch (" << generator::type_name(type.discriminator()) << ")" << std::endl;
 
     ss << std::string(tabs * 4, ' ') << "{" << std::endl;
@@ -260,7 +277,7 @@ inline std::string generate_union(const UnionType& type, size_t tabs = 0)
         }
         const Member& member = type.member(name);
         ss << std::string((tabs + 2) * 4, ' ');
-        if(member.type().kind() == TypeKind::ARRAY_TYPE)
+        if (member.type().kind() == TypeKind::ARRAY_TYPE)
         {
             ss << generator::array_member(member); //Spetial member syntax
         }
@@ -274,7 +291,9 @@ inline std::string generate_union(const UnionType& type, size_t tabs = 0)
     return ss.str();
 }
 
-inline std::string aliase(const DynamicType& type, const std::string& name)
+inline std::string aliase(
+        const std::string& name,
+        const DynamicType& type)
 {
     std::stringstream ss;
     ss << "typedef " << generator::type_name(type) << " " << name;
@@ -290,22 +309,25 @@ inline std::string aliase(const DynamicType& type, const std::string& name)
     return ss.str();
 }
 
-inline std::string enumeration32(const EnumerationType<uint32_t>& enumeration, size_t tabs = 0)
+inline std::string enumeration32(
+        const std::string& name,
+        const EnumerationType<uint32_t>& enumeration,
+        size_t tabs = 0)
 {
     std::stringstream ss;
     // We must add them in order
     using map_pair = std::pair<std::string, uint32_t>;
     std::map<std::string, uint32_t> enumerators = enumeration.enumerators();
-    ss << std::string(tabs * 4, ' ') << "enum " << enumeration.name() << std::endl;
+    ss << std::string(tabs * 4, ' ') << "enum " << name << std::endl;
     ss << std::string(tabs * 4, ' ') << "{" << std::endl;
     // Copy to a vector
     std::vector<map_pair> ids(enumerators.begin(), enumerators.end());
     // Sort the vector
     std::sort(ids.begin(), ids.end(),
-        [](const map_pair& a, const map_pair& b)
-              {
-                  return a.second < b.second;
-              });
+            [](const map_pair& a, const map_pair& b)
+                    {
+                        return a.second < b.second;
+                    });
     // Print the ordered values
     for (size_t i = 0; i < ids.size(); ++i)
     {
@@ -321,7 +343,8 @@ inline std::string enumeration32(const EnumerationType<uint32_t>& enumeration, s
     return ss.str();
 }
 
-inline std::string get_const_value(ReadableDynamicDataRef data)
+inline std::string get_const_value(
+        ReadableDynamicDataRef data)
 {
     std::stringstream ss;
     std::string prefix = "";
@@ -355,20 +378,24 @@ inline std::string get_const_value(ReadableDynamicDataRef data)
 
 // TODO: module_contents (and maybe module) should generate a dependency tree and resolve them in the generated IDL,
 // including maybe the need of forward declarations.
-inline std::string module_contents(const Module& module_, size_t tabs = 0)
+inline std::string module_contents(
+        const Module& module_,
+        size_t tabs = 0)
 {
     std::stringstream ss;
 
     // Aliases
     for (const auto& alias : module_.aliases_)
     {
-        ss << std::string(tabs * 4, ' ') << aliase(static_cast<const AliasType&>(*alias.second).get(), alias.first);
+        ss <<
+            std::string(tabs * 4,
+                ' ') << aliase(alias.first, static_cast<const AliasType&>(*alias.second.get()).get());
     }
     // Enums
     for (const auto& pair : module_.enumerations_32_)
     {
-        const EnumerationType<uint32_t>& enum_type = static_cast<const EnumerationType<uint32_t>&>(*pair.second);
-        ss << enumeration32(enum_type, tabs);
+        const EnumerationType<uint32_t>& enum_type = static_cast<const EnumerationType<uint32_t>&>(*pair.second.get());
+        ss << enumeration32(pair.first, enum_type, tabs);
     }
     // Consts
     for (const auto& pair : module_.constants_)
@@ -382,14 +409,14 @@ inline std::string module_contents(const Module& module_, size_t tabs = 0)
     // Unions
     for (const auto& pair : module_.unions_)
     {
-        const UnionType& union_type = static_cast<const UnionType&>(*pair.second);
-        ss << generate_union(union_type, tabs);
+        const UnionType& union_type = static_cast<const UnionType&>(*pair.second.get());
+        ss << generate_union(pair.first, union_type, tabs);
     }
     // Structs
     for (const auto& pair : module_.structs_)
     {
-        const StructType& struct_type = static_cast<const StructType&>(*pair.second);
-        ss << structure(struct_type, tabs);
+        const StructType& struct_type = static_cast<const StructType&>(*pair.second.get());
+        ss << structure(pair.first, struct_type, tabs);
     }
     // Submodules
     for (const auto& pair : module_.inner_)
@@ -404,7 +431,9 @@ inline std::string module_contents(const Module& module_, size_t tabs = 0)
     return ss.str();
 }
 
-inline std::string module(const Module& module, size_t tabs = 0)
+inline std::string module(
+        const Module& module,
+        size_t tabs = 0)
 {
     std::stringstream ss;
 

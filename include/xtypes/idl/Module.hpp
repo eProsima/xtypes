@@ -13,34 +13,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
-*/
+ */
 
-#ifndef EPROSIMA_XTYPES_MODULE_HPP_
-#define EPROSIMA_XTYPES_MODULE_HPP_
+#ifndef EPROSIMA_XTYPES_IDL_MODULE_HPP_
+#define EPROSIMA_XTYPES_IDL_MODULE_HPP_
 
 #include <xtypes/xtypes.hpp>
 
+#include <xtypes/idl/Type.hpp>
+
+#include <string>
+#include <memory>
+
 namespace eprosima {
 namespace xtypes {
+namespace idl {
 
 class Module;
 
-namespace idl {
 namespace generator {
-std::string module_contents(const Module& module, size_t tabs);
-}
+std::string module_contents(
+        const Module& module,
+        size_t tabs);
 }
 
 class Module
 {
 protected:
+
     using PairModuleSymbol = std::pair<const Module*, std::string>;
 
 public:
+
     Module()
         : outer_(nullptr)
         , name_("")
-    {}
+    {
+    }
 
     Module& create_submodule(
             const std::string& submodule)
@@ -55,7 +64,6 @@ public:
     {
         return inner_[submodule];
     }
-
 
     bool has_submodule(
             const std::string& submodule) const
@@ -74,20 +82,6 @@ public:
     {
         return *inner_.at(submodule);
     }
-
-    /* TODO - Probably should be removed.
-    bool emplace(
-            std::shared_ptr<Module>&& module)
-    {
-        if (module->name_.find("::") != std::string::npos)
-        {
-            return false; // Cannot add a module with scoped name.
-        }
-        module->outer_ = this;
-        auto result = inner_.emplace(module->name_, std::move(module));
-        return result.second;
-    }
-    */
 
     const std::string& name() const
     {
@@ -108,11 +102,11 @@ public:
             bool extend = true) const
     {
         bool has_it = structs_.count(ident) > 0
-            || unions_.count(ident) > 0
-            || aliases_.count(ident) > 0
-            || constants_.count(ident) > 0
-            || enumerations_32_.count(ident) > 0
-            || inner_.count(ident) > 0;
+                || unions_.count(ident) > 0
+                || aliases_.count(ident) > 0
+                || constants_.count(ident) > 0
+                || enumerations_32_.count(ident) > 0
+                || inner_.count(ident) > 0;
 
         if (has_it)
         {
@@ -148,7 +142,7 @@ public:
         auto it = module.first->structs_.find(module.second);
 
         xtypes_assert(it != module.first->structs_.end(), "Cannot find structure '" + name + "'.");
-        return static_cast<const StructType&>(*it->second);
+        return static_cast<const StructType&>(*it->second.get());
     }
 
     StructType& structure(
@@ -161,18 +155,23 @@ public:
 
         auto it = module.first->structs_.find(module.second);
         xtypes_assert(it != module.first->structs_.end(), "Cannot find structure '" + name + "'.");
-        return static_cast<StructType&>(const_cast<DynamicType&>(*it->second));
+        return static_cast<StructType&>(const_cast<DynamicType&>(*it->second.get()));
     }
 
     bool structure(
-            const StructType& struct_type)
+            StructType& struct_type)
     {
         if (struct_type.name().find("::") != std::string::npos)
         {
             return false; // Cannot add a symbol with scoped name.
         }
 
-        auto result = structs_.emplace(struct_type.name(), struct_type);
+        std::string name = struct_type.name();
+        std::string name_space = scope();
+        struct_type.name(name_space + (name_space.empty() ? "" : "::") + name);
+        auto result = structs_.emplace(
+            name,
+            Type(*this, struct_type));
         return result.second;
     }
 
@@ -194,7 +193,12 @@ public:
             }
         }
 
-        auto result = structs_.emplace(struct_type.name(), std::move(struct_type));
+        std::string name = struct_type.name();
+        std::string name_space = scope();
+        struct_type.name(name_space + (name_space.empty() ? "" : "::") + name);
+        auto result = structs_.emplace(
+            name,
+            Type(*this, std::move(struct_type)));
         return result.second;
     }
 
@@ -221,7 +225,7 @@ public:
         auto it = module.first->unions_.find(module.second);
 
         xtypes_assert(it != module.first->unions_.end(), "Cannot find union '" + name + "'.");
-        return static_cast<const UnionType&>(*it->second);
+        return static_cast<const UnionType&>(*it->second.get());
     }
 
     UnionType& union_switch(
@@ -235,18 +239,23 @@ public:
         auto it = module.first->unions_.find(module.second);
 
         xtypes_assert(it != module.first->unions_.end(), "Cannot find union '" + name + "'.");
-        return static_cast<UnionType&>(const_cast<DynamicType&>(*it->second));
+        return static_cast<UnionType&>(const_cast<DynamicType&>(*it->second.get()));
     }
 
     bool union_switch(
-            const UnionType& union_type)
+            UnionType& union_type)
     {
         if (union_type.name().find("::") != std::string::npos)
         {
             return false; // Cannot add a symbol with scoped name.
         }
 
-        auto result = unions_.emplace(union_type.name(), union_type);
+        std::string name = union_type.name();
+        std::string name_space = scope();
+        union_type.name(name_space + (name_space.empty() ? "" : "::") + name);
+        auto result = unions_.emplace(
+            name,
+            Type(*this, union_type));
         return result.second;
     }
 
@@ -268,7 +277,12 @@ public:
             }
         }
 
-        auto result = unions_.emplace(union_type.name(), std::move(union_type));
+        std::string name = union_type.name();
+        std::string name_space = scope();
+        union_type.name(name_space + (name_space.empty() ? "" : "::") + name);
+        auto result = unions_.emplace(
+            name,
+            Type(*this, std::move(union_type)));
         return result.second;
     }
 
@@ -287,42 +301,35 @@ public:
             std::map<std::string, DynamicType::Ptr>& map,
             bool add_scope = false) const
     {
-        std::string module_name = scope();
-        if (add_scope && !module_name.empty())
+        std::string module_name = add_scope ? scope() : "";
+        if (!module_name.empty())
         {
-            for (const auto& pair : structs_)
-            {
-                map.emplace(module_name + "::" + pair.first, pair.second);
-            }
-            for (const auto& pair : unions_)
-            {
-                map.emplace(module_name + "::" + pair.first, pair.second);
-            }
-            for (const auto& pair : aliases_)
-            {
-                map.emplace(module_name + "::" + pair.first, pair.second);
-            }
-            for (const auto& pair : enumerations_32_)
-            {
-                map.emplace(module_name + "::" + pair.first, pair.second);
-            }
-            // TODO Add other types...
+            module_name += "::";
         }
-        else
+
+        for (const auto& pair : structs_)
         {
-            map.insert(structs_.begin(), structs_.end());
-            map.insert(unions_.begin(), unions_.end());
-            map.insert(aliases_.begin(), aliases_.end());
-            map.insert(enumerations_32_.begin(), enumerations_32_.end());
-            // TODO Add other types...
+            map.emplace(module_name + pair.first, pair.second.get());
         }
+        for (const auto& pair : unions_)
+        {
+            map.emplace(module_name + pair.first, pair.second.get());
+        }
+        for (const auto& pair : aliases_)
+        {
+            map.emplace(module_name + pair.first, pair.second.get());
+        }
+        for (const auto& pair : enumerations_32_)
+        {
+            map.emplace(module_name + pair.first, pair.second.get());
+        }
+        // TODO Add other types...
 
         for (const auto& pair : inner_)
         {
             pair.second->fill_all_types(map, add_scope);
         }
     }
-
 
     DynamicData constant(
             const std::string& name) const
@@ -389,10 +396,10 @@ public:
             }
         }
 
-        auto inserted = constants_types_.emplace(name, value.type());
+        auto inserted = constants_types_.emplace(name, Type(*this, value.type()));
         if (inserted.second)
         {
-            DynamicData temp(*(inserted.first->second));
+            DynamicData temp(*inserted.first->second.get());
             temp = value;
             auto result = constants_.emplace(name, temp);
             if (result.second && from_enumeration)
@@ -414,7 +421,7 @@ public:
 
         auto it = module.first->enumerations_32_.find(module.second);
         xtypes_assert(it != module.first->enumerations_32_.end(), "Cannot find enumeration '" + name + "'.");
-        return static_cast<EnumerationType<uint32_t>&>(const_cast<DynamicType&>(*it->second));
+        return static_cast<EnumerationType<uint32_t>&>(const_cast<DynamicType&>(*it->second.get()));
     }
 
     bool has_enum_32(
@@ -433,7 +440,7 @@ public:
 
         auto it = module.first->enumerations_32_.find(module.second);
         xtypes_assert(it != module.first->enumerations_32_.end(), "Cannot find enumeration '" + name + "'.");
-        return static_cast<const EnumerationType<uint32_t>&>(*it->second);
+        return static_cast<const EnumerationType<uint32_t>&>(*it->second.get());
     }
 
     bool enum_32(
@@ -454,7 +461,10 @@ public:
             }
         }
 
-        auto result = enumerations_32_.emplace(enumeration.name(), std::move(enumeration));
+        std::string name = enumeration.name();
+        std::string name_space = scope();
+        enumeration.name(name_space + (name_space.empty() ? "" : "::") + name);
+        auto result = enumerations_32_.emplace(name, Type(*this, std::move(enumeration)));
         return result.second;
     }
 
@@ -465,7 +475,7 @@ public:
         PairModuleSymbol module = resolve_scope(name);
         xtypes_assert(module.first != nullptr, "Cannot solve scope for alias '" + name + "'.");
 
-        return static_cast<const AliasType&>(*module.first->aliases_.at(module.second));
+        return static_cast<const AliasType&>(*module.first->aliases_.at(module.second).get());
     }
 
     AliasType& alias(
@@ -475,7 +485,7 @@ public:
         PairModuleSymbol module = resolve_scope(name);
         xtypes_assert(module.first != nullptr, "Cannot solve scope for alias '" + name + "'.");
 
-        return static_cast<AliasType&>(const_cast<DynamicType&>(*module.first->aliases_.at(module.second)));
+        return static_cast<AliasType&>(const_cast<DynamicType&>(*module.first->aliases_.at(module.second).get()));
     }
 
     bool has_alias(
@@ -501,19 +511,27 @@ public:
             return false; // Cannot define alias with scoped name (or already defined).
         }
 
-        return aliases_.emplace(name, AliasType(type, name)).second;
+        std::string name_space = scope();
+        AliasType alias(type, name_space + (name_space.empty() ? "" : "::") + name);
+        return aliases_.emplace(name, Type(*this, alias)).second;
     }
 
     bool add_alias(
-            const AliasType& alias)
+            AliasType& alias)
     {
-        return aliases_.emplace(alias.name(), AliasType(alias)).second;
+        std::string name = alias.name();
+        std::string name_space = scope();
+        alias.name(name_space + (name_space.empty() ? "" : "::") + name);
+        return aliases_.emplace(name, Type(*this, AliasType(alias))).second;
     }
 
     bool add_alias(
-            const AliasType&& alias)
+            AliasType&& alias)
     {
-        return aliases_.emplace(alias.name(), std::move(alias)).second;
+        std::string name = alias.name();
+        std::string name_space = scope();
+        alias.name(name_space + (name_space.empty() ? "" : "::") + name);
+        return aliases_.emplace(name, Type(*this, std::move(alias))).second;
     }
 
     // Generic type retrieval.
@@ -530,25 +548,25 @@ public:
         // Check enums
         if (module.first->has_enum_32(module.second))
         {
-            return module.first->enumerations_32_.at(module.second);
+            return module.first->enumerations_32_.at(module.second).get();
         }
 
         // Check structs
         if (module.first->has_structure(module.second))
         {
-            return module.first->structs_.at(module.second);
+            return module.first->structs_.at(module.second).get();
         }
 
         // Check unions
         if (module.first->has_union(module.second))
         {
-            return module.first->unions_.at(module.second);
+            return module.first->unions_.at(module.second).get();
         }
 
         // Check aliases
         if (module.first->has_alias(module.second))
         {
-            return module.first->aliases_.at(module.second);
+            return module.first->aliases_.at(module.second).get();
         }
 
         // Check bitsets
@@ -561,18 +579,21 @@ public:
     }
 
 protected:
-    friend std::string idl::generator::module_contents(const Module& module, size_t tabs);
 
-    std::map<std::string, DynamicType::Ptr> aliases_;
-    std::map<std::string, DynamicType::Ptr> constants_types_;
+    friend std::string idl::generator::module_contents(
+            const Module& module,
+            size_t tabs);
+
+    std::map<std::string, Type> aliases_;
+    std::map<std::string, Type> constants_types_;
     std::map<std::string, DynamicData> constants_;
     std::vector<std::string> from_enum_;
-    std::map<std::string, DynamicType::Ptr> enumerations_32_;
-    std::map<std::string, DynamicType::Ptr> structs_;
-    std::map<std::string, DynamicType::Ptr> unions_;
+    std::map<std::string, Type> enumerations_32_;
+    std::map<std::string, Type> structs_;
+    std::map<std::string, Type> unions_;
     //std::map<std::string, std::shared_ptr<AnnotationType>> annotations_;
     Module* outer_;
-    std::map<std::string, std::shared_ptr<Module>> inner_;
+    std::map<std::string, std::shared_ptr<Module> > inner_;
     std::string name_;
 
     Module(
@@ -678,7 +699,8 @@ protected:
 
 };
 
-} // xtypes
-} // eprosima
+} // namespace idl
+} // namespace xtypes
+} // namespace eprosima
 
-#endif // EPROSIMA_XTYPES_MODULE_HPP_
+#endif // EPROSIMA_XTYPES_IDL_MODULE_HPP_

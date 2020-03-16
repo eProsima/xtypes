@@ -118,7 +118,6 @@ if(XTYPES_BUILD_TESTS)
         test/unitary/xtypes/struct_type.cpp
         test/unitary/xtypes/union_type.cpp
         test/unitary/xtypes/iterators.cpp
-        test/unitary/xtypes/module.cpp
         test/unitary/xtypes/consistency.cpp
         test/unitary/xtypes/integration.cpp
         test/unitary/xtypes/alias_type.cpp
@@ -129,7 +128,9 @@ if(XTYPES_BUILD_TESTS)
         test/unitary/xtypes/main.cpp
         test/unitary/xtypes/no_memcheck_tests.cpp)
 
-    compile_test(${PROJECT_NAME}_idl_parser_test_unitary SOURCE test/unitary/parser/parser_test.cpp)
+    compile_test(${PROJECT_NAME}_idl_parser_test_unitary SOURCE
+        test/unitary/parser/module.cpp
+        test/unitary/parser/parser_test.cpp)
     compile_test(${PROJECT_NAME}_idl_parser_roundtrip SOURCE test/unitary/parser/roundtrip.cpp)
     # ...
 

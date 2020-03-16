@@ -1,5 +1,5 @@
 #include <xtypes/xtypes.hpp>
-#include <xtypes/Module.hpp>
+#include <xtypes/idl/idl.hpp>
 
 #include <iostream>
 
@@ -7,7 +7,8 @@ using namespace eprosima::xtypes;
 
 int main()
 {
-    std::string idl_spec = R"(
+    std::string idl_spec =
+            R"(
         struct InnerType
         {
             uint32 im1;
@@ -16,25 +17,25 @@ int main()
     )";
 
     idl::Context context = idl::parse(idl_spec);
-    const StructType& inner = context.module().structure("InnerType");
+    StructType inner = context.module().structure("InnerType");
 
     StructType outer("OuterType");
     outer.add_member("om1", StringType());
 
-    Module root;
-    Module& submod_a = root.create_submodule("a");
-    Module& submod_b = root.create_submodule("b");
-    Module& submod_aa = submod_a.create_submodule("a");
+    idl::Module root;
+    idl::Module& submod_a = root.create_submodule("a");
+    idl::Module& submod_b = root.create_submodule("b");
+    idl::Module& submod_aa = submod_a.create_submodule("a");
     submod_aa.structure(outer);
     submod_b.structure(inner);
 
     /*
-    root
-        \_a
-           \_ a _ OuterType
+       root
+     \_a
+     \_ a _ OuterType
 
-        \_b _ InnerType
-    */
+     \_b _ InnerType
+     */
 
     std::cout << std::boolalpha;
     std::cout << "Does a::a::OuterType exists?: " << root.has_structure("a::a::OuterType") << std::endl;

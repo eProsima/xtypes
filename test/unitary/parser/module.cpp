@@ -13,24 +13,24 @@
 // limitations under the License.
 
 #include <gtest/gtest.h>
-#include <xtypes/xtypes.hpp>
-#include <xtypes/Module.hpp>
+#include <xtypes/idl/Module.hpp>
 
 using namespace eprosima::xtypes;
+using namespace eprosima::xtypes::idl;
 
 // This test checks the correct behavior of Modules, by checking visibility of the different structs from
 // each possible scope. The expected results are the same that would apply to the C++ namespaces.
 TEST (Modules, scope)
 {
     StructType inner = StructType("InnerType")
-        .add_member("inner_int32", primitive_type<uint32_t>())
-        .add_member("inner_float", primitive_type<float>());
+            .add_member("inner_int32", primitive_type<uint32_t>())
+            .add_member("inner_float", primitive_type<float>());
 
     StructType outer = StructType("OuterType")
-        .add_member("outer_float", primitive_type<float>());
+            .add_member("outer_float", primitive_type<float>());
 
     StructType b = StructType("BType")
-        .add_member("b_float", primitive_type<float>());
+            .add_member("b_float", primitive_type<float>());
 
     Module root;
     Module& submod_A = root.create_submodule("A");

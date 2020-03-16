@@ -1,8 +1,9 @@
 /**
-* This example shows how to make use of the builtin assert and exception system.
-*/
+ * This example shows how to make use of the builtin assert and exception system.
+ */
 
 #include <xtypes/xtypes.hpp>
+#include <xtypes/idl/idl.hpp>
 #include <iostream>
 
 // Auxiliar define to manage both assert (debug only) and exceptions (both)
@@ -10,38 +11,38 @@
 
 // If compiled with PREPROCESSOR flag XTYPES_EXCEPTIONS use this snniped.
 #define ASSERT_OR_EXCEPTION(exp, msg)                                                                       \
-{                                                                                                           \
-    try                                                                                                     \
-    {                                                                                                       \
-        exp;                                                                                                \
-        std::cout << "Exception wasn't throw!" << std::endl;                                                \
-    }                                                                                                       \
-    catch(const std::runtime_error& exc)                                                                    \
-    {                                                                                                       \
-        if (std::string(exc.what()).find(msg) == std::string::npos)                                         \
-        {                                                                                                   \
-            std::cout << "Unexpected exception: " << exc.what() << std::endl;                               \
-            std::cout << "Expected exception should contain: " << msg << std::endl;                         \
-        }                                                                                                   \
-        else                                                                                                \
-        {                                                                                                   \
-            std::cout << "Catched expected exception: " << exc.what() << std::endl;                         \
-        }                                                                                                   \
-    }                                                                                                       \
-}
+    {                                                                                                           \
+        try                                                                                                     \
+        {                                                                                                       \
+            exp;                                                                                                \
+            std::cout << "Exception wasn't throw!" << std::endl;                                                \
+        }                                                                                                       \
+        catch (const std::runtime_error& exc)                                                                    \
+        {                                                                                                       \
+            if (std::string(exc.what()).find(msg) == std::string::npos)                                         \
+            {                                                                                                   \
+                std::cout << "Unexpected exception: " << exc.what() << std::endl;                               \
+                std::cout << "Expected exception should contain: " << msg << std::endl;                         \
+            }                                                                                                   \
+            else                                                                                                \
+            {                                                                                                   \
+                std::cout << "Catched expected exception: " << exc.what() << std::endl;                         \
+            }                                                                                                   \
+        }                                                                                                       \
+    }
 
 #else
 #if !defined(NDEBUG)
 
 // If compiled without PREPROCESSOR flag XTYPES_EXCEPTIONS but debug (without NDEBUG defined) an assert will be raised.
 #define ASSERT_OR_EXCEPTION(exp, msg)                                                                       \
-{                                                                                                           \
-    std::cout << "Expected to raise assert: " << msg << std::endl;                                          \
-    {                                                                                                       \
-        exp;                                                                                                \
-    }                                                                                                       \
-    std::cout << "Failed to raise assert: " << msg << std::endl;                                            \
-}
+    {                                                                                                           \
+        std::cout << "Expected to raise assert: " << msg << std::endl;                                          \
+        {                                                                                                       \
+            exp;                                                                                                \
+        }                                                                                                       \
+        std::cout << "Failed to raise assert: " << msg << std::endl;                                            \
+    }
 
 #else
 
@@ -56,7 +57,8 @@ using namespace eprosima::xtypes;
 
 int main()
 {
-    std::string idl_spec = R"(
+    std::string idl_spec =
+            R"(
         struct InnerType
         {
             uint32 im1;

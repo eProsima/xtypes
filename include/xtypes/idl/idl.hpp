@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
-*/
+ */
 
 #ifndef EPROSIMA_XTYPES_IDL_IDL_HPP_
 #define EPROSIMA_XTYPES_IDL_IDL_HPP_
@@ -80,15 +80,17 @@ inline std::string preprocess(
 /// \brief Generates the IDL that represents an StructType
 /// \param[in] type StructType to represent into IDL
 /// \return An IDL that represents the StructType given.
-inline std::string generate(const StructType& type)
+inline std::string generate(
+        const StructType& type)
 {
-    return generator::structure(type);
+    return generator::structure(type.name(), type);
 }
 
 /// \brief Generates the IDL that represents a Module
 /// \param[in] module Module to represent into IDL
 /// \return An IDL that represents the Module given.
-inline std::string generate(const Module& module)
+inline std::string generate(
+        const Module& module)
 {
     return generator::module(module);
 }

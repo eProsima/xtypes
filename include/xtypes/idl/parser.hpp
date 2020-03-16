@@ -25,8 +25,8 @@
 #include <xtypes/StructType.hpp>
 #include <xtypes/SequenceType.hpp>
 #include <xtypes/DynamicData.hpp>
-#include <xtypes/Module.hpp>
 
+#include <xtypes/idl/Module.hpp>
 #include <xtypes/idl/grammar.hpp>
 
 #include <map>
@@ -83,18 +83,18 @@ struct LogEntry
         ss << "[";
         switch (level)
         {
-        case ERROR:
-            ss << "ERROR";
-            break;
-        case WARNING:
-            ss << "WARNING";
-            break;
-        case INFO:
-            ss << "INFO";
-            break;
-        case DEBUG:
-            ss << "DEBUG";
-            break;
+            case ERROR:
+                ss << "ERROR";
+                break;
+            case WARNING:
+                ss << "WARNING";
+                break;
+            case INFO:
+                ss << "INFO";
+                break;
+            case DEBUG:
+                ss << "DEBUG";
+                break;
         }
         ss << "] ";
         ss << category << ": ";
@@ -109,6 +109,7 @@ struct LogEntry
         //ss << line << ":" << column << ")";
         return ss.str();
     }
+
 };
 
 }
@@ -169,7 +170,9 @@ struct Context
         return log_;
     }
 
-    std::vector<log::LogEntry> log(log::LogLevel level, bool strict = false) const
+    std::vector<log::LogEntry> log(
+            log::LogLevel level,
+            bool strict = false) const
     {
         std::vector<log::LogEntry> result;
         for (const log::LogEntry& entry : log_)
@@ -182,7 +185,8 @@ struct Context
         return result;
     }
 
-    void log_level(log::LogLevel level)
+    void log_level(
+            log::LogLevel level)
     {
         log_level_ = level;
     }
@@ -192,12 +196,14 @@ struct Context
         return log_level_;
     }
 
-    void print_log(bool enable)
+    void print_log(
+            bool enable)
     {
         print_log_ = enable;
     }
 
 private:
+
     friend class Parser;
     Parser* instance_;
     std::shared_ptr<Module> module_ = nullptr;
@@ -239,6 +245,7 @@ static const Context DEFAULT_CONTEXT = Context();
 class Parser
 {
 public:
+
     static Parser* instance()
     {
         Parser* instance = get_instance();
@@ -262,7 +269,7 @@ public:
     {
         parser_.enable_ast();
         parser_.log = std::bind(&Parser::parser_log_cb_, this, std::placeholders::_1,
-            std::placeholders::_2, std::placeholders::_3);
+                        std::placeholders::_2, std::placeholders::_3);
     }
 
     Context parse(
@@ -289,7 +296,7 @@ public:
         {
             context.success = false;
             context_->log(log::LogLevel::DEBUG, "RESULT",
-                "The parser found errors while parsing.");
+                    "The parser found errors while parsing.");
             return false;
         }
         ast = peg::AstOptimizer(true).optimize(ast);
@@ -297,7 +304,7 @@ public:
         context.module_ = root_scope_;
         context.success = true;
         context_->log(log::LogLevel::DEBUG, "RESULT",
-            "The parser finished.");
+                "The parser finished.");
         return true;
     }
 
@@ -325,11 +332,11 @@ public:
         else
         {
             if (!(read_file(idl_file.c_str(), source)
-                  && parser_.parse_n(source.data(), source.size(), ast, idl_file.c_str())))
+                    && parser_.parse_n(source.data(), source.size(), ast, idl_file.c_str())))
             {
                 context.success = false;
                 context_->log(log::LogLevel::DEBUG, "RESULT",
-                    "The parser found errors while parsing.");
+                        "The parser found errors while parsing.");
                 return false;
             }
 
@@ -338,7 +345,7 @@ public:
             context.module_ = root_scope_;
             context.success = true;
             context_->log(log::LogLevel::DEBUG, "RESULT",
-                "The parser finished.");
+                    "The parser finished.");
             return true;
         }
     }
@@ -354,20 +361,24 @@ public:
 
     class exception : public std::runtime_error
     {
-    private:
+private:
+
         std::string message_;
         std::shared_ptr<peg::Ast> ast_;
-    public:
+
+public:
+
         exception(
                 const std::string& message,
                 const std::shared_ptr<peg::Ast> ast)
             : std::runtime_error(
-                  std::string("Parser exception (" + (ast->path.empty() ? "<no file>" : ast->path)
-                  + ":" + std::to_string(ast->line)
-                  + ":" + std::to_string(ast->column) + "): " + message))
+                std::string("Parser exception (" + (ast->path.empty() ? "<no file>" : ast->path)
+                + ":" + std::to_string(ast->line)
+                + ":" + std::to_string(ast->column) + "): " + message))
             , message_(message)
             , ast_(ast)
-        {}
+        {
+        }
 
         const std::string& message() const
         {
@@ -397,6 +408,7 @@ public:
     }
 
 private:
+
     friend struct Context;
     using LabelsCaseMemberPair = std::pair<std::vector<std::string>, Member>;
 
@@ -410,7 +422,10 @@ private:
         return instance_;
     }
 
-    void parser_log_cb_(size_t l, size_t c, const std::string& msg) const
+    void parser_log_cb_(
+            size_t l,
+            size_t c,
+            const std::string& msg) const
     {
         context_->log(log::DEBUG, "PEGLIB_PARSER", msg + " (" + std::to_string(l) + ":" + std::to_string(c) + ")");
     }
@@ -424,7 +439,7 @@ private:
         if (ifs.fail())
         {
             context_->log(log::LogLevel::DEBUG, "FILE",
-                "Cannot open file: " + std::string(path));
+                    "Cannot open file: " + std::string(path));
             return false;
         }
 
@@ -435,7 +450,7 @@ private:
             ifs.seekg(0, std::ios::beg).read(&buff[0], static_cast<std::streamsize>(buff.size()));
         }
         context_->log(log::LogLevel::DEBUG, "FILE",
-            "Loaded file: " + std::string(path));
+                "Loaded file: " + std::string(path));
         return true;
     }
 
@@ -450,7 +465,7 @@ private:
             command.append(" 2> /dev/null");
         }
         std::string result;
-        std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(command.c_str(), "r"), pclose);
+        std::unique_ptr<FILE, decltype(& pclose)> pipe(popen(command.c_str(), "r"), pclose);
         if (!pipe)
         {
             throw std::runtime_error("popen() failed!");
@@ -490,7 +505,7 @@ private:
         replace_all_string(escaped_idl_string, "\"", "\\\"");
         std::string cmd = "echo \"" + escaped_idl_string + "\" | " + context_->preprocessor_exec + " " + args;
         context_->log(log::LogLevel::DEBUG, "PREPROCESS",
-            "Calling preprocessor '" + context_->preprocessor_exec + "' for an IDL string.");
+                "Calling preprocessor '" + context_->preprocessor_exec + "' for an IDL string.");
         return exec(cmd);
     }
 
@@ -505,13 +520,13 @@ private:
         }
         std::string cmd = context_->preprocessor_exec + " " + args + idl_file;
         context_->log(log::LogLevel::DEBUG, "PREPROCESS",
-            "Calling preprocessor with command: " + cmd);
+                "Calling preprocessor with command: " + cmd);
         std::string output = exec(cmd);
         return output;
     }
 
     std::shared_ptr<Module> build_on_ast(
-            const std::shared_ptr<peg::Ast> ast,
+            const std::shared_ptr<peg::Ast>& ast,
             std::shared_ptr<Module> scope = nullptr)
     {
         using namespace peg::udl;
@@ -569,17 +584,17 @@ private:
     }
 
     std::string resolve_identifier(
-            const std::shared_ptr<peg::Ast> ast,
+            const std::shared_ptr<peg::Ast>& ast,
             const std::string& identifier,
-            std::shared_ptr<Module> scope,
+            std::shared_ptr<Module>& scope,
             bool ignore_already_used = false)
     {
         if (identifier.find("_") == 0)
         {
             context_->log(log::LogLevel::INFO, "ESCAPED_IDENTIFIER",
-                "The identifier \"" + identifier + "\" is escaped. It will be replaced by \""
-                + identifier.substr(1) + "\"",
-                ast);
+                    "The identifier \"" + identifier + "\" is escaped. It will be replaced by \""
+                    + identifier.substr(1) + "\"",
+                    ast);
             return identifier.substr(1); // If the identifier starts with "_", remove the underscode and return.
         }
 
@@ -588,13 +603,13 @@ private:
             if (!context_->allow_keyword_identifiers)
             {
                 context_->log(log::LogLevel::ERROR, "EXCEPTION",
-                    "The identifier \"" + identifier + "\" is a reserved word.",
-                    ast);
+                        "The identifier \"" + identifier + "\" is a reserved word.",
+                        ast);
                 throw exception("The identifier \"" + identifier + "\" is a reserved word.", ast);
             }
             context_->log(log::LogLevel::INFO, "RESERVED_WORD",
-                "The identifier \"" + identifier + "\" is a reserved word.",
-                ast);
+                    "The identifier \"" + identifier + "\" is a reserved word.",
+                    ast);
         }
 
         if (scope->has_symbol(identifier))
@@ -602,17 +617,17 @@ private:
             if (!ignore_already_used)
             {
                 context_->log(log::LogLevel::ERROR, "EXCEPTION",
-                    "The identifier \"" + identifier + "\" is already used.",
-                    ast);
+                        "The identifier \"" + identifier + "\" is already used.",
+                        ast);
                 throw exception("The identifier \"" + identifier + "\" is already used.", ast);
             }
             context_->log(log::LogLevel::INFO, "ALREADY_USED",
-                "The identifier \"" + identifier + "\" is already used.",
-                ast);
+                    "The identifier \"" + identifier + "\" is already used.",
+                    ast);
         }
 
         context_->log(log::LogLevel::DEBUG, "RESOLVE_IDENTIFIER",
-            identifier, ast);
+                identifier, ast);
         return identifier;
     }
 
@@ -620,10 +635,10 @@ private:
             std::string& str)
     {
         std::transform(str.begin(), str.end(), str.begin(),
-                       [](unsigned char c)
-                       {
-                           return std::tolower(c);
-                       });
+                [](unsigned char c)
+                    {
+                        return std::tolower(c);
+                    });
     }
 
     bool is_token(
@@ -650,8 +665,8 @@ private:
     }
 
     void module_dcl(
-            const std::shared_ptr<peg::Ast> ast,
-            std::shared_ptr<Module> outer)
+            const std::shared_ptr<peg::Ast>& ast,
+            std::shared_ptr<Module>& outer)
     {
         using namespace peg::udl;
         std::shared_ptr<Module> scope;
@@ -667,16 +682,16 @@ private:
                         outer->create_submodule(name);
                         scope = outer->submodule(name);
                         context_->log(log::LogLevel::DEBUG, "MODULE_DCL",
-                            "New submodule: " + scope->scope(),
-                            ast);
+                                "New submodule: " + scope->scope(),
+                                ast);
                     }
                     else
                     {
                         // Adding to an already defined scope
                         scope = outer->submodule(name);
                         context_->log(log::LogLevel::DEBUG, "MODULE_DCL",
-                            "Existing submodule: " + scope->scope(),
-                            ast);
+                                "Existing submodule: " + scope->scope(),
+                                ast);
                     }
                     break;
                 }
@@ -688,8 +703,8 @@ private:
     }
 
     void alias_dcl(
-            const std::shared_ptr<peg::Ast> ast,
-            std::shared_ptr<Module> outer)
+            const std::shared_ptr<peg::Ast>& ast,
+            std::shared_ptr<Module>& outer)
     {
         using namespace peg::udl;
 
@@ -716,8 +731,8 @@ private:
     }
 
     void const_dcl(
-            const std::shared_ptr<peg::Ast> ast,
-            std::shared_ptr<Module> outer)
+            const std::shared_ptr<peg::Ast>& ast,
+            std::shared_ptr<Module>& outer)
     {
         using namespace peg::udl;
 
@@ -727,15 +742,15 @@ private:
         expr = solve_expr(*type, ast->nodes[2], outer);
 
         context_->log(log::LogLevel::DEBUG, "DECLARATION",
-            "Found const " + type->name() + " " + identifier + " = " + expr.to_string(),
-            ast);
+                "Found const " + type->name() + " " + identifier + " = " + expr.to_string(),
+                ast);
 
         outer->create_constant(identifier, expr);
     }
 
     bool get_literal_value(
             DynamicData& data,
-            const std::shared_ptr<peg::Ast> ast) const
+            const std::shared_ptr<peg::Ast>& ast) const
     {
         using namespace peg::udl;
         const unsigned int tag = ast->tag;
@@ -757,8 +772,8 @@ private:
                 if (tag != "INTEGER_LITERAL"_)
                 {
                     context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
-                        "Expected an INTEGER_LITERAL, found " + literal,
-                        ast);
+                            "Expected an INTEGER_LITERAL, found " + literal,
+                            ast);
                 }
                 int8_t value = static_cast<int8_t>(std::strtoll(literal.c_str(), nullptr, base));
                 data = value;
@@ -769,8 +784,8 @@ private:
                 if (tag != "INTEGER_LITERAL"_)
                 {
                     context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
-                        "Expected an INTEGER_LITERAL, found " + literal,
-                        ast);
+                            "Expected an INTEGER_LITERAL, found " + literal,
+                            ast);
                 }
                 uint8_t value = static_cast<uint8_t>(std::strtoull(literal.c_str(), nullptr, base));
                 data = value;
@@ -781,8 +796,8 @@ private:
                 if (tag != "INTEGER_LITERAL"_)
                 {
                     context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
-                        "Expected an INTEGER_LITERAL, found " + literal,
-                        ast);
+                            "Expected an INTEGER_LITERAL, found " + literal,
+                            ast);
                 }
                 int16_t value = static_cast<int16_t>(std::strtoll(literal.c_str(), nullptr, base));
                 data = value;
@@ -793,8 +808,8 @@ private:
                 if (tag != "INTEGER_LITERAL"_)
                 {
                     context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
-                        "Expected an INTEGER_LITERAL, found " + literal,
-                        ast);
+                            "Expected an INTEGER_LITERAL, found " + literal,
+                            ast);
                 }
                 uint16_t value = static_cast<uint16_t>(std::strtoull(literal.c_str(), nullptr, base));
                 data = value;
@@ -805,8 +820,8 @@ private:
                 if (tag != "INTEGER_LITERAL"_)
                 {
                     context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
-                        "Expected an INTEGER_LITERAL, found " + literal,
-                        ast);
+                            "Expected an INTEGER_LITERAL, found " + literal,
+                            ast);
                 }
                 int32_t value = static_cast<int32_t>(std::strtoll(literal.c_str(), nullptr, base));
                 data = value;
@@ -817,8 +832,8 @@ private:
                 if (tag != "INTEGER_LITERAL"_)
                 {
                     context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
-                        "Expected an INTEGER_LITERAL, found " + literal,
-                        ast);
+                            "Expected an INTEGER_LITERAL, found " + literal,
+                            ast);
                 }
                 uint32_t value = static_cast<uint32_t>(std::strtoull(literal.c_str(), nullptr, base));
                 data = value;
@@ -829,8 +844,8 @@ private:
                 if (tag != "INTEGER_LITERAL"_)
                 {
                     context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
-                        "Expected an INTEGER_LITERAL, found " + literal,
-                        ast);
+                            "Expected an INTEGER_LITERAL, found " + literal,
+                            ast);
                 }
                 int64_t value = static_cast<int64_t>(std::strtoll(literal.c_str(), nullptr, base));
                 data = value;
@@ -841,8 +856,8 @@ private:
                 if (tag != "INTEGER_LITERAL"_)
                 {
                     context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
-                        "Expected an INTEGER_LITERAL, found " + literal,
-                        ast);
+                            "Expected an INTEGER_LITERAL, found " + literal,
+                            ast);
                 }
                 uint64_t value = static_cast<uint64_t>(std::strtoull(literal.c_str(), nullptr, base));
                 data = value;
@@ -853,8 +868,8 @@ private:
                 if (tag != "CHAR_LITERAL"_)
                 {
                     context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
-                        "Expected an CHAR_LITERAL, found " + literal,
-                        ast);
+                            "Expected an CHAR_LITERAL, found " + literal,
+                            ast);
                 }
                 char value = literal.c_str()[0];
                 data = value;
@@ -865,8 +880,8 @@ private:
                 if (tag != "WIDE_CHAR_LITERAL"_)
                 {
                     context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
-                        "Expected an WIDE_CHAR_LITERAL, found " + literal,
-                        ast);
+                            "Expected an WIDE_CHAR_LITERAL, found " + literal,
+                            ast);
                 }
                 using convert_type = std::codecvt_utf8<wchar_t>;
                 std::wstring_convert<convert_type, wchar_t> converter;
@@ -886,8 +901,8 @@ private:
                 if (tag != "STRING_LITERAL"_ && tag != "UNEXPECTED_LITERAL"_)
                 {
                     context_->log(log::LogLevel::WARNING, "STRING",
-                        "Expected an STRING_LITERAL, found " + literal,
-                        ast);
+                            "Expected an STRING_LITERAL, found " + literal,
+                            ast);
                 }
 
                 data = aux;
@@ -904,8 +919,8 @@ private:
                 if (tag != "WIDE_STRING_LITERAL"_ && tag != "WIDE_SUBSTRING_LITERAL"_)
                 {
                     context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
-                        "Expected an WIDE_STRING_LITERAL, found " + literal,
-                        ast);
+                            "Expected an WIDE_STRING_LITERAL, found " + literal,
+                            ast);
                 }
                 using convert_type = std::codecvt_utf8<wchar_t>;
                 std::wstring_convert<convert_type, wchar_t> converter;
@@ -918,8 +933,8 @@ private:
                 if (tag != "BOOLEAN_LITERAL"_)
                 {
                     context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
-                        "Expected an BOOLEAN_LITERAL, found " + literal,
-                        ast);
+                            "Expected an BOOLEAN_LITERAL, found " + literal,
+                            ast);
                 }
                 if (literal == "TRUE")
                 {
@@ -932,9 +947,9 @@ private:
                 else
                 {
                     context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
-                        "Expected bool value (TRUE or FALSE) but found '" + literal
-                        + "'. It will be take the value 'FALSE'.",
-                        ast);
+                            "Expected bool value (TRUE or FALSE) but found '" + literal
+                            + "'. It will be take the value 'FALSE'.",
+                            ast);
                     data = false;
                 }
                 break;
@@ -944,8 +959,8 @@ private:
                 if (tag != "FLOAT_LITERAL"_)
                 {
                     context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
-                        "Expected a FLOAT_LITERAL, found " + literal,
-                        ast);
+                            "Expected a FLOAT_LITERAL, found " + literal,
+                            ast);
                 }
                 float value = std::stof(literal, nullptr);
                 data = value;
@@ -956,8 +971,8 @@ private:
                 if (tag != "FLOAT_LITERAL"_)
                 {
                     context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
-                        "Expected a FLOAT_LITERAL, found " + literal,
-                        ast);
+                            "Expected a FLOAT_LITERAL, found " + literal,
+                            ast);
                 }
                 double value = std::stod(literal, nullptr);
                 data = value;
@@ -968,8 +983,8 @@ private:
                 if (tag != "FLOAT_LITERAL"_)
                 {
                     context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
-                        "Expected a FLOAT_LITERAL, found " + literal,
-                        ast);
+                            "Expected a FLOAT_LITERAL, found " + literal,
+                            ast);
                 }
                 long double value = std::stold(literal, nullptr);
                 data = value;
@@ -977,8 +992,8 @@ private:
             }
             default:
                 context_->log(log::LogLevel::ERROR, "UNEXPECTED_LITERAL_TYPE",
-                    "Unknown literal type: " + data.type().name() + " (" + literal + ")",
-                    ast);
+                        "Unknown literal type: " + data.type().name() + " (" + literal + ")",
+                        ast);
                 return false;
         }
         return true;
@@ -986,8 +1001,8 @@ private:
 
     DynamicData solve_expr(
             const DynamicType& type,
-            const std::shared_ptr<peg::Ast> ast,
-            std::shared_ptr<Module> outer) const
+            const std::shared_ptr<peg::Ast>& ast,
+            std::shared_ptr<Module>& outer) const
     {
         using namespace peg::udl;
         DynamicData result(type);
@@ -1011,117 +1026,117 @@ private:
                 result = outer->constant(ast->token);
                 break;
             case "UNARY_EXPR"_:
+            {
+                result = solve_expr(type, ast->nodes[1], outer);
+                if (ast->nodes[0]->tag == "SUB_OP"_)
                 {
-                    result = solve_expr(type, ast->nodes[1], outer);
-                    if (ast->nodes[0]->tag == "SUB_OP"_)
-                    {
-                        DynamicData temp(-result);
-                        result = temp;
-                    }
+                    DynamicData temp(-result);
+                    result = temp;
                 }
-                break;
+            }
+            break;
             case "MULT_EXPR"_:
-                {
-                    DynamicData lho = solve_expr(type, ast->nodes[0], outer);
-                    DynamicData rho = solve_expr(type, ast->nodes[2], outer);
+            {
+                DynamicData lho = solve_expr(type, ast->nodes[0], outer);
+                DynamicData rho = solve_expr(type, ast->nodes[2], outer);
 
-                    if (ast->nodes[1]->tag == "MULT_OP"_)
-                    {
-                        DynamicData temp(lho * rho);
-                        result = temp;
-                    }
-                    else if (ast->nodes[1]->tag == "DIV_OP"_)
-                    {
-                        DynamicData temp(lho / rho);
-                        result = temp;
-                        //return lho / rho;
-                    }
-                    else if (ast->nodes[1]->tag == "MOD_OP"_)
-                    {
-                        DynamicData temp(lho % rho);
-                        result = temp;
-                    }
+                if (ast->nodes[1]->tag == "MULT_OP"_)
+                {
+                    DynamicData temp(lho * rho);
+                    result = temp;
                 }
-                break;
+                else if (ast->nodes[1]->tag == "DIV_OP"_)
+                {
+                    DynamicData temp(lho / rho);
+                    result = temp;
+                    //return lho / rho;
+                }
+                else if (ast->nodes[1]->tag == "MOD_OP"_)
+                {
+                    DynamicData temp(lho % rho);
+                    result = temp;
+                }
+            }
+            break;
             case "ADD_EXPR"_:
-                {
-                    DynamicData lho = solve_expr(type, ast->nodes[0], outer);
-                    DynamicData rho = solve_expr(type, ast->nodes[2], outer);
+            {
+                DynamicData lho = solve_expr(type, ast->nodes[0], outer);
+                DynamicData rho = solve_expr(type, ast->nodes[2], outer);
 
-                    DynamicData temp(type);
-                    if (ast->nodes[1]->tag == "ADD_OP"_)
-                    {
-                        temp = DynamicData(lho + rho);
-                    }
-                    else if (ast->nodes[1]->tag == "SUB_OP"_)
-                    {
-                        temp = DynamicData(lho - rho);
-                    }
-                    result = temp;
+                DynamicData temp(type);
+                if (ast->nodes[1]->tag == "ADD_OP"_)
+                {
+                    temp = DynamicData(lho + rho);
                 }
-                break;
+                else if (ast->nodes[1]->tag == "SUB_OP"_)
+                {
+                    temp = DynamicData(lho - rho);
+                }
+                result = temp;
+            }
+            break;
             case "SHIFT_EXPR"_:
-                {
-                    DynamicData lho = solve_expr(type, ast->nodes[0], outer);
-                    DynamicData rho = solve_expr(type, ast->nodes[2], outer);
+            {
+                DynamicData lho = solve_expr(type, ast->nodes[0], outer);
+                DynamicData rho = solve_expr(type, ast->nodes[2], outer);
 
-                    DynamicData temp(type);
-                    if (ast->nodes[1]->tag == "LSHIFT_OP"_)
-                    {
-                        temp = DynamicData(lho << rho);
-                    }
-                    else if (ast->nodes[1]->tag == "RSHIFT_OP"_)
-                    {
-                        temp = DynamicData(lho >> rho);
-                    }
-                    result = temp;
+                DynamicData temp(type);
+                if (ast->nodes[1]->tag == "LSHIFT_OP"_)
+                {
+                    temp = DynamicData(lho << rho);
                 }
-                break;
+                else if (ast->nodes[1]->tag == "RSHIFT_OP"_)
+                {
+                    temp = DynamicData(lho >> rho);
+                }
+                result = temp;
+            }
+            break;
             case "AND_EXPR"_:
-                {
-                    DynamicData lho = solve_expr(type, ast->nodes[0], outer);
-                    DynamicData rho = solve_expr(type, ast->nodes[2], outer);
+            {
+                DynamicData lho = solve_expr(type, ast->nodes[0], outer);
+                DynamicData rho = solve_expr(type, ast->nodes[2], outer);
 
-                    result = DynamicData(lho & rho);
-                }
-                break;
+                result = DynamicData(lho & rho);
+            }
+            break;
             case "XOR_EXPR"_:
-                {
-                    DynamicData lho = solve_expr(type, ast->nodes[0], outer);
-                    DynamicData rho = solve_expr(type, ast->nodes[2], outer);
+            {
+                DynamicData lho = solve_expr(type, ast->nodes[0], outer);
+                DynamicData rho = solve_expr(type, ast->nodes[2], outer);
 
-                    result = DynamicData(lho ^ rho);
-                }
-                break;
+                result = DynamicData(lho ^ rho);
+            }
+            break;
             case "CONST_EXPR"_: // OR_EXPR
-                {
-                    DynamicData lho = solve_expr(type, ast->nodes[0], outer);
-                    DynamicData rho = solve_expr(type, ast->nodes[2], outer);
+            {
+                DynamicData lho = solve_expr(type, ast->nodes[0], outer);
+                DynamicData rho = solve_expr(type, ast->nodes[2], outer);
 
-                    result = DynamicData(lho | rho);
-                }
-                break;
+                result = DynamicData(lho | rho);
+            }
+            break;
         }
         return result;
     }
 
     void enum_dcl(
-            const std::shared_ptr<peg::Ast> ast,
-            std::shared_ptr<Module> outer)
+            const std::shared_ptr<peg::Ast>& ast,
+            std::shared_ptr<Module>& outer)
     {
         using namespace peg::udl;
 
         std::string name = ast->nodes[0]->token;
         EnumerationType<uint32_t> result(name); // TODO: Support other Enum types?, the grammar should be upgraded.
         context_->log(log::LogLevel::DEBUG, "ENUM_DCL",
-            "Found enum \"" + name + "\"",
-            ast);
+                "Found enum \"" + name + "\"",
+                ast);
         for (size_t idx = 1; idx < ast->nodes.size(); ++idx)
         {
             const std::string& token = ast->nodes[idx]->token;
             context_->log(log::LogLevel::DEBUG, "ENUM_DCL_VALUE",
-                "Adding \"" + token + "\" to enum \"" + name + "\"",
-                ast);
+                    "Adding \"" + token + "\" to enum \"" + name + "\"",
+                    ast);
             result.add_enumerator(token);
             // Little hack. Don't judge me.
             DynamicData hack(primitive_type<uint32_t>());
@@ -1134,37 +1149,37 @@ private:
     }
 
     void struct_fw_dcl(
-            const std::shared_ptr<peg::Ast> ast,
-            std::shared_ptr<Module> outer)
+            const std::shared_ptr<peg::Ast>& ast,
+            std::shared_ptr<Module>& outer)
     {
         using namespace peg::udl;
         std::string name = resolve_identifier(ast, ast->token, outer);
         if (outer->has_symbol(name, false))
         {
             context_->log(log::LogLevel::ERROR, "EXCEPTION",
-                "Struct " + ast->token + " was already declared.",
-                ast);
+                    "Struct " + ast->token + " was already declared.",
+                    ast);
             throw exception("Struct " + ast->token + " was already declared.", ast);
         }
 
         StructType result(name);
         context_->log(log::LogLevel::DEBUG, "STRUCT_FW_DCL",
-            "Found forward struct declaration: \"" + name + "\"",
-            ast);
+                "Found forward struct declaration: \"" + name + "\"",
+                ast);
         outer->structure(std::move(result));
     }
 
     void union_fw_dcl(
-            const std::shared_ptr<peg::Ast> ast,
-            std::shared_ptr<Module> outer)
+            const std::shared_ptr<peg::Ast>& ast,
+            std::shared_ptr<Module>& outer)
     {
         using namespace peg::udl;
         std::string name = resolve_identifier(ast, ast->token, outer);
         if (outer->has_symbol(name, false))
         {
             context_->log(log::LogLevel::ERROR, "EXCEPTION",
-                "Union " + ast->token + " was already declared.",
-                ast);
+                    "Union " + ast->token + " was already declared.",
+                    ast);
             throw exception("Union " + ast->token + " was already declared.", ast);
         }
 
@@ -1173,14 +1188,14 @@ private:
         // because they doesn't defines the switch type
         StructType result(name);
         context_->log(log::LogLevel::DEBUG, "UNION_FW_DCL",
-            "Found forward union declaration: \"" + name + "\"",
-            ast);
+                "Found forward union declaration: \"" + name + "\"",
+                ast);
         outer->structure(std::move(result));
     }
 
     void struct_def(
-            const std::shared_ptr<peg::Ast> ast,
-            std::shared_ptr<Module> outer)
+            const std::shared_ptr<peg::Ast>& ast,
+            std::shared_ptr<Module>& outer)
     {
         using namespace peg::udl;
         std::string name;
@@ -1230,18 +1245,18 @@ private:
             if (context_->ignore_redefinition)
             {
                 context_->log(log::LogLevel::INFO, "REDEFINITION",
-                    msg,
-                    ast);
+                        msg,
+                        ast);
                 return;
             }
             context_->log(log::LogLevel::ERROR, "EXCEPTION",
-                msg,
-                ast);
+                    msg,
+                    ast);
             throw exception(msg, ast);
         }
         context_->log(log::LogLevel::DEBUG, "STRUCT_DEF",
-            "Struct \"" + name + "\" definition.",
-            ast);
+                "Struct \"" + name + "\" definition.",
+                ast);
 
         if (!parent_name.empty())
         {
@@ -1254,15 +1269,15 @@ private:
         for (auto& member : member_list)
         {
             context_->log(log::LogLevel::DEBUG, "STRUCT_DEF_MEMBER",
-                "Struct \"" + name + "\" member: " + member.name(),
-                ast);
+                    "Struct \"" + name + "\" member: " + member.name(),
+                    ast);
             struct_type->add_member(std::move(member));
         }
     }
 
     void union_def(
-            const std::shared_ptr<peg::Ast> ast,
-            std::shared_ptr<Module> outer)
+            const std::shared_ptr<peg::Ast>& ast,
+            std::shared_ptr<Module>& outer)
     {
         using namespace peg::udl;
         std::string name;
@@ -1298,31 +1313,31 @@ private:
             if (context_->ignore_redefinition)
             {
                 context_->log(log::LogLevel::INFO, "REDEFINITION",
-                    msg,
-                    ast);
+                        msg,
+                        ast);
                 return;
             }
             context_->log(log::LogLevel::ERROR, "EXCEPTION",
-                msg,
-                ast);
+                    msg,
+                    ast);
             throw exception(msg, ast);
         }
         context_->log(log::LogLevel::DEBUG, "UNION_DEF",
-            "Union \"" + name + "\" definition.",
-            ast);
+                "Union \"" + name + "\" definition.",
+                ast);
         for (auto& pair : member_list)
         {
             Member& member = pair.second;
             context_->log(log::LogLevel::DEBUG, "UNION_DEF_MEMBER",
-                "Union \"" + name + "\" member: " + member.name(),
-                ast);
+                    "Union \"" + name + "\" member: " + member.name(),
+                    ast);
             union_type.add_case_member(pair.first, std::move(member));
         }
     }
 
     void switch_body(
-            const std::shared_ptr<peg::Ast> ast,
-            std::shared_ptr<Module> outer,
+            const std::shared_ptr<peg::Ast>& ast,
+            std::shared_ptr<Module>& outer,
             std::vector<LabelsCaseMemberPair>& member_list,
             const DynamicType::Ptr type)
     {
@@ -1339,16 +1354,16 @@ private:
                 default:
                 {
                     context_->log(log::LogLevel::ERROR, "UNSUPPORTED",
-                       "Found unexepcted node \"" + node->name + "\" while parsing an Union. Ignoring.",
-                        node);
+                            "Found unexepcted node \"" + node->name + "\" while parsing an Union. Ignoring.",
+                            node);
                 }
             }
         }
     }
 
     void switch_case(
-            const std::shared_ptr<peg::Ast> ast,
-            std::shared_ptr<Module> outer,
+            const std::shared_ptr<peg::Ast>& ast,
+            std::shared_ptr<Module>& outer,
             std::vector<LabelsCaseMemberPair>& member_list,
             const DynamicType::Ptr type)
     {
@@ -1383,14 +1398,14 @@ private:
     }
 
     void case_member_def(
-            const std::shared_ptr<peg::Ast> ast,
-            std::shared_ptr<Module> outer,
+            const std::shared_ptr<peg::Ast>& ast,
+            std::shared_ptr<Module>& outer,
             std::vector<Member>& result)
     {
         using namespace peg::udl;
         DynamicType::Ptr type;
 
-        using id_pair = std::pair<std::string, std::vector<size_t>>;
+        using id_pair = std::pair<std::string, std::vector<size_t> >;
         using id_pair_vector = std::vector<id_pair>;
 
         id_pair_vector pairs;
@@ -1426,8 +1441,8 @@ private:
             if (already_defined)
             {
                 context_->log(log::LogLevel::ERROR, "EXCEPTION",
-                    "Member identifier " + ast->token + " already defined",
-                    ast);
+                        "Member identifier " + ast->token + " already defined",
+                        ast);
                 throw exception("Member identifier " + ast->token + " already defined", ast);
             }
             if (dimensions.empty())
@@ -1442,8 +1457,8 @@ private:
     }
 
     void annotation_dcl(
-            const std::shared_ptr<peg::Ast> ast,
-            std::shared_ptr<Module> outer)
+            const std::shared_ptr<peg::Ast>& ast,
+            std::shared_ptr<Module>& outer)
     {
         using namespace peg::udl;
         std::string name;
@@ -1472,22 +1487,22 @@ private:
         }
 
         context_->log(log::LogLevel::WARNING, "UNSUPPORTED",
-            "Found \"@annotation " + name + "\" but annotations aren't supported. Ignoring.",
-            ast);
+                "Found \"@annotation " + name + "\" but annotations aren't supported. Ignoring.",
+                ast);
         /* TODO
-        AnnotationType annotation_type(name);
-        for (auto& member : member_list)
-        {
+           AnnotationType annotation_type(name);
+           for (auto& member : member_list)
+           {
             annotation_type.add_member(std::move(member.second));
-        }
-        // Replace
-        outer->set_annotation(annotation_type));
-        */
+           }
+           // Replace
+           outer->set_annotation(annotation_type));
+         */
     }
 
     void bitset_dcl(
-            const std::shared_ptr<peg::Ast> ast,
-            std::shared_ptr<Module> outer)
+            const std::shared_ptr<peg::Ast>& ast,
+            std::shared_ptr<Module>& outer)
     {
         using namespace peg::udl;
         std::string name;
@@ -1521,22 +1536,22 @@ private:
         }
 
         context_->log(log::LogLevel::WARNING, "UNSUPPORTED",
-            "Found \"bitset " + name + "\" but bitsets aren't supported. Ignoring.",
-            ast);
+                "Found \"bitset " + name + "\" but bitsets aren't supported. Ignoring.",
+                ast);
         /* TODO
-        BitsetType bitset_type(name);
-        for (auto& member : member_list)
-        {
+           BitsetType bitset_type(name);
+           for (auto& member : member_list)
+           {
             bitset_type.add_member(std::move(member.second));
-        }
-        // Replace ?
-        outer->set_bitset(bitset_type);
-        */
+           }
+           // Replace ?
+           outer->set_bitset(bitset_type);
+         */
     }
 
     void bitmask_dcl(
-            const std::shared_ptr<peg::Ast> ast,
-            std::shared_ptr<Module> outer)
+            const std::shared_ptr<peg::Ast>& ast,
+            std::shared_ptr<Module>& outer)
     {
         using namespace peg::udl;
         std::string name;
@@ -1566,22 +1581,22 @@ private:
         }
 
         context_->log(log::LogLevel::WARNING, "UNSUPPORTED",
-            "Found \"bitmask " + name + "\" but bitmasks aren't supported. Ignoring.",
-            ast);
+                "Found \"bitmask " + name + "\" but bitmasks aren't supported. Ignoring.",
+                ast);
         /* TODO
-        BitmaskType bitmask_type(name);
-        for (auto& member : member_list)
-        {
+           BitmaskType bitmask_type(name);
+           for (auto& member : member_list)
+           {
             bitmask_type.add_member(std::move(member.second));
-        }
-        // Replace
-        outer->set_bitmask(bitmask_type);
-        */
+           }
+           // Replace
+           outer->set_bitmask(bitmask_type);
+         */
     }
 
     void member_def(
-            const std::shared_ptr<peg::Ast> ast,
-            std::shared_ptr<Module> outer,
+            const std::shared_ptr<peg::Ast>& ast,
+            std::shared_ptr<Module>& outer,
             std::vector<Member>& result)
     {
         using namespace peg::udl;
@@ -1605,8 +1620,8 @@ private:
     }
 
     DynamicType::Ptr type_spec(
-            const std::shared_ptr<peg::Ast> node, //ast,
-            std::shared_ptr<Module> outer)
+            const std::shared_ptr<peg::Ast>& node, //ast,
+            std::shared_ptr<Module>& outer)
     {
         using namespace peg::udl;
         switch (node->tag)
@@ -1618,8 +1633,8 @@ private:
                 if (type.get() == nullptr)
                 {
                     context_->log(log::LogLevel::ERROR, "EXCEPTION",
-                        "Member type " + node->token + " is unknown",
-                        node);
+                            "Member type " + node->token + " is unknown",
+                            node);
                     throw exception("Member type " + node->token + " is unknown", node);
                 }
                 return type;
@@ -1705,16 +1720,16 @@ private:
         }
 
         context_->log(log::LogLevel::ERROR, "UNKNOWN_TYPE",
-            node->token,
-            node);
+                node->token,
+                node);
 
         return DynamicType::Ptr();
     }
 
     size_t get_dimension(
             const std::string& value,
-            std::shared_ptr<Module> outer,
-            const std::shared_ptr<peg::Ast> node)
+            std::shared_ptr<Module>& outer,
+            const std::shared_ptr<peg::Ast>& node)
     {
         DynamicData c_data = outer->constant(value);
         size_t dim = 0;
@@ -1746,16 +1761,16 @@ private:
                 break;
             default:
                 context_->log(log::LogLevel::ERROR, "EXCEPTION",
-                    "Only a positive integer number can be used as dimension.",
-                    node);
+                        "Only a positive integer number can be used as dimension.",
+                        node);
                 throw exception("Only a positive integer number can be used as dimension.", node);
         }
         return dim;
     }
 
     size_t get_dimension(
-            std::shared_ptr<Module> outer,
-            const std::shared_ptr<peg::Ast> node)
+            std::shared_ptr<Module>& outer,
+            const std::shared_ptr<peg::Ast>& node)
     {
         using namespace peg::udl;
 
@@ -1801,13 +1816,13 @@ private:
     }
 
     void members(
-            const std::shared_ptr<peg::Ast> ast,
-            std::shared_ptr<Module> outer,
+            const std::shared_ptr<peg::Ast>& ast,
+            std::shared_ptr<Module>& outer,
             const DynamicType::Ptr type,
             std::vector<Member>& result)
     {
         using namespace peg::udl;
-        using id_pair = std::pair<std::string, std::vector<size_t>>;
+        using id_pair = std::pair<std::string, std::vector<size_t> >;
         using id_pair_vector = std::vector<id_pair>;
 
         id_pair_vector pairs = identifier_list(ast, outer);
@@ -1829,8 +1844,8 @@ private:
             if (already_defined)
             {
                 context_->log(log::LogLevel::ERROR, "EXCEPTION",
-                    "Member identifier " + ast->token + " already defined",
-                    ast);
+                        "Member identifier " + ast->token + " already defined",
+                        ast);
                 throw exception("Member identifier " + ast->token + " already defined", ast);
             }
             if (dimensions.empty())
@@ -1844,12 +1859,12 @@ private:
         }
     }
 
-    std::vector<std::pair<std::string, std::vector<size_t>>> identifier_list(
-            const std::shared_ptr<peg::Ast> node,
-            std::shared_ptr<Module> outer)
+    std::vector<std::pair<std::string, std::vector<size_t> > > identifier_list(
+            const std::shared_ptr<peg::Ast>& node,
+            std::shared_ptr<Module>& outer)
     {
         using namespace peg::udl;
-        std::vector<std::pair<std::string, std::vector<size_t>>> result;
+        std::vector<std::pair<std::string, std::vector<size_t> > > result;
 
         if (node->tag == node->original_tag)
         {
@@ -1868,9 +1883,9 @@ private:
     }
 
     void identifier(
-            const std::shared_ptr<peg::Ast> node,
-            std::shared_ptr<Module> outer,
-            std::vector<std::pair<std::string, std::vector<size_t>>>& list)
+            const std::shared_ptr<peg::Ast>& node,
+            std::shared_ptr<Module>& outer,
+            std::vector<std::pair<std::string, std::vector<size_t> > >& list)
     {
         using namespace peg::udl;
         std::string name;
@@ -1928,8 +1943,8 @@ private:
                                     break;
                                 default:
                                     context_->log(log::LogLevel::ERROR, "EXCEPTION",
-                                        "Only a positive intenger number can be used as dimension.",
-                                        node);
+                                            "Only a positive intenger number can be used as dimension.",
+                                            node);
                                     throw exception("Only a positive intenger number can be used as dimension.", node);
                             }
                             dimensions.push_back(dim);
