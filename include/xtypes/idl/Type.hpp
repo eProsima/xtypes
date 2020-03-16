@@ -32,20 +32,16 @@ public:
 
     Type(
             Module& parent,
-            const std::string& name,
             const DynamicType& type)
-        : name_(name)
-        , type_(type)
+        : type_(type)
         , parent_(parent)
     {
     }
 
     Type(
             Module& parent,
-            const std::string& name,
             DynamicType&& type)
-        : name_(name)
-        , type_(std::move(type))
+        : type_(std::move(type))
         , parent_(parent)
     {
     }
@@ -72,8 +68,6 @@ private:
 
     Type(
             const Type& type) = delete;
-
-    std::string name_; //TODO Necessary?
 
     DynamicType::Ptr type_;
 

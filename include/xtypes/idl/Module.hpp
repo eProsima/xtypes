@@ -171,7 +171,7 @@ public:
         struct_type.name(name_space + (name_space.empty() ? "" : "::") + name);
         auto result = structs_.emplace(
             name,
-            Type(*this, name, struct_type));
+            Type(*this, struct_type));
         return result.second;
     }
 
@@ -198,7 +198,7 @@ public:
         struct_type.name(name_space + (name_space.empty() ? "" : "::") + name);
         auto result = structs_.emplace(
             name,
-            Type(*this, name, std::move(struct_type)));
+            Type(*this, std::move(struct_type)));
         return result.second;
     }
 
@@ -255,7 +255,7 @@ public:
         union_type.name(name_space + (name_space.empty() ? "" : "::") + name);
         auto result = unions_.emplace(
             name,
-            Type(*this, name, union_type));
+            Type(*this, union_type));
         return result.second;
     }
 
@@ -282,7 +282,7 @@ public:
         union_type.name(name_space + (name_space.empty() ? "" : "::") + name);
         auto result = unions_.emplace(
             name,
-            Type(*this, name, std::move(union_type)));
+            Type(*this, std::move(union_type)));
         return result.second;
     }
 
@@ -396,7 +396,7 @@ public:
             }
         }
 
-        auto inserted = constants_types_.emplace(name, Type(*this, name, value.type()));
+        auto inserted = constants_types_.emplace(name, Type(*this, value.type()));
         if (inserted.second)
         {
             DynamicData temp(*inserted.first->second.get());
@@ -464,7 +464,7 @@ public:
         std::string name = enumeration.name();
         std::string name_space = scope();
         enumeration.name(name_space + (name_space.empty() ? "" : "::") + name);
-        auto result = enumerations_32_.emplace(name, Type(*this, name, std::move(enumeration)));
+        auto result = enumerations_32_.emplace(name, Type(*this, std::move(enumeration)));
         return result.second;
     }
 
@@ -513,7 +513,7 @@ public:
 
         std::string name_space = scope();
         AliasType alias(type, name_space + (name_space.empty() ? "" : "::") + name);
-        return aliases_.emplace(name, Type(*this, name, alias)).second;
+        return aliases_.emplace(name, Type(*this, alias)).second;
     }
 
     bool add_alias(
@@ -522,7 +522,7 @@ public:
         std::string name = alias.name();
         std::string name_space = scope();
         alias.name(name_space + (name_space.empty() ? "" : "::") + name);
-        return aliases_.emplace(name, Type(*this, name, AliasType(alias))).second;
+        return aliases_.emplace(name, Type(*this, AliasType(alias))).second;
     }
 
     bool add_alias(
@@ -531,7 +531,7 @@ public:
         std::string name = alias.name();
         std::string name_space = scope();
         alias.name(name_space + (name_space.empty() ? "" : "::") + name);
-        return aliases_.emplace(name, Type(*this, name, std::move(alias))).second;
+        return aliases_.emplace(name, Type(*this, std::move(alias))).second;
     }
 
     // Generic type retrieval.
