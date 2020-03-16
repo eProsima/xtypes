@@ -1483,11 +1483,9 @@ TEST (IDLParser, same_struct_id_in_different_modules)
         std::map<std::string, DynamicType::Ptr> result = context.module().get_all_types();
         EXPECT_EQ(1, result.size());
         const DynamicType* my_struct = result["MyStruct"].get();
-        EXPECT_EQ(my_struct->name(), "MyStruct");
-        EXPECT_EQ(my_struct->parent()->scope(), "a::b::c");
+        EXPECT_EQ(my_struct->name(), "a::b::c::MyStruct");
         first_struct = result["MyStruct"];
-        EXPECT_EQ(first_struct.get()->name(), "MyStruct");
-        EXPECT_EQ(first_struct.get()->parent()->scope(), "a::b::c");
+        EXPECT_EQ(first_struct.get()->name(), "a::b::c::MyStruct");
     }
 
     {
@@ -1509,12 +1507,10 @@ TEST (IDLParser, same_struct_id_in_different_modules)
         std::map<std::string, DynamicType::Ptr> result = context.module().get_all_types();
         EXPECT_EQ(1, result.size());
         const DynamicType* my_struct = result["MyStruct"].get();
-        EXPECT_EQ(my_struct->name(), "MyStruct");
-        EXPECT_EQ(my_struct->parent()->scope(), "x::y");
+        EXPECT_EQ(my_struct->name(), "x::y::MyStruct");
     }
 
-    EXPECT_EQ(first_struct.get()->name(), "MyStruct");
-    EXPECT_EQ(first_struct.get()->parent()->scope(), "a::b::c");
+    EXPECT_EQ(first_struct.get()->name(), "a::b::c::MyStruct");
 }
 
 int main(

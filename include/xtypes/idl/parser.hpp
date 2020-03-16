@@ -25,8 +25,8 @@
 #include <xtypes/StructType.hpp>
 #include <xtypes/SequenceType.hpp>
 #include <xtypes/DynamicData.hpp>
-#include <xtypes/Module.hpp>
 
+#include <xtypes/idl/Module.hpp>
 #include <xtypes/idl/grammar.hpp>
 
 #include <map>

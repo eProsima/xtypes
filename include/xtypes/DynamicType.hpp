@@ -28,13 +28,9 @@
 namespace eprosima {
 namespace xtypes {
 
-class Module;
-
 /// \brief Abstract base class for all dynamic types.
 class DynamicType : public Instanceable
 {
-    friend Module;
-
 public:
 
     virtual ~DynamicType() = default;
@@ -201,11 +197,6 @@ public:
         name_ = name;
     }
 
-    Module* parent() const
-    {
-        return parent_;
-    }
-
 protected:
 
     DynamicType(
@@ -213,7 +204,6 @@ protected:
             const std::string& name)
         : kind_(kind)
         , name_(name)
-        , parent_(nullptr)
     {
     }
 
@@ -228,17 +218,6 @@ protected:
 
     TypeKind kind_;
     std::string name_;
-    Module* parent_;
-
-private:
-
-    void attach_to_module(
-            Module* module)
-    {
-        xtypes_assert(module, name_ << " type cannot be attached to nullptr.");
-        xtypes_assert(!parent_, name_ << " type is already attached to a module.");
-        parent_ = module;
-    }
 
 public:
 

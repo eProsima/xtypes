@@ -14,6 +14,7 @@
 
 #include <gtest/gtest.h>
 #include <xtypes/xtypes.hpp>
+#include <xtypes/idl/idl.hpp>
 #include "../utils.hpp"
 
 #define PI 3.14159f
@@ -37,7 +38,7 @@ TEST (AliasType, alias_casting)
     AliasType at(StringType(100), "str100");
 
     ASSERT_OR_EXCEPTION({ static_cast<const StructType&>(at); },
-        "cannot be cast to the specified type");
+            "cannot be cast to the specified type");
 }
 
 TEST (AliasType, dynamic_alias_data)
@@ -96,7 +97,7 @@ TEST (AliasType, alias_idl_generate)
     stdata.add_member("st1", primitive_type<int>());
     stdata.add_member("st2", at1);
 
-    Module m;
+    idl::Module m;
     m.add_alias(at);
     m.add_alias(at1);
     m.structure(stdata);

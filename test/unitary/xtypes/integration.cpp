@@ -14,13 +14,13 @@
 
 #include <gtest/gtest.h>
 #include <xtypes/xtypes.hpp>
-#include <xtypes/Module.hpp>
+#include <xtypes/idl/Module.hpp>
 
 using namespace eprosima::xtypes;
 
 /***********************************
- *        Integration Tests        *
- ***********************************/
+*        Integration Tests        *
+***********************************/
 
 // TODO Write here tests to reproduce issues or cases involving several types that doesn't make sense to test
 // in other test unit.

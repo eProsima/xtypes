@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
-*/
+ */
 
 /// \file This file contains all needed headers that the user should include.
 
@@ -22,8 +22,10 @@
 
 #include <xtypes/ArrayType.hpp>
 #include <xtypes/StringType.hpp>
-#include <xtypes/DynamicData.hpp>
-#include <xtypes/idl/idl.hpp>
+#include <xtypes/StructType.hpp>
+#include <xtypes/UnionType.hpp>
+#include <xtypes/SequenceType.hpp>
 #include <xtypes/AliasType.hpp>
+#include <xtypes/DynamicData.hpp>
 
 #endif //EPROSIMA_XTYPES_XTYPES_HPP_

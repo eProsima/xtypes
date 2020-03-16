@@ -193,7 +193,8 @@ void check_result(
 
 TEST (IDLGenerator, roundtrip)
 {
-    Context context = parse(R"(
+    Context context = parse(
+        R"(
         typedef uint8 ByteMultiArray[6][7][8];
 
         enum RootEnum
@@ -301,7 +302,9 @@ TEST (IDLGenerator, roundtrip)
     check_result(result.module());
 }
 
-int main(int argc, char** argv)
+int main(
+        int argc,
+        char** argv)
 {
     testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();

@@ -1,5 +1,4 @@
 #include <xtypes/xtypes.hpp>
-#include <xtypes/Module.hpp>
 
 #include <iostream>
 
@@ -13,19 +12,19 @@ int main()
         DynamicData str1(string);
 
         str1.value<std::string>("Hello!");
-        for (ReadableDynamicDataRef&& elem : str1)
+        for (ReadableDynamicDataRef && elem : str1)
         {
             std::cout << elem.value<char>();
         }
         std::cout << std::endl;
 
         // Hello! -> Ifmmp"
-        for (WritableDynamicDataRef&& elem : str1)
+        for (WritableDynamicDataRef && elem : str1)
         {
             elem = static_cast<char>(elem.value<char>() + 1);
         }
 
-        for (ReadableDynamicDataRef&& elem : str1)
+        for (ReadableDynamicDataRef && elem : str1)
         {
             std::cout << elem.value<char>();
         }
@@ -43,18 +42,18 @@ int main()
         }
 
         int32_t check_sum = 0;
-        for (ReadableDynamicDataRef&& elem : array)
+        for (ReadableDynamicDataRef && elem : array)
         {
             check_sum += elem.value<int32_t>();
         }
 
-        for (WritableDynamicDataRef&& elem : array)
+        for (WritableDynamicDataRef && elem : array)
         {
             elem = elem.value<int32_t>() * 2;
         }
 
         int32_t double_check_sum = 0;
-        for (ReadableDynamicDataRef&& elem : array)
+        for (ReadableDynamicDataRef && elem : array)
         {
             double_check_sum += elem.value<int32_t>();
         }
@@ -73,18 +72,18 @@ int main()
         }
 
         int32_t check_sum = 0;
-        for (ReadableDynamicDataRef&& elem : seq)
+        for (ReadableDynamicDataRef && elem : seq)
         {
             check_sum += elem.value<int32_t>();
         }
 
-        for (WritableDynamicDataRef&& elem : seq)
+        for (WritableDynamicDataRef && elem : seq)
         {
             elem = elem.value<int32_t>() * 2;
         }
 
         int32_t double_check_sum = 0;
-        for (ReadableDynamicDataRef&& elem : seq)
+        for (ReadableDynamicDataRef && elem : seq)
         {
             double_check_sum += elem.value<int32_t>();
         }
@@ -106,18 +105,18 @@ int main()
 
         int32_t check_sum = 0;
         // The map returns an iterator to its pairs, which doesn't follow the insertion order!
-        for (ReadableDynamicDataRef&& elem : map)
+        for (ReadableDynamicDataRef && elem : map)
         {
             check_sum += elem[1].value<int32_t>();
         }
 
-        for (WritableDynamicDataRef&& elem : map)
+        for (WritableDynamicDataRef && elem : map)
         {
             elem[1] = elem[1].value<int32_t>() * 2;
         }
 
         int32_t double_check_sum = 0;
-        for (ReadableDynamicDataRef&& elem : map)
+        for (ReadableDynamicDataRef && elem : map)
         {
             double_check_sum += elem[1].value<int32_t>();
         }
@@ -138,48 +137,48 @@ int main()
         auto it = my_data.citems().begin();
         auto wit = my_data.items().begin();
 
-        for (ReadableDynamicDataRef::MemberPair&& elem : my_data.items())
+        for (ReadableDynamicDataRef::MemberPair && elem : my_data.items())
         {
-            switch(elem.kind())
+            switch (elem.kind())
             {
-            case TypeKind::INT_32_TYPE:
-                std::cout << elem.member().name() << ": " << elem.data().value<int32_t>() << std::endl;
-                break;
-            case TypeKind::FLOAT_64_TYPE:
-                std::cout << elem.member().name() << ": " << elem.data().value<double>() << std::endl;
-                break;
-            default:
-                break;
+                case TypeKind::INT_32_TYPE:
+                    std::cout << elem.member().name() << ": " << elem.data().value<int32_t>() << std::endl;
+                    break;
+                case TypeKind::FLOAT_64_TYPE:
+                    std::cout << elem.member().name() << ": " << elem.data().value<double>() << std::endl;
+                    break;
+                default:
+                    break;
             }
         }
 
-        for (WritableDynamicDataRef::MemberPair&& elem : my_data.items())
+        for (WritableDynamicDataRef::MemberPair && elem : my_data.items())
         {
-            switch(elem.kind())
+            switch (elem.kind())
             {
-            case TypeKind::INT_32_TYPE:
-                elem.data() = elem.data().value<int32_t>() * 2;
-                break;
-            case TypeKind::FLOAT_64_TYPE:
-                elem.data() = elem.data().value<double>() * 2;
-                break;
-            default:
-                break;
+                case TypeKind::INT_32_TYPE:
+                    elem.data() = elem.data().value<int32_t>() * 2;
+                    break;
+                case TypeKind::FLOAT_64_TYPE:
+                    elem.data() = elem.data().value<double>() * 2;
+                    break;
+                default:
+                    break;
             }
         }
 
-        for (ReadableDynamicDataRef::MemberPair&& elem : my_data.items())
+        for (ReadableDynamicDataRef::MemberPair && elem : my_data.items())
         {
-            switch(elem.kind())
+            switch (elem.kind())
             {
-            case TypeKind::INT_32_TYPE:
-                std::cout << elem.member().name() << " * 2: " << elem.data().value<int32_t>() << std::endl;
-                break;
-            case TypeKind::FLOAT_64_TYPE:
-                std::cout << elem.member().name() << " * 2: " << elem.data().value<double>() << std::endl;
-                break;
-            default:
-                break;
+                case TypeKind::INT_32_TYPE:
+                    std::cout << elem.member().name() << " * 2: " << elem.data().value<int32_t>() << std::endl;
+                    break;
+                case TypeKind::FLOAT_64_TYPE:
+                    std::cout << elem.member().name() << " * 2: " << elem.data().value<double>() << std::endl;
+                    break;
+                default:
+                    break;
             }
         }
     }
@@ -187,22 +186,22 @@ int main()
     std::cout << "--- Iterate struct type (depth) ---" << std::endl;
     {
         StructType l2 = StructType("Level2")
-            .add_member("l2m1", primitive_type<uint32_t>())
-            .add_member("l2m2", primitive_type<float>())
-            .add_member("l2m3", StringType())
-            .add_member("l2m4", WStringType());
+                .add_member("l2m1", primitive_type<uint32_t>())
+                .add_member("l2m2", primitive_type<float>())
+                .add_member("l2m3", StringType())
+                .add_member("l2m4", WStringType());
 
         StructType l1 = StructType("Level1")
-            .add_member("l1m1", SequenceType(primitive_type<uint32_t>()))
-            .add_member("l1m2", SequenceType(l2))
-            .add_member("l1m3", ArrayType(primitive_type<uint32_t>(), 2))
-            .add_member("l1m4", ArrayType(l2, 4))
-            .add_member("l1m5", l2);
+                .add_member("l1m1", SequenceType(primitive_type<uint32_t>()))
+                .add_member("l1m2", SequenceType(l2))
+                .add_member("l1m3", ArrayType(primitive_type<uint32_t>(), 2))
+                .add_member("l1m4", ArrayType(l2, 4))
+                .add_member("l1m5", l2);
 
         StructType l0 = StructType("Level0")
-            .add_member("l0m1", l1)
-            .add_member("l0m2", l2)
-            .add_member("l0m3", MapType(primitive_type<uint32_t>(), StringType()));
+                .add_member("l0m1", l1)
+                .add_member("l0m2", l2)
+                .add_member("l0m3", MapType(primitive_type<uint32_t>(), StringType()));
 
         l0.for_each([&](const DynamicType::TypeNode& node)
         {
@@ -222,21 +221,21 @@ int main()
     std::cout << "--- Iterate struct data (depth) ---" << std::endl;
     {
         StructType l2 = StructType("Level2")
-            .add_member("l2m1", primitive_type<uint32_t>())
-            .add_member("l2m2", primitive_type<float>())
-            .add_member("l2m3", StringType());
+                .add_member("l2m1", primitive_type<uint32_t>())
+                .add_member("l2m2", primitive_type<float>())
+                .add_member("l2m3", StringType());
 
         StructType l1 = StructType("Level1")
-            .add_member("l1m1", SequenceType(primitive_type<uint32_t>()))
-            .add_member("l1m2", SequenceType(l2))
-            .add_member("l1m3", ArrayType(primitive_type<uint32_t>(), 2))
-            .add_member("l1m4", ArrayType(l2, 4))
-            .add_member("l1m5", l2);
+                .add_member("l1m1", SequenceType(primitive_type<uint32_t>()))
+                .add_member("l1m2", SequenceType(l2))
+                .add_member("l1m3", ArrayType(primitive_type<uint32_t>(), 2))
+                .add_member("l1m4", ArrayType(l2, 4))
+                .add_member("l1m5", l2);
 
         StructType l0 = StructType("Level0")
-            .add_member("l0m1", l1)
-            .add_member("l0m2", l2)
-            .add_member("l0m3", MapType(primitive_type<uint32_t>(), StringType()));
+                .add_member("l0m1", l1)
+                .add_member("l0m2", l2)
+                .add_member("l0m3", MapType(primitive_type<uint32_t>(), StringType()));
 
         uint32_t uint_value = 0;
         DynamicData data(l0);
@@ -285,7 +284,10 @@ int main()
 
         data.for_each([&](const DynamicData::ReadableNode& node)
         {
-            if (!node.has_parent()) return; // Ignore the root
+            if (!node.has_parent())
+            {
+                return;                     // Ignore the root
+            }
             if (node.from_member() != nullptr)
             {
                 for (size_t tabs = 0; tabs < node.deep(); ++tabs)
