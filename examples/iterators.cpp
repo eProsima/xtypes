@@ -12,19 +12,19 @@ int main()
         DynamicData str1(string);
 
         str1.value<std::string>("Hello!");
-        for (auto&& elem : str1)
+        for (auto&& elem : str1) // Loop through each `ReadableDynamicDataRef`.
         {
             std::cout << elem.value<char>();
         }
         std::cout << std::endl;
 
         // Hello! -> Ifmmp"
-        for (auto&& elem : str1)
+        for (auto&& elem : str1) // Loop through each `WritableDynamicDataRef`.
         {
             elem = static_cast<char>(elem.value<char>() + 1);
         }
 
-        for (auto&& elem : str1)
+        for (auto&& elem : str1) // Loop through each `ReadableDynamicDataRef`.
         {
             std::cout << elem.value<char>();
         }
@@ -42,18 +42,18 @@ int main()
         }
 
         int32_t check_sum = 0;
-        for (auto&& elem : array)
+        for (auto&& elem : array) // Loop through each `ReadableDynamicDataRef`.
         {
             check_sum += elem.value<int32_t>();
         }
 
-        for (auto&& elem : array)
+        for (auto&& elem : array) // Loop through each `WritableDynamicDataRef`.
         {
             elem = elem.value<int32_t>() * 2;
         }
 
         int32_t double_check_sum = 0;
-        for (auto&& elem : array)
+        for (auto&& elem : array) // Loop through each `ReadableDynamicDataRef`.
         {
             double_check_sum += elem.value<int32_t>();
         }
@@ -72,18 +72,18 @@ int main()
         }
 
         int32_t check_sum = 0;
-        for (auto&& elem : seq)
+        for (auto&& elem : seq) // Loop through each `ReadableDynamicDataRef`.
         {
             check_sum += elem.value<int32_t>();
         }
 
-        for (auto&& elem : seq)
+        for (auto&& elem : seq) // Loop through each `WritableDynamicDataRef`.
         {
             elem = elem.value<int32_t>() * 2;
         }
 
         int32_t double_check_sum = 0;
-        for (auto&& elem : seq)
+        for (auto&& elem : seq) // Loop through each `ReadableDynamicDataRef`.
         {
             double_check_sum += elem.value<int32_t>();
         }
@@ -105,18 +105,18 @@ int main()
 
         int32_t check_sum = 0;
         // The map returns an iterator to its pairs, which doesn't follow the insertion order!
-        for (auto&& elem : map)
+        for (auto&& elem : map) // Loop through each `ReadableDynamicDataRef`.
         {
             check_sum += elem[1].value<int32_t>();
         }
 
-        for (auto&& elem : map)
+        for (auto&& elem : map) // Loop through each `WritableDynamicDataRef`.
         {
             elem[1] = elem[1].value<int32_t>() * 2;
         }
 
         int32_t double_check_sum = 0;
-        for (auto&& elem : map)
+        for (auto&& elem : map) // Loop through each `ReadableDynamicDataRef`.
         {
             double_check_sum += elem[1].value<int32_t>();
         }
@@ -137,7 +137,7 @@ int main()
         auto it = my_data.citems().begin();
         auto wit = my_data.items().begin();
 
-        for (auto&& elem : my_data.items())
+        for (auto&& elem : my_data.items()) // Loop through each `ReadableDynamicDataRef`.
         {
             switch (elem.kind())
             {
@@ -152,7 +152,7 @@ int main()
             }
         }
 
-        for (auto&& elem : my_data.items())
+        for (auto&& elem : my_data.items()) // Loop through each `WritableDynamicDataRef`.
         {
             switch (elem.kind())
             {
@@ -167,7 +167,7 @@ int main()
             }
         }
 
-        for (auto&& elem : my_data.items())
+        for (auto&& elem : my_data.items()) // Loop through each `ReadableDynamicDataRef`.
         {
             switch (elem.kind())
             {
