@@ -84,8 +84,16 @@ public:
             const uint8_t* source,
             const DynamicType& other) const override
     {
-        xtypes_assert(other.kind() == TypeKind::SEQUENCE_TYPE,
-            "Cannot copy data from different types: From '" << other.name() << "' to '" << name() << "'.");
+	const DynamicType* another = &other;
+
+	if (other.kind() == TypeKind::ALIAS_TYPE)
+	{
+            const AliasType& other_alias = static_cast<const AliasType&>(other);
+            another = &other_alias.rget();
+        }
+
+        xtypes_assert(another->kind() == TypeKind::SEQUENCE_TYPE,
+            "Cannot copy data from different types: From '" << another->name() << "' to '" << name() << "'.");
         (void) other;
         new (target) SequenceInstance(*reinterpret_cast<const SequenceInstance*>(source), content_type(), bounds());
     }
@@ -128,12 +136,20 @@ public:
     virtual TypeConsistency is_compatible(
             const DynamicType& other) const override
     {
-        if(other.kind() != TypeKind::SEQUENCE_TYPE)
+        const DynamicType* another = &other;
+
+        if (other.kind() == TypeKind::ALIAS_TYPE)
+        {
+            const AliasType& other_alias = static_cast<const AliasType&>(other);
+            another = &other_alias.rget();
+        }
+
+        if(another->kind() != TypeKind::SEQUENCE_TYPE)
         {
             return TypeConsistency::NONE;
         }
 
-        const SequenceType& other_sequence = static_cast<const SequenceType&>(other);
+        const SequenceType& other_sequence = static_cast<const SequenceType&>(*another);
 
         if(bounds() == other_sequence.bounds())
         {
