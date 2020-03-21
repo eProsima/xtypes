@@ -88,6 +88,11 @@ public:
             return is_compatible(other_alias.rget());
         }
 
+        if (other.kind() == TypeKind::STRUCTURE_TYPE) // Resolve one-member structs
+        {
+            return other.is_compatible(*this);
+        }
+
         if (other.is_enumerated_type())
         {
             if (PrimitiveType<T>::memory_size() == other.memory_size())
