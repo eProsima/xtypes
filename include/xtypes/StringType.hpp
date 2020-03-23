@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
-*/
+ */
 
 #ifndef EPROSIMA_XTYPES_STRING_TYPE_HPP_
 #define EPROSIMA_XTYPES_STRING_TYPE_HPP_
@@ -32,17 +32,19 @@ template<typename CHAR_T, TypeKind KIND, const char* TYPE_NAME>
 class TStringType : public MutableCollectionType
 {
 public:
+
     /// \brief Construct a string
     /// Depends of the specialization used, the string will contain PrimitiveType of char or wchar elements
     /// \param[in] bounds Limits of the string, 0 means no limits.
     TStringType(
             int bounds = 0)
         : MutableCollectionType(
-                KIND,
-                TYPE_NAME + ((bounds > 0) ? "_" + std::to_string(bounds) : ""),
-                DynamicType::Ptr(primitive_type<CHAR_T>()),
-                bounds)
-    {}
+            KIND,
+            TYPE_NAME + ((bounds > 0) ? "_" + std::to_string(bounds) : ""),
+            DynamicType::Ptr(primitive_type<CHAR_T>()),
+            bounds)
+    {
+    }
 
     virtual size_t memory_size() const override
     {
@@ -70,9 +72,16 @@ public:
             const uint8_t* source,
             const DynamicType& other) const override
     {
-        xtypes_assert(other.kind() == KIND,
-            "Cannot copy data from different types: From '" << other.name() << "' to '" << name() << "'.");
-        (void) other;
+        const DynamicType* another = &other;
+
+        if (other.kind() == TypeKind::ALIAS_TYPE)
+        {
+            const AliasType& other_alias = static_cast<const AliasType&>(other);
+            another = &other_alias.rget();
+        }
+
+        xtypes_assert(another->kind() == KIND,
+                "Cannot copy data from different types: From '" << another->name() << "' to '" << name() << "'.");
         const std::basic_string<CHAR_T>& source_string = *reinterpret_cast<const std::basic_string<CHAR_T>*>(source);
         size_t max_size = bounds() > 0 ? size_t(bounds()) : std::basic_string<CHAR_T>::npos;
         new (target) std::basic_string<CHAR_T>(source_string, 0, std::min(max_size, source_string.size()));
@@ -96,20 +105,28 @@ public:
             const uint8_t* other_instance) const override
     {
         return *reinterpret_cast<const std::basic_string<CHAR_T>*>(instance) ==
-                *reinterpret_cast<const std::basic_string<CHAR_T>*>(other_instance);
+               *reinterpret_cast<const std::basic_string<CHAR_T>*>(other_instance);
     }
 
     virtual TypeConsistency is_compatible(
             const DynamicType& other) const override
     {
-        if(other.kind() != KIND)
+        const DynamicType* another = &other;
+
+        if (other.kind() == TypeKind::ALIAS_TYPE)
+        {
+            const AliasType& other_alias = static_cast<const AliasType&>(other);
+            another = &other_alias.rget();
+        }
+
+        if (another->kind() != KIND)
         {
             return TypeConsistency::NONE;
         }
 
-        const TStringType& other_string = static_cast<const TStringType&>(other);
+        const TStringType& other_string = static_cast<const TStringType&>(*another);
 
-        if(bounds() == other_string.bounds())
+        if (bounds() == other_string.bounds())
         {
             return TypeConsistency::EQUALS;
         }
@@ -135,7 +152,7 @@ public:
             uint8_t* instance,
             size_t index) const override
     {
-        void* char_addr = &reinterpret_cast<std::basic_string<CHAR_T>*>(instance)->operator[](index);
+        void* char_addr = &reinterpret_cast<std::basic_string<CHAR_T>*>(instance)->operator [](index);
         return static_cast<uint8_t*>(char_addr);
     }
 
@@ -148,15 +165,17 @@ public:
     virtual uint64_t hash(
             const uint8_t* instance) const override
     {
-        std::hash<std::basic_string<CHAR_T>> hash_fn;
+        std::hash<std::basic_string<CHAR_T> > hash_fn;
         return hash_fn(*reinterpret_cast<const std::basic_string<CHAR_T>*>(instance));
     }
 
 protected:
+
     virtual DynamicType* clone() const override
     {
         return new TStringType(*this);
     }
+
 };
 
 /// \brief Specialization for strings that contains chars

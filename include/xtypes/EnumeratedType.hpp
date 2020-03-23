@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
-*/
+ */
 
 #ifndef EPROSIMA_ENUMERATED_TYPE_HPP_
 #define EPROSIMA_ENUMERATED_TYPE_HPP_
@@ -32,28 +32,38 @@ template<typename T>
 class EnumeratedType : public PrimitiveType<T>
 {
 public:
+
     /// \brief Check for a enumerator name existence.
     /// \param[in] name enumerator name to check.
     /// \returns true if found.
-    bool has_enumerator(const std::string& name) const { return values_.count(name) != 0; }
+    bool has_enumerator(
+            const std::string& name) const
+    {
+        return values_.count(name) != 0;
+    }
 
     /// \brief Enumerators of the enumerator.
     /// \returns A reference to the map of enumerators.
-    const std::map<std::string, T>& enumerators() const { return values_; }
+    const std::map<std::string, T>& enumerators() const
+    {
+        return values_;
+    }
 
     /// \brief Get a enumerator value by name. O(log(n)).
     /// \param[in] name EnumMember name.
     /// \pre has_enumerator() == true
     /// \returns A reference to the found enumerator.
-    T value(const std::string& name) const
+    T value(
+            const std::string& name) const
     {
         xtypes_assert(has_enumerator(name),
-            "Type '" + this->name() + "' doesn't have an enumerator named '" + name
-            + "'. Use 'has_enumerator' function to ensure the asked enumerator exists.");
+                "Type '" + this->name() + "' doesn't have an enumerator named '" + name
+                + "'. Use 'has_enumerator' function to ensure the asked enumerator exists.");
         return values_.at(name);
     }
 
-    bool is_allowed_value(T value) const
+    bool is_allowed_value(
+            T value) const
     {
         for (const auto& pair : values_)
         {
@@ -67,7 +77,8 @@ public:
 
     /// \brief Returns the enumerator for the given value.
     /// \returns The enumerator as std::string if exists, empty is doesn't.
-    std::string enumerator(T value) const
+    std::string enumerator(
+            T value) const
     {
         for (const auto& pair : values_)
         {
@@ -82,9 +93,17 @@ public:
     virtual TypeConsistency is_compatible(
             const DynamicType& other) const override
     {
-        if (other.is_enumerated_type())
+        const DynamicType* another = &other;
+
+        if (other.kind() == TypeKind::ALIAS_TYPE)
         {
-            if (PrimitiveType<T>::memory_size() == other.memory_size())
+            const AliasType& other_alias = static_cast<const AliasType&>(other);
+            another = &other_alias.rget();
+        }
+
+        if (another->is_enumerated_type())
+        {
+            if (PrimitiveType<T>::memory_size() == another->memory_size())
             {
                 return TypeConsistency::EQUALS;
             }
@@ -92,18 +111,18 @@ public:
             return TypeConsistency::IGNORE_TYPE_WIDTH;
         }
 
-        if(!other.is_primitive_type())
+        if (!another->is_primitive_type())
         {
             return TypeConsistency::NONE;
         }
 
         TypeConsistency consistency = TypeConsistency::EQUALS;
-        if(PrimitiveType<T>::memory_size() != other.memory_size())
+        if (PrimitiveType<T>::memory_size() != another->memory_size())
         {
             consistency |= TypeConsistency::IGNORE_TYPE_WIDTH;
         }
 
-        if((other.kind() & TypeKind::UNSIGNED_TYPE) == TypeKind::NO_TYPE)
+        if ((another->kind() & TypeKind::UNSIGNED_TYPE) == TypeKind::NO_TYPE)
         {
             consistency |= TypeConsistency::IGNORE_TYPE_SIGN;
         }
@@ -111,6 +130,7 @@ public:
     }
 
 protected:
+
     virtual DynamicType* clone() const override
     {
         EnumeratedType* result = new EnumeratedType<T>(PrimitiveType<T>::kind(), PrimitiveType<T>::name());
@@ -130,10 +150,12 @@ protected:
     /// \param[in] value value of the enumerator to add.
     /// \pre !has_enumerator(name)
     /// \returns A reference to the EnumeratedType (this).
-    EnumeratedType& insert_enumerator(const std::string& name, T value)
+    EnumeratedType& insert_enumerator(
+            const std::string& name,
+            T value)
     {
         xtypes_assert(!has_enumerator(name),
-            "Type '" + this->name() + "' already has an enumerator named '" + name + "'.");
+                "Type '" + this->name() + "' already has an enumerator named '" + name + "'.");
         values_.emplace(name, value);
         return *this;
     }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
-*/
+ */
 
 #ifndef EPROSIMA_XTYPES_MAP_TYPE_HPP_
 #define EPROSIMA_XTYPES_MAP_TYPE_HPP_
@@ -31,6 +31,7 @@ namespace xtypes {
 class MapType : public MutableCollectionType
 {
 public:
+
     /// \brief Construct a MapType.
     /// \param[in] key Key type of the map.
     /// \param[in] content Content type of the map.
@@ -40,11 +41,12 @@ public:
             const DynamicType& content,
             uint32_t bounds = 0)
         : MutableCollectionType(
-                TypeKind::MAP_TYPE,
-                "map_" + ((bounds > 0) ? std::to_string(bounds) + "_" : "") + PairType::name(key, content),
-                DynamicType::Ptr(PairType(key, content)),
-                bounds)
-    {}
+            TypeKind::MAP_TYPE,
+            "map_" + ((bounds > 0) ? std::to_string(bounds) + "_" : "") + PairType::name(key, content),
+            DynamicType::Ptr(PairType(key, content)),
+            bounds)
+    {
+    }
 
     /// \brief Construct a MapType.
     /// \param[in] key Key type of the map.
@@ -56,14 +58,17 @@ public:
             const DynamicTypeImpl&& content,
             uint32_t bounds)
         : MutableCollectionType(
-                TypeKind::MAP_TYPE,
-                "map_" + ((bounds > 0) ? std::to_string(bounds) + "_" : "") + PairType::name(key, content),
-                DynamicType::Ptr(PairType(key, content)),
-                bounds)
-    {}
+            TypeKind::MAP_TYPE,
+            "map_" + ((bounds > 0) ? std::to_string(bounds) + "_" : "") + PairType::name(key, content),
+            DynamicType::Ptr(PairType(key, content)),
+            bounds)
+    {
+    }
 
-    MapType(const MapType& other) = default;
-    MapType(MapType&& other) = default;
+    MapType(
+            const MapType& other) = default;
+    MapType(
+            MapType&& other) = default;
 
     virtual size_t memory_size() const override
     {
@@ -88,11 +93,18 @@ public:
             const uint8_t* source,
             const DynamicType& other) const override
     {
+        const DynamicType* another = &other;
+
+        if (other.kind() == TypeKind::ALIAS_TYPE)
+        {
+            const AliasType& other_alias = static_cast<const AliasType&>(other);
+            another = &other_alias.rget();
+        }
+
         xtypes_assert(
-            other.kind() == TypeKind::MAP_TYPE
-                && content_type().name() == static_cast<const MapType&>(other).content_type().name(),
-            "Cannot copy data from different types: From '" << other.name() << "' to '" << name() << "'.");
-        (void) other;
+            another->kind() == TypeKind::MAP_TYPE
+            && content_type().name() == static_cast<const MapType&>(*another).content_type().name(),
+            "Cannot copy data from different types: From '" << another->name() << "' to '" << name() << "'.");
         new (target) MapInstance(*reinterpret_cast<const MapInstance*>(source), bounds());
     }
 
@@ -114,14 +126,14 @@ public:
             uint8_t* instance,
             size_t index) const override
     {
-        return reinterpret_cast<MapInstance*>(instance)->operator[](uint32_t(index));
+        return reinterpret_cast<MapInstance*>(instance)->operator [](uint32_t(index));
     }
 
     virtual uint8_t* get_instance_at(
             uint8_t* instance,
             uint8_t* key_instance) const
     {
-        return reinterpret_cast<MapInstance*>(instance)->operator[](key_instance);
+        return reinterpret_cast<MapInstance*>(instance)->operator [](key_instance);
     }
 
     virtual size_t get_instance_size(
@@ -135,27 +147,35 @@ public:
             const uint8_t* other_instance) const override
     {
         return *reinterpret_cast<const MapInstance*>(instance)
-            == *reinterpret_cast<const MapInstance*>(other_instance);
+               == *reinterpret_cast<const MapInstance*>(other_instance);
     }
 
     virtual TypeConsistency is_compatible(
             const DynamicType& other) const override
     {
-        if(other.kind() != TypeKind::MAP_TYPE)
+        const DynamicType* another = &other;
+
+        if (other.kind() == TypeKind::ALIAS_TYPE)
+        {
+            const AliasType& other_alias = static_cast<const AliasType&>(other);
+            another = &other_alias.rget();
+        }
+
+        if (another->kind() != TypeKind::MAP_TYPE)
         {
             return TypeConsistency::NONE;
         }
 
-        const MapType& other_map = static_cast<const MapType&>(other);
+        const MapType& other_map = static_cast<const MapType&>(*another);
 
-        if(bounds() == other_map.bounds())
+        if (bounds() == other_map.bounds())
         {
             return TypeConsistency::EQUALS
-                | content_type().is_compatible(other_map.content_type());
+                   | content_type().is_compatible(other_map.content_type());
         }
 
         return TypeConsistency::IGNORE_MAP_BOUNDS
-            | content_type().is_compatible(other_map.content_type());
+               | content_type().is_compatible(other_map.content_type());
     }
 
     virtual void for_each_instance(
@@ -164,7 +184,7 @@ public:
     {
         const MapInstance& map = *reinterpret_cast<const MapInstance*>(node.instance);
         visitor(node);
-        for(uint32_t i = 0; i < map.size(); i++)
+        for (uint32_t i = 0; i < map.size(); i++)
         {
             InstanceNode child(node, content_type(), map[i], i, nullptr);
             content_type().for_each_instance(child, visitor);
@@ -189,7 +209,7 @@ public:
             uint8_t* instance,
             const uint8_t* key_instance) const
     {
-        if(get_instance_size(instance) < bounds() || bounds() == 0)
+        if (get_instance_size(instance) < bounds() || bounds() == 0)
         {
             return reinterpret_cast<MapInstance*>(instance)->insert(key_instance, bounds());
         }
@@ -212,10 +232,12 @@ public:
     }
 
 protected:
+
     virtual DynamicType* clone() const override
     {
         return new MapType(*this);
     }
+
 };
 
 } //namespace xtypes

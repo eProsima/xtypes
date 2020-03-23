@@ -18,6 +18,7 @@
 #define EPROSIMA_XTYPES_PRIMITIVE_TYPE_HPP_
 
 #include <xtypes/DynamicType.hpp>
+#include <xtypes/AliasType.hpp>
 
 #include <cstring>
 
@@ -33,12 +34,12 @@ struct PrimitiveTypeKindTrait
 };
 
 #define DDS_CORE_XTYPES_PRIMITIVE(TYPE, KIND) \
-template<> \
-struct PrimitiveTypeKindTrait<TYPE> \
-{ \
-    static constexpr TypeKind kind = TypeKind::KIND; \
-    static constexpr const char* name = #TYPE; \
-};\
+    template<> \
+    struct PrimitiveTypeKindTrait<TYPE> \
+    { \
+        static constexpr TypeKind kind = TypeKind::KIND; \
+        static constexpr const char* name = #TYPE; \
+    }; \
 
 DDS_CORE_XTYPES_PRIMITIVE(bool, BOOLEAN_TYPE)
 DDS_CORE_XTYPES_PRIMITIVE(int8_t, INT_8_TYPE)
@@ -63,33 +64,42 @@ template<typename T>
 class PrimitiveType : public DynamicType
 {
 protected:
+
     template<typename R>
     friend const DynamicType& primitive_type();
 
     PrimitiveType()
         : DynamicType(PrimitiveTypeKindTrait<T>::kind, PrimitiveTypeKindTrait<T>::name)
-    {}
+    {
+    }
 
     PrimitiveType(
             TypeKind kind,
             const std::string& name)
         : DynamicType(kind, name)
-    {}
+    {
+    }
 
-    PrimitiveType(const PrimitiveType& other) = delete;
-    PrimitiveType(PrimitiveType&& other) = delete;
+    PrimitiveType(
+            const PrimitiveType& other) = delete;
+    PrimitiveType(
+            PrimitiveType&& other) = delete;
 
     virtual size_t memory_size() const override
     {
         return sizeof(T);
-    };
+    }
 
-    virtual void construct_instance(uint8_t* instance) const override
+    virtual void construct_instance(
+            uint8_t* instance) const override
     {
         *reinterpret_cast<T*>(instance) = T(0);
     }
 
-    virtual void destroy_instance(uint8_t* /*instance*/) const override { } //Default does nothing
+    virtual void destroy_instance(
+            uint8_t* /*instance*/) const override
+    {
+    }                                                                       //Default does nothing
 
     virtual void copy_instance(
             uint8_t* target,
@@ -103,10 +113,17 @@ protected:
             const uint8_t* source,
             const DynamicType& other) const override
     {
-        xtypes_assert(other.is_primitive_type(),
-            "Cannot copy data from type '" + other.name() + "' to type '" + name() + "'.");
-        (void) other;
-        switch(other.kind())
+        const DynamicType* another = &other;
+
+        if (other.kind() == TypeKind::ALIAS_TYPE)
+        {
+            const AliasType& other_alias = static_cast<const AliasType&>(other);
+            another = &other_alias.rget();
+        }
+
+        xtypes_assert(another->is_primitive_type(),
+                "Cannot copy data from type '" + another->name() + "' to type '" + name() + "'.");
+        switch (another->kind())
         {
             case TypeKind::BOOLEAN_TYPE:
                 *reinterpret_cast<T*>(target) = *reinterpret_cast<const bool*>(source);
@@ -169,23 +186,31 @@ protected:
     virtual TypeConsistency is_compatible(
             const DynamicType& other) const override
     {
-        if(!other.is_primitive_type())
+        const DynamicType* another = &other;
+
+        if (other.kind() == TypeKind::ALIAS_TYPE)
+        {
+            const AliasType& other_alias = static_cast<const AliasType&>(other);
+            another = &other_alias.rget();
+        }
+
+        if (!another->is_primitive_type())
         {
             return TypeConsistency::NONE;
         }
 
-        if(kind() == other.kind())
+        if (kind() == another->kind())
         {
             return TypeConsistency::EQUALS;
         }
 
         TypeConsistency consistency = TypeConsistency::EQUALS;
-        if(memory_size() != other.memory_size())
+        if (memory_size() != another->memory_size())
         {
             consistency |= TypeConsistency::IGNORE_TYPE_WIDTH;
         }
 
-        if((kind() & TypeKind::UNSIGNED_TYPE) != (other.kind() & TypeKind::UNSIGNED_TYPE))
+        if ((kind() & TypeKind::UNSIGNED_TYPE) != (another->kind() & TypeKind::UNSIGNED_TYPE))
         {
             consistency |= TypeConsistency::IGNORE_TYPE_SIGN;
         }
@@ -210,6 +235,7 @@ protected:
     {
         return new PrimitiveType<T>();
     }
+
 };
 
 /// \brief Helper function to create a PrimitiveType.
