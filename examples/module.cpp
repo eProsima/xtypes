@@ -31,10 +31,10 @@ int main()
 
     /*
        root
-     \_a
-     \_ a _ OuterType
-
-     \_b _ InnerType
+           \_a
+           |  \_ a _ OuterType
+           |
+           \_b _ InnerType
      */
 
     std::cout << std::boolalpha;
@@ -48,8 +48,7 @@ int main()
     DynamicData outer_data(root["a"]["a"].structure("OuterType")); // ::a::a::OuterType
     outer_data["om1"] = "This is a string.";
 
-    std::string scope_b = submod_b.scope();
-    std::string scope_inner_type = scope_b + "::" + inner.name(); // b::InnerType
+    std::string scope_inner_type = inner.name(); // b::InnerType
     DynamicData inner_data(root.structure(scope_inner_type));
     inner_data["im1"] = 32u;
     inner_data["im2"] = 3.14159265f;
