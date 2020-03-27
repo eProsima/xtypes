@@ -32,9 +32,11 @@ namespace idl {
 class Module;
 
 namespace generator {
-std::string module_contents(
-        const Module& module,
-        size_t tabs);
+namespace dependencytree {
+// Forward declarations
+class DependencyNode;
+class DependencyModule;
+}
 }
 
 class Module
@@ -51,6 +53,9 @@ public:
     {
     }
 
+    Module(
+            const Module& other) = delete;
+
     Module& create_submodule(
             const std::string& submodule)
     {
@@ -65,11 +70,11 @@ public:
         return inner_[submodule];
     }
 
-    using ModuleVisitor = std::function<void(const Module& mod)>;
+    using ModuleVisitor = std::function<void (const Module& mod)>;
 
     void for_each_submodule(
             ModuleVisitor visitor,
-            const bool recursive=true) const
+            bool recursive = true) const
     {
         for (const auto& inner : this->inner_)
         {
@@ -81,7 +86,8 @@ public:
         }
     }
 
-    void for_each(ModuleVisitor visitor) const
+    void for_each(
+            ModuleVisitor visitor) const
     {
         visitor(*this);
         for_each_submodule(visitor);
@@ -139,6 +145,27 @@ public:
             return outer_->has_symbol(ident, extend);
         }
         return false;
+    }
+
+    unsigned int symbol_count(
+            const std::string& ident) const
+    {
+        unsigned int count = 0;
+        if (has_symbol(ident, false))
+        {
+            count++;
+        }
+
+        Module* outer = outer_;
+        while (outer != nullptr)
+        {
+            if (outer->has_symbol(ident, false))
+            {
+                count++;
+            }
+            outer = outer->outer_;
+        }
+        return count;
     }
 
     bool has_structure(
@@ -560,35 +587,42 @@ public:
     DynamicType::Ptr type(
             const std::string& name)
     {
+        DynamicType::Ptr ret_type;
         // Solve scope
         PairModuleSymbol module = resolve_scope(name);
         if (module.first == nullptr)
         {
-            return DynamicType::Ptr();
+            return ret_type;
         }
 
         // Check enums
         if (module.first->has_enum_32(module.second))
         {
-            return module.first->enumerations_32_.at(module.second).get();
+            ret_type = module.first->enumerations_32_.at(module.second).get();
         }
 
         // Check structs
         if (module.first->has_structure(module.second))
         {
-            return module.first->structs_.at(module.second).get();
+            ret_type = module.first->structs_.at(module.second).get();
         }
 
         // Check unions
         if (module.first->has_union(module.second))
         {
-            return module.first->unions_.at(module.second).get();
+            ret_type = module.first->unions_.at(module.second).get();
         }
 
         // Check aliases
         if (module.first->has_alias(module.second))
         {
-            return module.first->aliases_.at(module.second).get();
+            ret_type = module.first->aliases_.at(module.second).get();
+        }
+
+        if (name.find("::") == 0)
+        {
+            // Scope ambiguity solver was originally used, add it to the retrieved DynamicType
+            ret_type->name(name);
         }
 
         // Check bitsets
@@ -597,14 +631,13 @@ public:
         // Check bitmasks
         // TODO
 
-        return DynamicType::Ptr();
+        return ret_type;
     }
 
 protected:
 
-    friend std::string idl::generator::module_contents(
-            const Module& module,
-            size_t tabs);
+    friend class generator::dependencytree::DependencyNode;
+    friend class generator::dependencytree::DependencyModule;
 
     std::map<std::string, Type> aliases_;
     std::map<std::string, Type> constants_types_;

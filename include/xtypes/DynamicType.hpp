@@ -327,6 +327,13 @@ public:
             return type_;
         }
 
+        /// \brief Get a non-const pointer of the internal managed DynamicType.
+        /// \returns A non-const pointer of the interal managed DynamicType
+        DynamicType* operator ->()
+        {
+            return const_cast<DynamicType*>(type_);
+        }
+
         /// \brief Returns a reference of the intenral managed DynamicType.
         /// \returns A reference of the internal managed DynamicType.
         const DynamicType& operator *() const

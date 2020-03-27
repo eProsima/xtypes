@@ -21,14 +21,14 @@ using namespace eprosima::xtypes;
 void generation_roundtrip_test(
         const std::vector<std::pair<std::string, std::string>>& module_elements)
 {
-    Module root;
-    Module& mod_A = root.create_submodule("A");
-    Module& mod_B = root.create_submodule("B");
-    Module& mod_AB = mod_A.create_submodule("B");
-    Module& mod_AC = mod_A.create_submodule("C");
-    Module& mod_ABA = mod_AB.create_submodule("A");
+    idl::Module root;
+    idl::Module& mod_A = root.create_submodule("A");
+    idl::Module& mod_B = root.create_submodule("B");
+    idl::Module& mod_AB = mod_A.create_submodule("B");
+    idl::Module& mod_AC = mod_A.create_submodule("C");
+    idl::Module& mod_ABA = mod_AB.create_submodule("A");
 
-    const std::map<const std::string, Module&> modules = {
+    const std::map<const std::string, idl::Module&> modules = {
         {"A",       mod_A  },
         {"B",       mod_B  },
         {"A::B",    mod_AB },
@@ -71,7 +71,7 @@ void generation_roundtrip_test(
     {
         const std::string& submodule = pair.first;
 
-        Module* module = &root;
+        idl::Module* module = &root;
         if (!submodule.empty())
         {
             ASSERT_TRUE(modules.count(submodule));
@@ -126,17 +126,17 @@ void generation_roundtrip_test(
     idl::Context context = idl::parse(gen_idl);
     ASSERT_TRUE(context.success);
 
-    Module& root_gen = context.module();
+    idl::Module& root_gen = context.module();
     ASSERT_TRUE(root_gen.has_submodule("A"));
-    Module& modA_gen = root_gen["A"];
+    idl::Module& modA_gen = root_gen["A"];
     ASSERT_TRUE(modA_gen.has_submodule("B"));
-    Module& modAB_gen = modA_gen["B"];
+    idl::Module& modAB_gen = modA_gen["B"];
     ASSERT_TRUE(modA_gen.has_submodule("C"));
-    Module& modAC_gen = modA_gen["C"];
+    idl::Module& modAC_gen = modA_gen["C"];
     ASSERT_TRUE(modAB_gen.has_submodule("A"));
-    Module& modABA_gen = modAB_gen["A"];
+    idl::Module& modABA_gen = modAB_gen["A"];
     ASSERT_TRUE(root_gen.has_submodule("B"));
-    Module& modB_gen = root_gen["B"];
+    idl::Module& modB_gen = root_gen["B"];
 
     for (const auto& pair : module_elements)
     {

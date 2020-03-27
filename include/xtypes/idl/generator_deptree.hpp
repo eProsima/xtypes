@@ -18,7 +18,7 @@
 #ifndef EPROSIMA_XTYPES_IDL_GENERATOR_DEPENDENCYTREE_HPP_
 #define EPROSIMA_XTYPES_IDL_GENERATOR_DEPENDENCYTREE_HPP_
 
-#include <xtypes/Module.hpp>
+#include <xtypes/idl/Module.hpp>
 #include <xtypes/idl/generator.hpp>
 
 namespace eprosima {
@@ -37,25 +37,40 @@ class DependencyModule;
 
 // Forward declarations from "generator.hpp". Allows user to just include
 // "idl/generator.hpp" and forget about this file.
-inline std::string aliase(dependencytree::DependencyNode* alias_node,
-                          const DynamicType& type, const std::string& name);
+inline std::string type_name(
+        dependencytree::DependencyNode* node,
+        const DynamicType& type);
 
-inline std::string type_name(dependencytree::DependencyNode* node, const DynamicType& type);
+inline std::string aliase(
+        const std::string& name,
+        const DynamicType& type,
+        dependencytree::DependencyNode* alias_node);
 
-inline std::string get_const_value(ReadableDynamicDataRef data);
+inline std::string get_const_value(
+        ReadableDynamicDataRef data);
 
-inline std::string enumeration32(const EnumerationType<uint32_t>& enumeration, size_t tabs = 0);
+inline std::string enumeration32(
+        const std::string& name,
+        const EnumerationType<uint32_t>& enumeration,
+        size_t tabs = 0);
 
-inline std::string structure(const StructType& type, size_t tabs = 0,
-                             dependencytree::DependencyNode* struct_node = nullptr);
+inline std::string structure(
+        const std::string& name,
+        const StructType& type,
+        dependencytree::DependencyNode* struct_node = nullptr,
+        size_t tabs = 0);
 
-inline std::string generate_union(dependencytree::DependencyNode* union_node, size_t tabs = 0);
+inline std::string generate_union(
+        const std::string& name,
+        const UnionType& type,
+        dependencytree::DependencyNode* union_node,
+        size_t tabs = 0);
 
 namespace dependencytree {
 
 /// \brief Alias given to some Module's content element (alias, struct, constant...).
 /// std::pair is used, as Module's contents are stored using std::map containers.
-using ModuleElement = std::pair<const std::string, DynamicType::Ptr>;
+using ModuleElement = std::pair<const std::string, Type>;
 using ModuleRefSet = std::vector<std::weak_ptr<DependencyModule>>;
 
 /// \brief Enumeration that describes the kind of a DependencyNode.
@@ -89,7 +104,7 @@ public:
     DependencyNode(
             DependencyModule* from,
             const ModuleElement& node,
-            const ModuleElementKind&& kind)
+            ModuleElementKind&& kind)
         : from_(from)
         , node_(node)
         , kind_(std::move(kind))
@@ -137,6 +152,13 @@ public:
     const ModuleElementKind& kind() const
     {
         return kind_;
+    }
+
+    /// \brief Module containing this DependencyNode.
+    /// \returns A const reference to the Module.
+    const Module& module() const
+    {
+        return node_.second.parent();
     }
 
     /// \brief Ask the DependencyNode if it does have any ancestor.
@@ -254,39 +276,33 @@ public:
     }
 
     /// \brief Generates the corresponding IDL sentence for this node
-    /// \param[in] from_enum List of the module's constants created from enums.
-    /// Required to properly generate "const" IDL sentences.
-    /// \param[in] constants Reference to module's constants values.
-    /// Required to properly generate "const" IDL sentences.
     /// \param[in] tabs Padding relative to module's scope.
     /// \return the generated sentence for this DependencyNode object.
     std::string generate_idl_sentence(
-            const std::vector<std::string>& from_enum,
-            const std::map<std::string, DynamicData>& constants,
             unsigned int tabs)
     {
         using namespace generator;
-
-        std::stringstream ss;
 
         if (iterated_)
         {
             return std::string();
         }
 
+        std::stringstream ss;
+        Module& module_ = node_.second.parent();
+
         switch(kind_)
         {
             case ModuleElementKind::ALIAS:
             {
-                ss << std::string(4 * tabs, ' ') << aliase(this, static_cast<const AliasType&>(type()).get(), name());
+                ss << std::string(4 * tabs, ' ') << aliase(name(), static_cast<const AliasType&>(type()).get(), this);
                 break;
             }
             case ModuleElementKind::CONST:
             {
-                for (const auto& pair : constants)
+                for (const auto& pair : module_.constants_)
                 {
-                    if (pair.first == name() &&
-                        std::find(from_enum.begin(), from_enum.end(), name()) == from_enum.end())
+                    if (pair.first == name() && !module_.is_const_from_enum(name()))
                         // Don't add as const the "fake" enumeration consts.
                     {
                         ss << std::string(4 * tabs, ' ') << "const " << type_name(this, pair.second.type())
@@ -298,17 +314,17 @@ public:
             }
             case ModuleElementKind::ENUM:
             {
-                ss << enumeration32(static_cast<const EnumerationType<uint32_t>&>(type()), tabs);
+                ss << enumeration32(name(), static_cast<const EnumerationType<uint32_t>&>(type()), tabs);
                 break;
             }
             case ModuleElementKind::STRUCT:
             {
-                ss << structure(static_cast<const StructType&>(type()), tabs, this);
+                ss << structure(name(), static_cast<const StructType&>(type()), this, tabs);
                 break;
             }
             case ModuleElementKind::UNION:
             {
-                ss << generate_union(this, tabs);
+                ss << generate_union(name(), static_cast<const UnionType&>(type()), this, tabs);
                 break;
             }
             /*
@@ -328,7 +344,10 @@ public:
     inline bool operator == (
             const DependencyNode& other) const
     {
-        return (node_ == other.node_ && kind_ == other.kind_);
+        return (kind_ == other.kind_ &&
+                node_.first == node_.first &&
+                node_.second.get() == other.node_.second.get() &&
+                node_.second.parent().scope() == node_.second.parent().scope());
     }
 
     /// \brief Not equal comparison operator overload between two DependencyNode objects.
@@ -344,7 +363,7 @@ private:
 
     DependencyModule* from_;
     const ModuleElement& node_;
-    const ModuleElementKind kind_;
+    ModuleElementKind kind_;
     bool iterated_;
     NodeRefSet ancestors_;
     ModuleRefSet parent_modules_;
@@ -352,7 +371,7 @@ private:
 };
 
 /// \brief Class to set and store hierarchical relationships between Module objects.
-class DependencyModule : public Module
+class DependencyModule
 {
 public:
 
@@ -361,7 +380,7 @@ public:
 
     /// \brief Construct a new DependencyModule object.
     /// \param[in] d_root Reference to root DependencyModule in this tree.
-    /// \param[in] module The Module object from which this objects inherits.
+    /// \param[in] module The Module object from which this objects keeps track of.
     /// \param[in] outer A pointer to its outer DependencyModule. Here, "outer" does not
     /// mean a hierarchically precedent DependencyModule to be printed before this in the
     /// generated IDL file, but is a pointer to this Module's outer scoped Module object;
@@ -370,7 +389,7 @@ public:
             const std::shared_ptr<DependencyModule>& d_root,
             const Module& module,
             DependencyModule* outer)
-        : Module(module)
+        : module_(module)
         , d_root_(d_root)
         , d_outer_(outer)
         ,iterated_(false)
@@ -389,6 +408,13 @@ public:
     void set_iterated(bool iterated)
     {
         iterated_ = iterated;
+    }
+
+    /// \brief Retrieve Module object referred by this DependencyModule.
+    /// \returns A const reference to the Module.
+    const Module& module() const
+    {
+        return module_;
     }
 
     /// \brief Get this DependencyModule's DependencyNode set.
@@ -494,7 +520,7 @@ public:
     DepModulesPair find_outer_siblings(
             const DependencyModule* dep)
     {
-        xtypes_assert(has_outer(), "Cannot use 'find_common_outer()' in root node.");
+        xtypes_assert(has_outer(), "Cannot use 'find_outer_siblings()' in root node.");
 
         DependencyModule* inner_dep = d_outer_->has_inner(dep);
 
@@ -620,11 +646,11 @@ public:
     /// \brief Create a DependencyNode set for this DependencyModule.
     inline void create_dependency_set()
     {
-        ADD_INTO_DEPENDENCY_SET(aliases_, ALIAS);
-        ADD_INTO_DEPENDENCY_SET(constants_types_, CONST);
-        ADD_INTO_DEPENDENCY_SET(enumerations_32_, ENUM);
-        ADD_INTO_DEPENDENCY_SET(structs_, STRUCT);
-        ADD_INTO_DEPENDENCY_SET(unions_, UNION);
+        ADD_INTO_DEPENDENCY_SET(module_.aliases_, ALIAS);
+        ADD_INTO_DEPENDENCY_SET(module_.constants_types_, CONST);
+        ADD_INTO_DEPENDENCY_SET(module_.enumerations_32_, ENUM);
+        ADD_INTO_DEPENDENCY_SET(module_.structs_, STRUCT);
+        ADD_INTO_DEPENDENCY_SET(module_.unions_, UNION);
     }
 
     /// \brief Looks for an specific module in the shared_ptr tree, given its pointer.
@@ -669,33 +695,65 @@ public:
     }
 
     /// \brief Given a DependencyNode's name, search for it through the DependencyModule tree.
-    /// \param[in] name Name of the DependencyNode to be found.
+    /// \param[in] scoped_name Name of the DependencyNode to be found.
     /// \param[in] from_search Reference to DependencyModule that triggered the search. It will
     /// be set as a child DependencyModule of the found DependencyNode, if it is not nullptr.
     /// \param[in] from_root Start search from DependencyModule's tree root.
     /// \returns A pointer to the found DependencyModule.
     DependencyModule* search_module_with_node(
-            const std::string& name,
+            const std::string& scoped_name,
             DependencyModule* from_search=nullptr,
             bool from_root=true)
     {
         if (from_root)
         {
             DependencyModule* res =
-                outer_root()->search_module_with_node(name, from_search, false);
+                outer_root()->search_module_with_node(scoped_name, from_search, false);
             xtypes_assert(res != nullptr,
-                "Could not find module containing dependency named '" << name << "'.");
+                "Could not find module containing dependency named '" << scoped_name << "'.");
             return res;
         }
         else
         {
+            bool scope_match = true;
+            std::string unscoped_name;
+            std::string scope;
+            // Separe unscoped name and scope
+            size_t pos = scoped_name.rfind("::");
+            if (pos != std::string::npos)
+            {
+                unscoped_name = scoped_name.substr(pos + 2);
+                scope = scoped_name.substr(0, pos);
+                if (scope != ((scope.find("::") == 0) ? std::string("::") + module_.scope()
+                                                      : module_.scope()))
+                {
+                    scope_match = false;
+                }
+            }
+            else
+            {
+                unscoped_name = scoped_name;
+            }
+
             for (auto& node : node_set_)
             {
-                if (node.name() == name)
+                if (node.name() == unscoped_name && scope_match)
                 {
                     if (from_search != nullptr)
                     {
-                        node.set_child_module(search_module_in_tree(from_search));
+                        DependencyModule* new_child = from_search;
+                        if (!node.from()->has_inner(from_search, false))
+                        {
+                            for (const auto& inner : node.from()->inner())
+                            {
+                                if (inner->has_inner(from_search))
+                                {
+                                    new_child = inner.get();
+                                    break;
+                                }
+                            }
+                        }
+                        node.set_child_module(search_module_in_tree(new_child));
                     }
 
                     return this;
@@ -705,7 +763,7 @@ public:
             for (const auto& inner : d_inner_)
             {
                 DependencyModule* found;
-                found = inner->search_module_with_node(name, from_search, false);
+                found = inner->search_module_with_node(scoped_name, from_search, false);
 
                 if (found != nullptr)
                 {
@@ -732,7 +790,26 @@ public:
             return;
         }
 
-        if (has_symbol(master, false))
+        bool scoped_this = true;
+        std::string unscoped_master, master_scope;
+        if (master.find("::") != std::string::npos)
+        {
+            size_t scope_end = master.rfind("::");
+            unscoped_master = master.substr(scope_end + 2);
+            master_scope = master.substr(0, scope_end);
+
+            if (master_scope != ((master_scope.find("::") == 0) ? std::string("::") + module_.scope()
+                                                                : module_.scope()))
+            {
+                scoped_this = false;
+            }
+        }
+        else
+        {
+            unscoped_master = master;
+        }
+
+        if (module_.has_symbol(unscoped_master, false) && scoped_this)
         {
             for (auto& node : node_set_)
             {
@@ -740,7 +817,7 @@ public:
                 {
                     continue;
                 }
-                else if (node.name() == master)
+                else if (node.name() == unscoped_master)
                 {
                     dependent.set_ancestor(node);
                     break;
@@ -841,7 +918,10 @@ public:
                 structure.for_each([&](const DynamicType::TypeNode& tnode)
                 {
                     const DynamicType& type = tnode.type();
-                    set_dynamic_type_dependency(node, type, type.name());
+                    if (type.name() != structure.name())
+                    {
+                        set_dynamic_type_dependency(node, type, type.name());
+                    }
                 });
                 break;
             }
@@ -852,7 +932,10 @@ public:
                 union_type.for_each([&](const DynamicType::TypeNode& tnode)
                 {
                     const DynamicType& type = tnode.type();
-                    set_dynamic_type_dependency(node, type, type.name());
+                    if (type.name() != union_type.name())
+                    {
+                        set_dynamic_type_dependency(node, type, type.name());
+                    }
                 });
                 break;
             }
@@ -891,7 +974,7 @@ public:
 
         if (has_outer(other))
         {
-            ss << other->name() << "::";
+            ss << other->module().name() << "::";
         }
         else if (has_inner(other) != nullptr)
         {
@@ -899,15 +982,15 @@ public:
 
             while (inner != other)
             {
-                ss << inner->name() << "::";
+                ss << inner->module().name() << "::";
                 inner = inner->has_inner(other);
             }
 
-            ss << other->name() << "::";
+            ss << other->module().name() << "::";
         }
         else // no relationship
         {
-            ss << "::" << other->scope() << "::";
+            ss << "::" << other->module().scope() << "::";
         }
 
         return ss.str();
@@ -925,7 +1008,7 @@ public:
     {
         if (std::find(node_set_.begin(), node_set_.end(), node) != node_set_.end())
         {
-            return node.generate_idl_sentence(from_enum_, constants_, tabs);
+            return node.generate_idl_sentence(tabs);
         }
         else
         {
@@ -950,7 +1033,7 @@ public:
                 for (const auto& ancestor : node.ancestors())
                 {
                     std::stringstream ss_ancestor;
-                    ss_ancestor << ancestor.get().generate_idl_sentence(from_enum_, constants_, tabs);
+                    ss_ancestor << ancestor.get().generate_idl_sentence(tabs);
 
                     if (ss_ancestor.rdbuf()->in_avail())
                     {
@@ -960,7 +1043,7 @@ public:
             }
 
             std::stringstream ss_node;
-            ss_node << node.generate_idl_sentence(from_enum_, constants_, tabs);
+            ss_node << node.generate_idl_sentence(tabs);
 
             if (ss_node.rdbuf()->in_avail() &&
                 (!all_nodes_iterated() || (!d_inner_.empty() && !all_inner_iterated())))
@@ -977,6 +1060,7 @@ public:
 private:
 
     bool iterated_;
+    const Module& module_;
     const std::shared_ptr<DependencyModule>& d_root_;
     DependencyModule* d_outer_;
     ModuleSet d_inner_;
@@ -1007,7 +1091,7 @@ public:
     {
         outer->create_dependency_set();
 
-        outer->for_each_submodule([&](const Module& submod)
+        outer->module().for_each_submodule([&](const Module& submod)
         {
             std::shared_ptr<DependencyModule> child =
                 std::make_shared<DependencyModule>(dep_root_, submod, outer);
@@ -1042,7 +1126,7 @@ public:
             return std::string();
         }
 
-        bool root = dep_mod->name().empty();
+        bool root = dep_mod->module().name().empty();
         std::stringstream ss;
 
         // Generate DependencyModule ancestors first
@@ -1077,7 +1161,7 @@ public:
 
         if (!root)
         {
-            ss << std::string(4 * tabs, ' ') << "module " << dep_mod->name() << std::endl;
+            ss << std::string(4 * tabs, ' ') << "module " << dep_mod->module().name() << std::endl;
             ss << std::string(4 * tabs, ' ') << "{" << std::endl;
         }
 
