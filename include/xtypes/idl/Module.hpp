@@ -74,9 +74,10 @@ public:
 
     void for_each_submodule(
             ModuleVisitor visitor,
+            const Module* module,
             bool recursive = true) const
     {
-        for (const auto& inner : this->inner_)
+        for (const auto& inner : module->inner_)
         {
             visitor(*inner.second.get());
             if (recursive)
@@ -86,11 +87,18 @@ public:
         }
     }
 
+    void for_each_submodule(
+            ModuleVisitor visitor,
+            bool recursive = true) const
+    {
+        for_each_submodule(visitor, this, recursive);
+    }
+
     void for_each(
             ModuleVisitor visitor) const
     {
         visitor(*this);
-        for_each_submodule(visitor);
+        for_each_submodule(visitor, this);
     }
 
     bool has_submodule(
@@ -156,14 +164,9 @@ public:
             count++;
         }
 
-        Module* outer = outer_;
-        while (outer != nullptr)
+        if (outer_ != nullptr)
         {
-            if (outer->has_symbol(ident, false))
-            {
-                count++;
-            }
-            outer = outer->outer_;
+            count += outer_->symbol_count(ident);
         }
         return count;
     }
