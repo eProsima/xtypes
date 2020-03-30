@@ -224,6 +224,179 @@ TEST (IDLGenerator, dependencies)
     generation_roundtrip_test(test4);*/
 }
 
+void generation_ambiguity_resolution_check(
+        const idl::Module& root)
+{
+    const idl::Module& mod_A   = root["A"];
+    const idl::Module& mod_B   = root["B"];
+    const idl::Module& mod_AB  = mod_A["B"];
+    const idl::Module& mod_AC  = mod_A["C"];
+    const idl::Module& mod_ABA = mod_AB["A"];
+
+    // Retrieve all "MyStruct" types
+    ASSERT_TRUE(root.has_structure("MyStruct"));
+    const StructType& _my_struct = root.structure("MyStruct");
+    ASSERT_TRUE(_my_struct.has_member("ms0"));
+    const Member& _my_struct_0 = _my_struct.member("ms0");
+    ASSERT_EQ(_my_struct_0.type().kind(), TypeKind::UINT_16_TYPE);
+    ASSERT_TRUE(_my_struct.has_member("ms1"));
+    const Member& _my_struct_1 = _my_struct.member("ms1");
+    ASSERT_EQ(_my_struct_1.type().name(), "A::C::MyEnum");
+    ASSERT_EQ(_my_struct_1.type().kind(), TypeKind::ENUMERATION_TYPE);
+
+    ASSERT_TRUE(mod_A.has_structure("MyStruct"));
+    const StructType& _A_my_struct = mod_A.structure("MyStruct");
+    ASSERT_TRUE(_A_my_struct.has_member("ms0"));
+    const Member& _A_my_struct_0 = _A_my_struct.member("ms0");
+    ASSERT_EQ(_A_my_struct_0.type().kind(), TypeKind::FLOAT_64_TYPE);
+    ASSERT_TRUE(_A_my_struct.has_member("ms1"));
+    const Member& _A_my_struct_1 = _A_my_struct.member("ms1");
+    ASSERT_EQ(_A_my_struct_1.type().kind(), TypeKind::BOOLEAN_TYPE);
+
+    ASSERT_TRUE(mod_AC.has_structure("MyStruct"));
+    const StructType& _AC_my_struct = mod_AC.structure("MyStruct");
+    ASSERT_TRUE(_AC_my_struct.has_member("ms0"));
+    const Member& _AC_my_struct_0 = _AC_my_struct.member("ms0");
+    ASSERT_EQ(_AC_my_struct_0.type().kind(), TypeKind::UINT_8_TYPE);
+    ASSERT_TRUE(_AC_my_struct.has_member("ms1"));
+    const Member& _AC_my_struct_1 = _AC_my_struct.member("ms1");
+    ASSERT_EQ(_AC_my_struct_1.type().kind(), TypeKind::STRING_TYPE);
+
+    // Check that the correct references to "MyStruct" were used
+    ASSERT_TRUE(mod_B.has_structure("MyChildStruct"));
+    const StructType& _B_my_childstruct = mod_B.structure("MyChildStruct");
+    ASSERT_TRUE(_B_my_childstruct.has_parent());
+    const StructType& _B_my_childstruct_parent =
+        static_cast<const StructType&>(_B_my_childstruct.parent());
+    ASSERT_EQ(_B_my_childstruct_parent.name(), "A::C::MyStruct");
+    ASSERT_TRUE(_B_my_childstruct_parent.has_member("ms0"));
+    const Member& _B_my_childstruct_parent_0 = _B_my_childstruct_parent.member("ms0");
+    ASSERT_EQ(_B_my_childstruct_parent_0.type().kind(), TypeKind::UINT_8_TYPE);
+    ASSERT_TRUE(_B_my_childstruct_parent.has_member("ms1"));
+    const Member& _B_my_childstruct_parent_1 = _B_my_childstruct_parent.member("ms1");
+    ASSERT_EQ(_B_my_childstruct_parent_1.type().kind(), TypeKind::STRING_TYPE);
+
+    ASSERT_TRUE(mod_B.has_union("MyUnion"));
+    const UnionType& _B_my_union = mod_B.union_switch("MyUnion");
+    ASSERT_TRUE(_B_my_union.has_member("my_union_first_struct"));
+    const Member& _B_my_union_first_struct_member = _B_my_union.member("my_union_first_struct");
+    ASSERT_EQ(_B_my_union_first_struct_member.type().name(), "A::MyStruct");
+    ASSERT_EQ(_B_my_union_first_struct_member.type().kind(), TypeKind::STRUCTURE_TYPE);
+    const StructType& _B_my_union_first_struct =
+        static_cast<const StructType&>(_B_my_union_first_struct_member.type());
+    ASSERT_TRUE(_B_my_union_first_struct.has_member("ms0"));
+    const Member& _B_my_union_first_struct_0 = _B_my_union_first_struct.member("ms0");
+    ASSERT_EQ(_B_my_union_first_struct_0.type().kind(), TypeKind::FLOAT_64_TYPE);
+    ASSERT_TRUE(_B_my_union_first_struct.has_member("ms1"));
+    const Member& _B_my_union_first_struct_1 = _B_my_union_first_struct.member("ms1");
+    ASSERT_EQ(_B_my_union_first_struct_1.type().kind(), TypeKind::BOOLEAN_TYPE);
+    ASSERT_TRUE(_B_my_union.has_member("my_union_second_struct"));
+    const Member& _B_my_union_second_struct_member = _B_my_union.member("my_union_second_struct");
+    ASSERT_EQ(_B_my_union_second_struct_member.type().name(), "MyStruct");
+    ASSERT_EQ(_B_my_union_second_struct_member.type().kind(), TypeKind::STRUCTURE_TYPE);
+    const StructType& _B_my_union_second_struct =
+        static_cast<const StructType&>(_B_my_union_second_struct_member.type());
+    ASSERT_TRUE(_B_my_union_second_struct.has_member("ms0"));
+    const Member& _B_my_union_second_struct_0 = _B_my_union_second_struct.member("ms0");
+    ASSERT_EQ(_B_my_union_second_struct_0.type().kind(), TypeKind::UINT_16_TYPE);
+    ASSERT_TRUE(_B_my_union_second_struct.has_member("ms1"));
+    const Member& _B_my_union_second_struct_1 = _B_my_union_second_struct.member("ms1");
+    ASSERT_EQ(_B_my_union_second_struct_1.type().kind(), TypeKind::ENUMERATION_TYPE);
+    ASSERT_EQ(_B_my_union_second_struct_1.type().name(), "A::C::MyEnum");
+}
+
+TEST (IDLGenerator, ambiguity)
+{
+    idl::Context context = idl::parse(
+        R"(
+        module A
+        {
+            module C
+            {
+                struct MyStruct
+                {
+                    uint8 ms0;
+                    string ms1;
+                };
+
+                enum MyEnum
+                {
+                    A,
+                    B,
+                    C
+                };
+
+            };
+
+            struct MyStruct
+            {
+                double ms0;
+                boolean ms1;
+            };
+
+            module B
+            {
+                module A
+                {
+                    typedef boolean MyBoolAlias;
+                };
+            };
+        };
+
+        typedef A::B::A::MyBoolAlias MyBoolAliasAlias;
+
+        const A::C::MyEnum MyEnumConst = 1;
+
+        enum MyDiscriminatorEnum
+        {
+            Disc_1,
+            Disc_2,
+            Disc_3,
+            Disc_4
+        };
+
+        struct MyStruct
+        {
+            uint16 ms0;
+            A::C::MyEnum ms1;
+        };
+
+
+        module B
+        {
+            struct MyChildStruct : A::C::MyStruct
+            {
+                string<20> mcs0;
+            };
+
+            union MyUnion switch (MyDiscriminatorEnum)
+            {
+                case Disc_1:
+                    A::MyStruct my_union_first_struct;
+                case Disc_2:
+                    MyBoolAliasAlias my_union_alias;
+                case Disc_3:
+                    float my_union_float;
+                case Disc_4:
+                default:
+                    MyStruct my_union_second_struct;
+            };
+        };
+            )");
+
+        ASSERT_TRUE(context.success);
+        const idl::Module& root = context.module();
+        generation_ambiguity_resolution_check(root);
+
+        std::string gen_idl = idl::generate(root);
+        // Debug
+        // std::cout << gen_idl << std::endl;
+
+        idl::Context gen_context = idl::parse(gen_idl);
+        ASSERT_TRUE(gen_context.success);
+        generation_ambiguity_resolution_check(gen_context.module());
+}
+
 int main(int argc, char** argv)
 {
     testing::InitGoogleTest(&argc, argv);
