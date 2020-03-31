@@ -132,6 +132,7 @@ if(XTYPES_BUILD_TESTS)
         test/unitary/parser/module.cpp
         test/unitary/parser/parser_test.cpp)
     compile_test(${PROJECT_NAME}_idl_parser_roundtrip SOURCE test/unitary/parser/roundtrip.cpp)
+    compile_test(${PROJECT_NAME}_idl_generator_dependencies SOURCE test/unitary/generator/dependencies.cpp)
     # ...
 
     # Set test with label NoMemoryCheck

@@ -64,6 +64,16 @@ public:
         return type_;
     }
 
+    const DynamicType& operator * () const
+    {
+        return *type_;
+    }
+
+    const DynamicType* operator -> () const
+    {
+        return type_.get();
+    }
+
 private:
 
     Type(
