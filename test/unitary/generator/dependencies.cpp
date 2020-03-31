@@ -64,8 +64,10 @@ void generation_roundtrip_test(
     std::vector<std::string> labels = {"Disc_1", "Disc_2"};
     my_union.add_case_member(labels, Member("my_union_alias", my_bool_alias_alias));
     std::vector<uint32_t> test(my_union_enum.value("Disc_3"));
-    my_union.add_case_member(my_union_enum.value("Disc_3"), "my_union_float", primitive_type<float>());
-    my_union.add_case_member(my_union_enum.value("Disc_4"), "my_union_struct", my_struct, true);
+    my_union.add_case_member<uint32_t>({my_union_enum.value("Disc_3")},
+                                       Member("my_union_float", primitive_type<float>()));
+    my_union.add_case_member<uint32_t>({my_union_enum.value("Disc_4")},
+                                       Member("my_union_struct", my_struct), true);
 
     for (const auto& pair : module_elements)
     {

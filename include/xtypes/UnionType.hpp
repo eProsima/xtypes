@@ -157,16 +157,6 @@ public:
         return add_case_member(labels, Member(name, type), is_default);
     }
 
-    template<typename T>
-    UnionType& add_case_member(
-            const T& label,
-            const std::string& name,
-            const DynamicType& type,
-            bool is_default = false)
-    {
-        return add_case_member(std::vector<T>(1, label), Member(name, type), is_default);
-    }
-
     /// \brief Create a member in this union with a type as rvalue.
     /// \param[in] name Member name to create.
     /// \param[in] type Member type fo the member.
