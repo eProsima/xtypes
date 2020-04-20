@@ -106,6 +106,29 @@ TEST (IDLParser, simple_struct_test)
     EXPECT_EQ(data[idx++].type().name(), "std::wstring");
 }
 
+TEST (IDLParser, char16_t_test)
+{
+    Context context;
+    context.wchar_type = Context::CHAR16_T;
+    parse(
+        R"(
+        struct SimpleStruct
+        {
+            wchar my_wchar;
+        };
+                   )",
+        context);
+
+    std::map<std::string, DynamicType::Ptr> result = context.module().get_all_types();
+    EXPECT_EQ(1, result.size());
+
+    const StructType& my_struct = context.module().structure("SimpleStruct");
+    DynamicData data(my_struct);
+
+    data["my_wchar"] = u'e';
+    EXPECT_EQ(u'e', data["my_wchar"].value<char16_t>());
+}
+
 TEST (IDLParser, array_sequence_struct_test)
 {
     Context context = parse(

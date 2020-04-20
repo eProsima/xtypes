@@ -125,6 +125,12 @@ struct Context
         INT8
     };
 
+    enum WideCharType
+    {
+        WCHAR_T,
+        CHAR16_T
+    };
+
     // Config
     bool ignore_case = false;
     bool clear = true;
@@ -132,6 +138,7 @@ struct Context
     bool allow_keyword_identifiers = false;
     bool ignore_redefinition = false;
     CharType char_translation = CHAR;
+    WideCharType wchar_type = WCHAR_T;
     std::string preprocessor_exec = "cpp";
     std::vector<std::string> include_paths;
 
@@ -876,6 +883,27 @@ private:
                 break;
             }
             case TypeKind::CHAR_16_TYPE:
+            {
+                if (tag != "WIDE_CHAR_LITERAL"_)
+                {
+                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
+                            "Expected an WIDE_CHAR_LITERAL, found " + literal,
+                            ast);
+                }
+                std::u16string temp = u"";
+                char16_t c16str[3] = u"\0";
+                mbstate_t mbs;
+                for (const auto& it : literal)
+                {
+                    std::memset(&mbs, 0, sizeof(mbs));
+                    std::memmove(c16str, u"\0\0\0", 3);
+                    std::mbrtoc16(c16str, &it, 3, &mbs);
+                    temp.append(std::u16string(c16str));
+                }
+                data = temp[0];
+                break;
+            }
+            case TypeKind::WIDE_CHAR_TYPE:
             {
                 if (tag != "WIDE_CHAR_LITERAL"_)
                 {
@@ -1677,7 +1705,18 @@ private:
                 }
             }
             case "WIDE_CHAR_TYPE"_:
-                return primitive_type<wchar_t>();
+                if (context_->wchar_type == Context::WCHAR_T)
+                {
+                    return primitive_type<wchar_t>();
+                }
+                else if (context_->wchar_type == Context::CHAR16_T)
+                {
+                    return primitive_type<char16_t>();
+                }
+                else
+                {
+                    return primitive_type<wchar_t>();
+                }
             case "STRING_TYPE"_:
                 return StringType();
             case "STRING_SIZE"_:

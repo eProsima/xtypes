@@ -48,7 +48,8 @@ enum class TypeKind
     FLOAT_64_TYPE    = PRIMITIVE_TYPE | 0x000B, ///< double
     FLOAT_128_TYPE   = PRIMITIVE_TYPE | 0x000C, ///< long double
     CHAR_8_TYPE      = PRIMITIVE_TYPE | 0x000D, ///< char
-    CHAR_16_TYPE     = PRIMITIVE_TYPE | 0x000E, ///< wchar
+    CHAR_16_TYPE     = PRIMITIVE_TYPE | 0x000E, ///< char16
+    WIDE_CHAR_TYPE   = PRIMITIVE_TYPE | 0x000F, ///< wchar
 
     ENUMERATION_TYPE = CONSTRUCTED_TYPE | ENUMERATED_TYPE | 0x0001,
     BITSET_TYPE      = CONSTRUCTED_TYPE | 0x0002, ///< Not supported

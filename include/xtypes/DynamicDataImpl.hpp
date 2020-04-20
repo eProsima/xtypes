@@ -93,6 +93,8 @@ namespace xtypes {
         case TypeKind::CHAR_8_TYPE:\
             MACRO(char, OPERATOR);\
         case TypeKind::CHAR_16_TYPE:\
+            MACRO(char16_t, OPERATOR);\
+        case TypeKind::WIDE_CHAR_TYPE:\
             MACRO(wchar_t, OPERATOR);\
         case TypeKind::BOOLEAN_TYPE:\
             MACRO(bool, OPERATOR);\
@@ -107,6 +109,8 @@ namespace xtypes {
         case TypeKind::CHAR_8_TYPE:\
             MACRO(char, OPERATOR);\
         case TypeKind::CHAR_16_TYPE:\
+            MACRO(char16_t, OPERATOR);\
+        case TypeKind::WIDE_CHAR_TYPE:\
             MACRO(wchar_t, OPERATOR);\
         case TypeKind::BOOLEAN_TYPE:\
             MACRO(bool, OPERATOR);\
@@ -138,7 +142,10 @@ inline std::string ReadableDynamicDataRef::to_string() const
                 ss << "<" << type_name << ">  " << node.data().value<char>();
                 break;
             case TypeKind::CHAR_16_TYPE:
-                ss << "<" << type_name << ">  " << node.data().value<char32_t>();
+                ss << "<" << type_name << ">  " << node.data().value<char16_t>();
+                break;
+            case TypeKind::WIDE_CHAR_TYPE:
+                ss << "<" << type_name << ">  " << node.data().value<wchar_t>();
                 break;
             case TypeKind::INT_8_TYPE:
                 ss << "<" << type_name << ">  " << node.data().value<int8_t>();
@@ -321,7 +328,7 @@ inline bool DynamicData::operator ! () const
         case TypeKind::WSTRING_TYPE:
             return this->value<std::wstring>().empty();
     }
-    DYNAMIC_DATA_BASICTYPE_INT_SWITCH(DYNAMIC_DATA_NOT_OPERATOR_RESULT, !);  
+    DYNAMIC_DATA_BASICTYPE_INT_SWITCH(DYNAMIC_DATA_NOT_OPERATOR_RESULT, !);
 }
 
 #define DYNAMIC_DATA_LOGIC_OPERATION(TYPE, OPERATOR) \

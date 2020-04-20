@@ -140,6 +140,7 @@ inline std::string type_name(
         { TypeKind::BOOLEAN_TYPE, "boolean" },
         { TypeKind::CHAR_8_TYPE, "char" },
         { TypeKind::CHAR_16_TYPE, "wchar" },
+        { TypeKind::WIDE_CHAR_TYPE, "wchar" },
         { TypeKind::INT_8_TYPE, "int8" },
         { TypeKind::UINT_8_TYPE, "uint8" },
         { TypeKind::INT_16_TYPE, "int16" },
@@ -235,6 +236,13 @@ inline std::string label_value(
             return ss.str();
         }
         case TypeKind::CHAR_16_TYPE:
+        {
+            char16_t temp = static_cast<char16_t>(value);
+            std::stringstream ss;
+            ss << "L'" << temp << "'";
+            return ss.str();
+        }
+        case TypeKind::WIDE_CHAR_TYPE:
         {
             wchar_t temp = static_cast<wchar_t>(value);
             std::stringstream ss;
@@ -431,6 +439,11 @@ inline std::string get_const_value(
         suffix = "'";
     }
     else if (data.type().kind() == TypeKind::CHAR_16_TYPE)
+    {
+        prefix = "L'";
+        suffix = "'";
+    }
+    else if (data.type().kind() == TypeKind::WIDE_CHAR_TYPE)
     {
         prefix = "L'";
         suffix = "'";

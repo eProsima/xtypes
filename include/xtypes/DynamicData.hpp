@@ -665,6 +665,11 @@ protected:
             }
             case TypeKind::CHAR_16_TYPE:
             {
+                char16_t temp = *this;
+                return static_cast<T>(temp);
+            }
+            case TypeKind::WIDE_CHAR_TYPE:
+            {
                 wchar_t temp = *this;
                 return static_cast<T>(temp);
             }
