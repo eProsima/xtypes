@@ -35,7 +35,7 @@ static const float FLOAT            = 3.1415927410125732421875f;
 static const double DOUBLE          = 3.1415926535897931159979631875;
 static const long double LDOUBLE    = 3.14159265358979321159979631875l;
 static const char CHAR              = 'f';
-static const char16_t UCHAR          = u'ñ';
+static const char16_t CHAR16        = u'ñ';
 static const wchar_t WCHAR          = 34590;
 
 static const std::string INNER_STRING_VALUE = "lay_down_and_cry";
@@ -237,7 +237,7 @@ TEST (StructType, type_verify_test)
     d["double"].value<double>(DOUBLE);
     d["long double"].value<long double>(LDOUBLE);
     d["char"].value<char>(CHAR);
-    d["char16_t"].value<char16_t>(UCHAR);
+    d["char16_t"].value<char16_t>(CHAR16);
     d["wchar_t"].value<wchar_t>(WCHAR);
 
     EXPECT_EQ(true, d["bool"].value<bool>());
@@ -253,7 +253,7 @@ TEST (StructType, type_verify_test)
     long double ld = LDOUBLE;
     EXPECT_EQ( ld , d["long double"].value<long double>());
     EXPECT_EQ( CHAR , d["char"].value<char>());
-    EXPECT_EQ( UCHAR , d["char16_t"].value<char16_t>());
+    EXPECT_EQ( CHAR16 , d["char16_t"].value<char16_t>());
     EXPECT_EQ( WCHAR , d["wchar_t"].value<wchar_t>());
 
 }

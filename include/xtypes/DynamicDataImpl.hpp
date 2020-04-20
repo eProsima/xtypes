@@ -189,6 +189,21 @@ inline std::string ReadableDynamicDataRef::to_string() const
                 ss << "<" << type_name << ">  " << converter.to_bytes(node.data().value<std::wstring>());
                 break;
             }
+            case TypeKind::STRING16_TYPE:
+            {
+                std::string str = "";
+                char cstr[3] = "\0";
+                mbstate_t mbs;
+                for (const auto& it : node.data().value<std::u16string>())
+                {
+                    std::memset(&mbs, 0, sizeof(mbs));
+                    std::memmove(cstr, "\0\0\0", 3);
+                    std::c16rtomb(cstr, it, &mbs);
+                    str.append(std::string(cstr));
+                }
+                ss << "<" << type_name << ">  " << str;
+                break;
+            }
             case TypeKind::ARRAY_TYPE:
                 ss << "<" << type_name << ">";
                 break;
@@ -225,6 +240,7 @@ inline std::string ReadableDynamicDataRef::cast<std::string>() const
     xtypes_assert(type_.is_primitive_type() ||
            type_.kind() == TypeKind::STRING_TYPE ||
            type_.kind() == TypeKind::WSTRING_TYPE ||
+           type_.kind() == TypeKind::STRING16_TYPE ||
            type_.is_enumerated_type(),
         "Expected a primitive or string type but '" << type_.name() << "' received while casting data to 'std::string'.");
     // Custom switch-case statement for types not contained in the macros
@@ -258,6 +274,11 @@ inline std::string ReadableDynamicDataRef::cast<std::string>() const
         case TypeKind::WSTRING_TYPE:
         {
             std::wstring temp = *this;
+            return reinterpret_cast<T>(temp);
+        }
+        case TypeKind::STRING16_TYPE:
+        {
+            std::u16string temp = *this;
             return reinterpret_cast<T>(temp);
         }
         */
@@ -327,6 +348,8 @@ inline bool DynamicData::operator ! () const
             return this->value<std::string>().empty();
         case TypeKind::WSTRING_TYPE:
             return this->value<std::wstring>().empty();
+        case TypeKind::STRING16_TYPE:
+            return this->value<std::u16string>().empty();
     }
     DYNAMIC_DATA_BASICTYPE_INT_SWITCH(DYNAMIC_DATA_NOT_OPERATOR_RESULT, !);
 }

@@ -29,6 +29,7 @@ static const uint64_t UINT64        = 18446744073709551610ULL;
 static const float FLOAT            = 3.1415927410125732421875f;
 static const double DOUBLE          = 3.1415926535897931159979631875;
 static const char CHAR              = 'f';
+static const char16_t CHAR16        = u'ñ';
 static const wchar_t WCHAR          = 34590;
 
 /*********************************************
@@ -162,6 +163,13 @@ TEST (PrimitiveTypes, primitive_type_wchar)
     EXPECT_TRUE(singleCheck<wchar_t>(L'a', L'a'));
     EXPECT_FALSE(singleCheck<wchar_t>(L'a', L'b'));
     assignCheck<wchar_t>(WCHAR);
+}
+
+TEST (PrimitiveTypes, primitive_type_char16)
+{
+    EXPECT_TRUE(singleCheck<char16_t>(u'a', u'a'));
+    EXPECT_FALSE(singleCheck<char16_t>(u'a', u'b'));
+    assignCheck<char16_t>(CHAR16);
 }
 
 TEST (PrimitiveTypes, primitive_type_double_longdouble)

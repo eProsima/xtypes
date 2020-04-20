@@ -115,6 +115,7 @@ TEST (IDLParser, char16_t_test)
         struct SimpleStruct
         {
             wchar my_wchar;
+            wstring my_wstring;
         };
                    )",
         context);
@@ -126,7 +127,9 @@ TEST (IDLParser, char16_t_test)
     DynamicData data(my_struct);
 
     data["my_wchar"] = u'e';
+    data["my_wstring"] = u"It works!";
     EXPECT_EQ(u'e', data["my_wchar"].value<char16_t>());
+    EXPECT_EQ(u"It works!", data["my_wstring"].value<std::u16string>());
 }
 
 TEST (IDLParser, array_sequence_struct_test)

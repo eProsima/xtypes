@@ -170,7 +170,10 @@ inline std::string type_name(
     {
         return map_type_name(node, type);
     }
-    else if (type.kind() == TypeKind::STRING_TYPE || type.kind() == TypeKind::WSTRING_TYPE)
+    else if (
+            type.kind() == TypeKind::STRING_TYPE ||
+            type.kind() == TypeKind::WSTRING_TYPE ||
+            type.kind() == TypeKind::STRING16_TYPE)
     {
         const MutableCollectionType& collection_type = static_cast<const MutableCollectionType&>(type);
         std::string type_name = type.kind() == TypeKind::STRING_TYPE ? "string" : "wstring";
@@ -429,6 +432,11 @@ inline std::string get_const_value(
         suffix = "\"";
     }
     else if (data.type().kind() == TypeKind::WSTRING_TYPE)
+    {
+        prefix = "L\"";
+        suffix = "\"";
+    }
+    else if (data.type().kind() == TypeKind::STRING16_TYPE)
     {
         prefix = "L\"";
         suffix = "\"";

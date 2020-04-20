@@ -60,6 +60,7 @@ enum class TypeKind
     SEQUENCE_TYPE    = CONSTRUCTED_TYPE | COLLECTION_TYPE | 0x0005, ///< Reprensets a SequenceType
     STRING_TYPE      = CONSTRUCTED_TYPE | COLLECTION_TYPE | 0x0006, ///< Represents a StringType
     WSTRING_TYPE     = CONSTRUCTED_TYPE | COLLECTION_TYPE | 0x0007, ///< Represents a WStringType
+    STRING16_TYPE    = CONSTRUCTED_TYPE | COLLECTION_TYPE | 0x0009, ///< Represents a String16Type
     MAP_TYPE         = CONSTRUCTED_TYPE | COLLECTION_TYPE | 0x0008, ///< Represents a MapType
 
     UNION_TYPE                = CONSTRUCTED_TYPE | AGGREGATION_TYPE | 0x0009, ///< Represents an UnionType

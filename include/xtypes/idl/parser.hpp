@@ -956,6 +956,21 @@ private:
                 data = value;
                 break;
             }
+            case TypeKind::STRING16_TYPE:
+            {
+                std::u16string temp = u"";
+                char16_t c16str[3] = u"\0";
+                mbstate_t mbs;
+                for (const auto& it : literal)
+                {
+                    std::memset(&mbs, 0, sizeof(mbs));
+                    std::memmove(c16str, u"\0\0\0", 3);
+                    std::mbrtoc16(c16str, &it, 3, &mbs);
+                    temp.append(std::u16string(c16str));
+                }
+                data = temp;
+                break;
+            }
             case TypeKind::BOOLEAN_TYPE:
             {
                 if (tag != "BOOLEAN_LITERAL"_)
@@ -1728,11 +1743,32 @@ private:
             case "WIDE_STRING_TYPE"_:
                 if (outer->has_constant(node->token))
                 {
-                    return WStringType(get_dimension(node->token, outer, node));
+                    if (context_->wchar_type == Context::WCHAR_T)
+                    {
+                        return WStringType(get_dimension(node->token, outer, node));
+                    }
+                    else // CHAR16_T
+                    {
+                        return String16Type(get_dimension(node->token, outer, node));
+                    }
                 }
-                return WStringType();
+                if (context_->wchar_type == Context::WCHAR_T)
+                {
+                    return WStringType();
+                }
+                else // CHAR16_T
+                {
+                    return String16Type();
+                }
             case "WSTRING_SIZE"_:
-                return WStringType(std::atoi(node->token.c_str()));
+                if (context_->wchar_type == Context::WCHAR_T)
+                {
+                    return WStringType(std::atoi(node->token.c_str()));
+                }
+                else // CHAR16_T
+                {
+                    return String16Type(std::atoi(node->token.c_str()));
+                }
             case "SEQUENCE_TYPE"_:
             {
                 DynamicType::Ptr inner_type = type_spec(node->nodes[0], outer);

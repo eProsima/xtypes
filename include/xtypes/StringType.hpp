@@ -28,6 +28,7 @@ namespace xtypes {
 /// \brief DynamicType representing a string.
 /// A StringType represents a TypeKind::STRING_TYPE.
 /// A WStringType represents a TypeKind::WSTRING_TYPE.
+/// A String16Type represents a TypeKind::STRING16_TYPE.
 template<typename CHAR_T, TypeKind KIND, const char* TYPE_NAME>
 class TStringType : public MutableCollectionType
 {
@@ -166,6 +167,10 @@ using StringType = TStringType<char, TypeKind::STRING_TYPE, string_type_name>;
 /// \brief Specialization for strings that contains wchars
 constexpr const char wstring_type_name[] = "std::wstring";
 using WStringType = TStringType<wchar_t, TypeKind::WSTRING_TYPE, wstring_type_name>;
+
+/// \brief Specialization for strings that contains char16s
+constexpr const char string16_type_name[] = "std::u16string";
+using String16Type = TStringType<char16_t, TypeKind::STRING16_TYPE, string16_type_name>;
 
 } //namespace xtypes
 } //namespace eprosima
