@@ -501,6 +501,39 @@ TEST (CollectionTypes, wstring)
     EXPECT_EQ(dt.size(), 10);
 }
 
+TEST (CollectionTypes, string16)
+{
+    String16Type s(20);
+    String16Type t(10);
+
+    EXPECT_EQ(s.is_compatible(t) , t.is_compatible(s));
+    EXPECT_EQ(TypeConsistency::IGNORE_STRING_BOUNDS, t.is_compatible(s));
+
+    DynamicData ds(s);
+    ds = u"12345678901234567890";
+
+    DynamicData dt(t);
+    dt = u"1234567890";
+
+    DynamicData dt_as_ds(dt, s);
+    EXPECT_EQ(10, dt_as_ds.size());
+
+    DynamicData ds_as_dt(ds, t);
+    EXPECT_EQ(10, ds_as_dt.size());
+
+    EXPECT_TRUE(dt == ds_as_dt);
+
+    String16Type u;
+    DynamicData du(u);
+    du = u"123456789012345678901234567890";
+
+    ASSERT_OR_EXCEPTION(dt = du;, "Cannot assign DynamicData of type");
+
+    dt = u"01234567890123456789";
+    EXPECT_EQ(dt.value<std::u16string>(), u"0123456789");
+    EXPECT_EQ(dt.size(), 10);
+}
+
 // TEST (CollectionTypes, map_asserts) moved to no_memcheck_tests.cpp
 
 TEST (CollectionTypes, map)

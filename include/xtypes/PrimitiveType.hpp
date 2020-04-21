@@ -53,7 +53,8 @@ DDS_CORE_XTYPES_PRIMITIVE(float, FLOAT_32_TYPE)
 DDS_CORE_XTYPES_PRIMITIVE(double, FLOAT_64_TYPE)
 DDS_CORE_XTYPES_PRIMITIVE(long double, FLOAT_128_TYPE)
 DDS_CORE_XTYPES_PRIMITIVE(char, CHAR_8_TYPE)
-DDS_CORE_XTYPES_PRIMITIVE(wchar_t, CHAR_16_TYPE)
+DDS_CORE_XTYPES_PRIMITIVE(char16_t, CHAR_16_TYPE)
+DDS_CORE_XTYPES_PRIMITIVE(wchar_t, WIDE_CHAR_TYPE)
 
 /// \brief DynamicType representing a primitive type.
 /// Primitive types can be the following: bool char wchar_t uint8_t int16_t
@@ -136,6 +137,9 @@ protected:
                 *reinterpret_cast<T*>(target) = *reinterpret_cast<const char*>(source);
                 break;
             case TypeKind::CHAR_16_TYPE:
+                *reinterpret_cast<T*>(target) = *reinterpret_cast<const char16_t*>(source);
+                break;
+            case TypeKind::WIDE_CHAR_TYPE:
                 *reinterpret_cast<T*>(target) = *reinterpret_cast<const wchar_t*>(source);
                 break;
             case TypeKind::FLOAT_32_TYPE:

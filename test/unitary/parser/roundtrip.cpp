@@ -49,7 +49,7 @@ void check_result(
     ASSERT_EQ(root_struct.member("my_double").type().kind(), TypeKind::FLOAT_64_TYPE);
     ASSERT_EQ(root_struct.member("my_long_double").type().kind(), TypeKind::FLOAT_128_TYPE);
     ASSERT_EQ(root_struct.member("my_char").type().kind(), TypeKind::CHAR_8_TYPE);
-    ASSERT_EQ(root_struct.member("my_wchar").type().kind(), TypeKind::CHAR_16_TYPE);
+    ASSERT_EQ(root_struct.member("my_wchar").type().kind(), TypeKind::WIDE_CHAR_TYPE);
     ASSERT_EQ(root_struct.member("my_string").type().kind(), TypeKind::STRING_TYPE);
     ASSERT_EQ(root_struct.member("my_wstring").type().kind(), TypeKind::WSTRING_TYPE);
     // Complex members

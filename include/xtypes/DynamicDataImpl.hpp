@@ -93,6 +93,8 @@ namespace xtypes {
         case TypeKind::CHAR_8_TYPE:\
             MACRO(char, OPERATOR);\
         case TypeKind::CHAR_16_TYPE:\
+            MACRO(char16_t, OPERATOR);\
+        case TypeKind::WIDE_CHAR_TYPE:\
             MACRO(wchar_t, OPERATOR);\
         case TypeKind::BOOLEAN_TYPE:\
             MACRO(bool, OPERATOR);\
@@ -107,6 +109,8 @@ namespace xtypes {
         case TypeKind::CHAR_8_TYPE:\
             MACRO(char, OPERATOR);\
         case TypeKind::CHAR_16_TYPE:\
+            MACRO(char16_t, OPERATOR);\
+        case TypeKind::WIDE_CHAR_TYPE:\
             MACRO(wchar_t, OPERATOR);\
         case TypeKind::BOOLEAN_TYPE:\
             MACRO(bool, OPERATOR);\
@@ -138,7 +142,10 @@ inline std::string ReadableDynamicDataRef::to_string() const
                 ss << "<" << type_name << ">  " << node.data().value<char>();
                 break;
             case TypeKind::CHAR_16_TYPE:
-                ss << "<" << type_name << ">  " << node.data().value<char32_t>();
+                ss << "<" << type_name << ">  " << node.data().value<char16_t>();
+                break;
+            case TypeKind::WIDE_CHAR_TYPE:
+                ss << "<" << type_name << ">  " << node.data().value<wchar_t>();
                 break;
             case TypeKind::INT_8_TYPE:
                 ss << "<" << type_name << ">  " << node.data().value<int8_t>();
@@ -182,6 +189,21 @@ inline std::string ReadableDynamicDataRef::to_string() const
                 ss << "<" << type_name << ">  " << converter.to_bytes(node.data().value<std::wstring>());
                 break;
             }
+            case TypeKind::STRING16_TYPE:
+            {
+                std::string str = "";
+                char cstr[3] = "\0";
+                mbstate_t mbs;
+                for (const auto& it : node.data().value<std::u16string>())
+                {
+                    std::memset(&mbs, 0, sizeof(mbs));
+                    std::memmove(cstr, "\0\0\0", 3);
+                    std::c16rtomb(cstr, it, &mbs);
+                    str.append(std::string(cstr));
+                }
+                ss << "<" << type_name << ">  " << str;
+                break;
+            }
             case TypeKind::ARRAY_TYPE:
                 ss << "<" << type_name << ">";
                 break;
@@ -218,6 +240,7 @@ inline std::string ReadableDynamicDataRef::cast<std::string>() const
     xtypes_assert(type_.is_primitive_type() ||
            type_.kind() == TypeKind::STRING_TYPE ||
            type_.kind() == TypeKind::WSTRING_TYPE ||
+           type_.kind() == TypeKind::STRING16_TYPE ||
            type_.is_enumerated_type(),
         "Expected a primitive or string type but '" << type_.name() << "' received while casting data to 'std::string'.");
     // Custom switch-case statement for types not contained in the macros
@@ -251,6 +274,11 @@ inline std::string ReadableDynamicDataRef::cast<std::string>() const
         case TypeKind::WSTRING_TYPE:
         {
             std::wstring temp = *this;
+            return reinterpret_cast<T>(temp);
+        }
+        case TypeKind::STRING16_TYPE:
+        {
+            std::u16string temp = *this;
             return reinterpret_cast<T>(temp);
         }
         */
@@ -320,8 +348,10 @@ inline bool DynamicData::operator ! () const
             return this->value<std::string>().empty();
         case TypeKind::WSTRING_TYPE:
             return this->value<std::wstring>().empty();
+        case TypeKind::STRING16_TYPE:
+            return this->value<std::u16string>().empty();
     }
-    DYNAMIC_DATA_BASICTYPE_INT_SWITCH(DYNAMIC_DATA_NOT_OPERATOR_RESULT, !);  
+    DYNAMIC_DATA_BASICTYPE_INT_SWITCH(DYNAMIC_DATA_NOT_OPERATOR_RESULT, !);
 }
 
 #define DYNAMIC_DATA_LOGIC_OPERATION(TYPE, OPERATOR) \
@@ -408,7 +438,7 @@ DYNAMIC_DATA_NUMERIC_INT_OPERATOR_IMPLEMENTATION(|);
 
 #define DYNAMIC_DATA_PRIMITIVE_SELF_ASSIGN_OPERATOR_RESULT(OPERATOR) { \
     bool self_assign_valid = std::is_arithmetic<T>::value && !std::is_same<T, bool>::value &&\
-            !std::is_same<T, char>::value && !std::is_same<T, wchar_t>::value;\
+            !std::is_same<T, char>::value && !std::is_same<T, wchar_t>::value && !std::is_same<T, char16_t>::value;\
     xtypes_assert(self_assign_valid,\
         "Operator" << #OPERATOR << "=() cannot be used with non-arithmetic types");\
     this->value<T>(this->value<T>() OPERATOR other);\

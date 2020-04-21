@@ -125,6 +125,12 @@ struct Context
         INT8
     };
 
+    enum WideCharType
+    {
+        WCHAR_T,
+        CHAR16_T
+    };
+
     // Config
     bool ignore_case = false;
     bool clear = true;
@@ -132,6 +138,7 @@ struct Context
     bool allow_keyword_identifiers = false;
     bool ignore_redefinition = false;
     CharType char_translation = CHAR;
+    WideCharType wchar_type = WCHAR_T;
     std::string preprocessor_exec = "cpp";
     std::vector<std::string> include_paths;
 
@@ -883,6 +890,27 @@ private:
                             "Expected an WIDE_CHAR_LITERAL, found " + literal,
                             ast);
                 }
+                std::u16string temp = u"";
+                char16_t c16str[3] = u"\0";
+                mbstate_t mbs;
+                for (const auto& it : literal)
+                {
+                    std::memset(&mbs, 0, sizeof(mbs));
+                    std::memmove(c16str, u"\0\0\0", 3);
+                    std::mbrtoc16(c16str, &it, 3, &mbs);
+                    temp.append(std::u16string(c16str));
+                }
+                data = temp[0];
+                break;
+            }
+            case TypeKind::WIDE_CHAR_TYPE:
+            {
+                if (tag != "WIDE_CHAR_LITERAL"_)
+                {
+                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
+                            "Expected an WIDE_CHAR_LITERAL, found " + literal,
+                            ast);
+                }
                 using convert_type = std::codecvt_utf8<wchar_t>;
                 std::wstring_convert<convert_type, wchar_t> converter;
                 std::wstring temp = converter.from_bytes(literal);
@@ -926,6 +954,21 @@ private:
                 std::wstring_convert<convert_type, wchar_t> converter;
                 std::wstring value = converter.from_bytes(aux);
                 data = value;
+                break;
+            }
+            case TypeKind::STRING16_TYPE:
+            {
+                std::u16string temp = u"";
+                char16_t c16str[3] = u"\0";
+                mbstate_t mbs;
+                for (const auto& it : literal)
+                {
+                    std::memset(&mbs, 0, sizeof(mbs));
+                    std::memmove(c16str, u"\0\0\0", 3);
+                    std::mbrtoc16(c16str, &it, 3, &mbs);
+                    temp.append(std::u16string(c16str));
+                }
+                data = temp;
                 break;
             }
             case TypeKind::BOOLEAN_TYPE:
@@ -1677,7 +1720,18 @@ private:
                 }
             }
             case "WIDE_CHAR_TYPE"_:
-                return primitive_type<wchar_t>();
+                if (context_->wchar_type == Context::WCHAR_T)
+                {
+                    return primitive_type<wchar_t>();
+                }
+                else if (context_->wchar_type == Context::CHAR16_T)
+                {
+                    return primitive_type<char16_t>();
+                }
+                else
+                {
+                    return primitive_type<wchar_t>();
+                }
             case "STRING_TYPE"_:
                 return StringType();
             case "STRING_SIZE"_:
@@ -1689,11 +1743,32 @@ private:
             case "WIDE_STRING_TYPE"_:
                 if (outer->has_constant(node->token))
                 {
-                    return WStringType(get_dimension(node->token, outer, node));
+                    if (context_->wchar_type == Context::WCHAR_T)
+                    {
+                        return WStringType(get_dimension(node->token, outer, node));
+                    }
+                    else // CHAR16_T
+                    {
+                        return String16Type(get_dimension(node->token, outer, node));
+                    }
                 }
-                return WStringType();
+                if (context_->wchar_type == Context::WCHAR_T)
+                {
+                    return WStringType();
+                }
+                else // CHAR16_T
+                {
+                    return String16Type();
+                }
             case "WSTRING_SIZE"_:
-                return WStringType(std::atoi(node->token.c_str()));
+                if (context_->wchar_type == Context::WCHAR_T)
+                {
+                    return WStringType(std::atoi(node->token.c_str()));
+                }
+                else // CHAR16_T
+                {
+                    return String16Type(std::atoi(node->token.c_str()));
+                }
             case "SEQUENCE_TYPE"_:
             {
                 DynamicType::Ptr inner_type = type_spec(node->nodes[0], outer);

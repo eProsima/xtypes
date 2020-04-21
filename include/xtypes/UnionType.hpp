@@ -27,6 +27,8 @@
 #include <vector>
 #include <regex>
 #include <codecvt>
+#include <cwchar>
+#include <cuchar>
 
 namespace eprosima {
 namespace xtypes {
@@ -561,6 +563,13 @@ protected:
                 break;
             case TypeKind::CHAR_16_TYPE:
                 {
+                    char16_t lvalue = *reinterpret_cast<char16_t*>(label_instance);
+                    int64_t new_value = static_cast<int64_t>(lvalue);
+                    current_label(instance, new_value);
+                }
+                break;
+            case TypeKind::WIDE_CHAR_TYPE:
+                {
                     wchar_t lvalue = *reinterpret_cast<wchar_t*>(label_instance);
                     int64_t new_value = static_cast<int64_t>(lvalue);
                     current_label(instance, new_value);
@@ -673,6 +682,13 @@ protected:
                 break;
             case TypeKind::CHAR_16_TYPE:
                 {
+                    char16_t lvalue = static_cast<char16_t>(new_value);
+                    char16_t& value = *reinterpret_cast<char16_t*>(instance);
+                    value = lvalue;
+                }
+                break;
+            case TypeKind::WIDE_CHAR_TYPE:
+                {
                     wchar_t lvalue = static_cast<wchar_t>(new_value);
                     wchar_t& value = *reinterpret_cast<wchar_t*>(instance);
                     value = lvalue;
@@ -766,6 +782,12 @@ protected:
                 }
                 break;
             case TypeKind::CHAR_16_TYPE:
+                {
+                    char16_t value = *reinterpret_cast<char16_t*>(instance);
+                    disc_value = static_cast<int64_t>(value);
+                }
+                break;
+            case TypeKind::WIDE_CHAR_TYPE:
                 {
                     wchar_t value = *reinterpret_cast<wchar_t*>(instance);
                     disc_value = static_cast<int64_t>(value);
@@ -1011,6 +1033,33 @@ protected:
                         }
                         break;
                     case TypeKind::CHAR_16_TYPE:
+                        {
+                            std::u16string wstr = u"";
+                            char16_t c16str[3] = u"\0";
+                            mbstate_t mbs;
+
+                            for (const auto& it : label)
+                            {
+                                std::memset(&mbs, 0, sizeof(mbs));
+                                std::memmove(c16str, u"\0\0\0", 3);
+                                std::mbrtoc16(c16str, &it, 3, &mbs);
+                                wstr.append(std::u16string(c16str));
+                            }
+
+                            char16_t value;
+                            // Check if comes with "'"
+                            if (label.size() == 1)
+                            {
+                                value = wstr[0];
+                            }
+                            else
+                            {
+                                value = wstr[wstr.find(u"'") + 1];
+                            }
+                            result.emplace_back(static_cast<int64_t>(value));
+                        }
+                        break;
+                    case TypeKind::WIDE_CHAR_TYPE:
                         {
                             using convert_type = std::codecvt_utf8<wchar_t>;
                             std::wstring_convert<convert_type, wchar_t> converter;

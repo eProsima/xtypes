@@ -48,6 +48,7 @@ using PrimitiveOrString = typename std::enable_if<
     std::is_arithmetic<T>::value ||
     std::is_same<std::string, T>::value ||
     std::is_same<std::wstring, T>::value ||
+    std::is_same<std::u16string, T>::value ||
     is_base_of_template<EnumeratedType, T>::value
     >::type;
 
@@ -110,6 +111,7 @@ public:
     {
         xtypes_assert((type_.kind() == TypeKind::STRING_TYPE && std::is_same<std::string, T>::value)
             || (type_.kind() == TypeKind::WSTRING_TYPE && std::is_same<std::wstring, T>::value)
+            || (type_.kind() == TypeKind::STRING16_TYPE && std::is_same<std::u16string, T>::value)
             || (type_.kind() == primitive_type<T>().kind())
             || (type_.is_enumerated_type()),
             "Expected type '" << type_.name()
@@ -281,6 +283,7 @@ public:
             "as_vector() isn't available for type '" << type_.name() << "'.");
         xtypes_assert((collection.content_type().kind() == TypeKind::STRING_TYPE && std::is_same<std::string, T>::value)
             || (collection.content_type().kind() == TypeKind::WSTRING_TYPE && std::is_same<std::wstring, T>::value)
+            || (collection.content_type().kind() == TypeKind::STRING16_TYPE && std::is_same<std::u16string, T>::value)
             || (collection.content_type().kind() == primitive_type<T>().kind()),
             "as_vector<" << PrimitiveTypeKindTrait<T>::name << ">() isn't available for type '"
             << type_.name() << "'.");
@@ -665,6 +668,11 @@ protected:
             }
             case TypeKind::CHAR_16_TYPE:
             {
+                char16_t temp = *this;
+                return static_cast<T>(temp);
+            }
+            case TypeKind::WIDE_CHAR_TYPE:
+            {
                 wchar_t temp = *this;
                 return static_cast<T>(temp);
             }
@@ -734,6 +742,14 @@ public:
             const std::wstring& other)
     {
         value<std::wstring>(other);
+        return *this;
+    }
+
+    /// \brief Specialization of WritableDynamicDataRef::operator =() for u16string
+    WritableDynamicDataRef& operator = (
+            const std::u16string& other)
+    {
+        value<std::u16string>(other);
         return *this;
     }
 
@@ -869,6 +885,7 @@ public:
     {
         xtypes_assert((type_.kind() == TypeKind::STRING_TYPE && std::is_same<std::string, T>::value)
             || (type_.kind() == TypeKind::WSTRING_TYPE && std::is_same<std::wstring, T>::value)
+            || (type_.kind() == TypeKind::STRING16_TYPE && std::is_same<std::u16string, T>::value)
             || (type_.kind() == PrimitiveTypeKindTrait<T>::kind)
             || (type_.is_enumerated_type()),
             "Expected type '" << type_.name()
@@ -902,6 +919,7 @@ public:
         const SequenceType& sequence = static_cast<const SequenceType&>(type_);
         xtypes_assert((sequence.content_type().kind() == TypeKind::STRING_TYPE && std::is_same<std::string, T>::value)
             || (sequence.content_type().kind() == TypeKind::WSTRING_TYPE && std::is_same<std::wstring, T>::value)
+            || (sequence.content_type().kind() == TypeKind::STRING16_TYPE && std::is_same<std::u16string, T>::value)
             || (sequence.content_type().kind() == primitive_type<T>().kind()),
             "Expected type '" << static_cast<const SequenceType&>(type_).content_type().name()
                 << "' but '" << PrimitiveTypeKindTrait<T>::name << "' received while pushing value.");
@@ -1237,6 +1255,13 @@ public:
     /// \brief See WritableDynamicDataRef::operator =()
     WritableDynamicDataRef& operator = (
             const std::wstring& other)
+    {
+        return WritableDynamicDataRef::operator=(other);
+    }
+
+    /// \brief See WritableDynamicDataRef::operator =()
+    WritableDynamicDataRef& operator = (
+            const std::u16string& other)
     {
         return WritableDynamicDataRef::operator=(other);
     }

@@ -35,6 +35,7 @@ static const float FLOAT            = 3.1415927410125732421875f;
 static const double DOUBLE          = 3.1415926535897931159979631875;
 static const long double LDOUBLE    = 3.14159265358979321159979631875l;
 static const char CHAR              = 'f';
+static const char16_t CHAR16        = u'ñ';
 static const wchar_t WCHAR          = 34590;
 
 static const std::string INNER_STRING_VALUE = "lay_down_and_cry";
@@ -187,7 +188,8 @@ TEST (StructType, type_verify_test)
     st.add_member("double", primitive_type<double>());
     st.add_member("long double", primitive_type<long double>());
     st.add_member("char", primitive_type<char>());
-    st.add_member("char16_t", primitive_type<wchar_t>());
+    st.add_member("char16_t", primitive_type<char16_t>());
+    st.add_member("wchar_t", primitive_type<wchar_t>());
 
     EXPECT_EQ(TypeKind::BOOLEAN_TYPE, st.member("bool").type().kind());
     EXPECT_EQ(TypeKind::UINT_8_TYPE, st.member("uint8_t").type().kind());
@@ -202,6 +204,7 @@ TEST (StructType, type_verify_test)
     EXPECT_EQ(TypeKind::FLOAT_128_TYPE, st.member("long double").type().kind());
     EXPECT_EQ(TypeKind::CHAR_8_TYPE, st.member("char").type().kind());
     EXPECT_EQ(TypeKind::CHAR_16_TYPE, st.member("char16_t").type().kind());
+    EXPECT_EQ(TypeKind::WIDE_CHAR_TYPE, st.member("wchar_t").type().kind());
     EXPECT_EQ(TypeKind::STRUCTURE_TYPE, st.kind());
 
     EXPECT_PRIMITIVE_TYPE("bool");
@@ -217,6 +220,7 @@ TEST (StructType, type_verify_test)
     EXPECT_PRIMITIVE_TYPE("long double");
     EXPECT_PRIMITIVE_TYPE("char");
     EXPECT_PRIMITIVE_TYPE("char16_t");
+    EXPECT_PRIMITIVE_TYPE("wchar_t");
     EXPECT_NE(0, uint32_t(TypeKind::STRUCTURE_TYPE) & uint32_t(st.kind()));
 
     DynamicData d(st);
@@ -233,7 +237,8 @@ TEST (StructType, type_verify_test)
     d["double"].value<double>(DOUBLE);
     d["long double"].value<long double>(LDOUBLE);
     d["char"].value<char>(CHAR);
-    d["char16_t"].value<wchar_t>(WCHAR);
+    d["char16_t"].value<char16_t>(CHAR16);
+    d["wchar_t"].value<wchar_t>(WCHAR);
 
     EXPECT_EQ(true, d["bool"].value<bool>());
     EXPECT_EQ(UINT8, d["uint8_t"].value<uint8_t>());
@@ -248,7 +253,8 @@ TEST (StructType, type_verify_test)
     long double ld = LDOUBLE;
     EXPECT_EQ( ld , d["long double"].value<long double>());
     EXPECT_EQ( CHAR , d["char"].value<char>());
-    EXPECT_EQ( WCHAR , d["char16_t"].value<wchar_t>());
+    EXPECT_EQ( CHAR16 , d["char16_t"].value<char16_t>());
+    EXPECT_EQ( WCHAR , d["wchar_t"].value<wchar_t>());
 
 }
 

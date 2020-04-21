@@ -48,7 +48,8 @@ enum class TypeKind
     FLOAT_64_TYPE    = PRIMITIVE_TYPE | 0x000B, ///< double
     FLOAT_128_TYPE   = PRIMITIVE_TYPE | 0x000C, ///< long double
     CHAR_8_TYPE      = PRIMITIVE_TYPE | 0x000D, ///< char
-    CHAR_16_TYPE     = PRIMITIVE_TYPE | 0x000E, ///< wchar
+    CHAR_16_TYPE     = PRIMITIVE_TYPE | 0x000E, ///< char16
+    WIDE_CHAR_TYPE   = PRIMITIVE_TYPE | 0x000F, ///< wchar
 
     ENUMERATION_TYPE = CONSTRUCTED_TYPE | ENUMERATED_TYPE | 0x0001,
     BITSET_TYPE      = CONSTRUCTED_TYPE | 0x0002, ///< Not supported
@@ -59,6 +60,7 @@ enum class TypeKind
     SEQUENCE_TYPE    = CONSTRUCTED_TYPE | COLLECTION_TYPE | 0x0005, ///< Reprensets a SequenceType
     STRING_TYPE      = CONSTRUCTED_TYPE | COLLECTION_TYPE | 0x0006, ///< Represents a StringType
     WSTRING_TYPE     = CONSTRUCTED_TYPE | COLLECTION_TYPE | 0x0007, ///< Represents a WStringType
+    STRING16_TYPE    = CONSTRUCTED_TYPE | COLLECTION_TYPE | 0x0009, ///< Represents a String16Type
     MAP_TYPE         = CONSTRUCTED_TYPE | COLLECTION_TYPE | 0x0008, ///< Represents a MapType
 
     UNION_TYPE                = CONSTRUCTED_TYPE | AGGREGATION_TYPE | 0x0009, ///< Represents an UnionType
