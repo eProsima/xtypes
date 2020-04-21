@@ -438,7 +438,7 @@ DYNAMIC_DATA_NUMERIC_INT_OPERATOR_IMPLEMENTATION(|);
 
 #define DYNAMIC_DATA_PRIMITIVE_SELF_ASSIGN_OPERATOR_RESULT(OPERATOR) { \
     bool self_assign_valid = std::is_arithmetic<T>::value && !std::is_same<T, bool>::value &&\
-            !std::is_same<T, char>::value && !std::is_same<T, wchar_t>::value;\
+            !std::is_same<T, char>::value && !std::is_same<T, wchar_t>::value && !std::is_same<T, char16_t>::value;\
     xtypes_assert(self_assign_valid,\
         "Operator" << #OPERATOR << "=() cannot be used with non-arithmetic types");\
     this->value<T>(this->value<T>() OPERATOR other);\

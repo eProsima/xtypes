@@ -69,6 +69,7 @@ TEST (DynamicDataOperators, increment_decrement_operators)
     check_de_increment_operators<bool>(true, true);
     check_de_increment_operators<char>('a', true);
     check_de_increment_operators<wchar_t>('\n', true);
+    check_de_increment_operators<char16_t>(u'ñ', true);
     check_de_increment_operators<float>(PI, true);
     check_de_increment_operators<double>(PI_D, true);
     check_de_increment_operators<long double>(PI_L, true);
@@ -118,6 +119,7 @@ TEST (DynamicDataOperators, arithmetic_unary_operators)
     check_bitwise_complement_operator<bool>(true, true);
     check_bitwise_complement_operator<char>('a', true);
     check_bitwise_complement_operator<wchar_t>('\n', true);
+    check_bitwise_complement_operator<char16_t>(u'ñ', true);
     check_bitwise_complement_operator<uint8_t>(7u, true);
     check_bitwise_complement_operator<uint16_t>(10u, true);
     check_bitwise_complement_operator<uint32_t>(20u, true);
@@ -135,6 +137,7 @@ TEST (DynamicDataOperators, arithmetic_unary_operators)
     check_negate_operator<bool>(true, true);
     check_negate_operator<char>('a', true);
     check_negate_operator<wchar_t>('\n', true);
+    check_negate_operator<char16_t>(u'ñ', true);
     check_negate_operator<uint8_t>(7u, true);
     check_negate_operator<uint16_t>(10u, true);
     check_negate_operator<uint32_t>(20u, true);
@@ -224,6 +227,7 @@ TEST (DynamicDataOperators, arithmetic_binary_operators)
     check_arithmetic_int_binary_operators<bool>(true, false, true);
     check_arithmetic_int_binary_operators<char>('a', 'b', true);
     check_arithmetic_int_binary_operators<wchar_t>('\n', 'b', true);
+    check_arithmetic_int_binary_operators<char16_t>(u'ñ', 'b', true);
     // Operators available (only floating-point)
     check_arithmetic_flt_binary_operators<float>(PI, 1.5f);
     check_arithmetic_flt_binary_operators<double>(PI_D, 1.5);
@@ -267,6 +271,7 @@ TEST (DynamicDataOperators, logical_operators)
     check_logical_not_operator<bool>(true);
     check_logical_not_operator<char>('a');
     check_logical_not_operator<wchar_t>('\0');
+    check_logical_not_operator<char16_t>(u'ñ');
     check_logical_not_operator<int8_t>(1);
     check_logical_not_operator<uint8_t>(1u);
     check_logical_not_operator<int16_t>(0);
@@ -294,6 +299,7 @@ TEST (DynamicDataOperators, logical_operators)
     check_logical_binary_operator<bool>(true, false);
     check_logical_binary_operator<char>('a', 'b');
     check_logical_binary_operator<wchar_t>('\n', '\0');
+    check_logical_binary_operator<char16_t>(u'ñ', '\0');
     check_logical_binary_operator<int8_t>(1, -2);
     check_logical_binary_operator<uint8_t>(1u, 2u);
     check_logical_binary_operator<int16_t>(4, 23);
@@ -330,6 +336,7 @@ TEST (DynamicDataOperators, comparison_operators)
     check_comparison_binary_operator<bool>(true, false);
     check_comparison_binary_operator<char>('a', 'b');
     check_comparison_binary_operator<wchar_t>('\n', '\0');
+    check_comparison_binary_operator<char16_t>(u'ñ', '\0');
     check_comparison_binary_operator<int8_t>(1, -2);
     check_comparison_binary_operator<uint8_t>(1u, 2u);
     check_comparison_binary_operator<int16_t>(4, 23);
@@ -443,6 +450,18 @@ TEST (DynamicDataOperators, assignment_operators)
     check_assignment_operators<bool>(true, false, true);
     check_assignment_operators<char>('a', 'b', true);
     check_assignment_operators<wchar_t>('\n', 'b', true);
+    check_assignment_operators<char16_t>(u'ñ', u'b', true);
+    /*
+    DynamicData a(primitive_type<char16_t>());
+    DynamicData b(primitive_type<char16_t>());
+    DynamicData c(primitive_type<char16_t>());
+    a = u'A';
+    b = u'B';
+    c = a + b;
+    a += b;
+    ASSERT_EQ(a.value<char16_t>(), c.value<char16_t>());
+    */
+
     // Operators available (only floating-point)
     check_assignment_flt_operators<float>(PI, 1.5f);
     check_assignment_flt_operators<double>(PI_D, 1.5);
