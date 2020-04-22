@@ -19,6 +19,7 @@
 #define EPROSIMA_XTYPES_COLLECTION_TYPE_HPP_
 
 #include <xtypes/DynamicType.hpp>
+#include <xtypes/AliasType.hpp>
 
 namespace eprosima {
 namespace xtypes {

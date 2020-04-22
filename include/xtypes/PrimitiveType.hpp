@@ -18,6 +18,7 @@
 #define EPROSIMA_XTYPES_PRIMITIVE_TYPE_HPP_
 
 #include <xtypes/DynamicType.hpp>
+#include <xtypes/AliasType.hpp>
 
 #include <cstring>
 
@@ -173,6 +174,12 @@ protected:
     virtual TypeConsistency is_compatible(
             const DynamicType& other) const override
     {
+        if (other.kind() == TypeKind::ALIAS_TYPE)
+        {
+            const AliasType& other_alias = static_cast<const AliasType&>(other);
+            return other_alias.is_compatible(*this);
+        }
+
         if(!other.is_primitive_type())
         {
             return TypeConsistency::NONE;

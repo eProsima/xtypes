@@ -20,6 +20,7 @@
 
 #include <xtypes/DynamicType.hpp>
 #include <xtypes/Member.hpp>
+#include <xtypes/AliasType.hpp>
 
 #include <string>
 #include <map>

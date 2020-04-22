@@ -128,6 +128,12 @@ public:
     virtual TypeConsistency is_compatible(
             const DynamicType& other) const override
     {
+        if (other.kind() == TypeKind::ALIAS_TYPE)
+        {
+            const AliasType& other_alias = static_cast<const AliasType&>(other);
+            return is_compatible(other_alias.rget());
+        }
+
         if(other.kind() != TypeKind::SEQUENCE_TYPE)
         {
             return TypeConsistency::NONE;

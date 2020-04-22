@@ -253,6 +253,7 @@ TEST (Consistency, testing_is_compatible_aliases)
     AliasType int32_alias_alias(int32_alias, "int32_t_alias");
     AliasType int32_alias_alias_alias(int32_alias_alias, "int32_t_alias_alias");
 
+    // One way
     EXPECT_EQ(int32_alias.is_compatible(primitive_type<int32_t>()), TypeConsistency::EQUALS);
     EXPECT_EQ(int32_alias.is_compatible(int32_alias_2), TypeConsistency::EQUALS);
     EXPECT_EQ(int32_alias.is_compatible(int32_alias_3), TypeConsistency::EQUALS);
@@ -266,6 +267,21 @@ TEST (Consistency, testing_is_compatible_aliases)
     EXPECT_EQ(int32_alias_alias_alias.is_compatible(int32_alias_2), TypeConsistency::EQUALS);
     EXPECT_EQ(int32_alias_alias_alias.is_compatible(int32_alias_3), TypeConsistency::EQUALS);
     EXPECT_EQ(int32_alias_alias_alias.is_compatible(int32_alias_alias), TypeConsistency::EQUALS);
+
+    // The other way
+    EXPECT_EQ(primitive_type<int32_t>().is_compatible(int32_alias), TypeConsistency::EQUALS);
+    EXPECT_EQ(int32_alias_2.is_compatible(int32_alias), TypeConsistency::EQUALS);
+    EXPECT_EQ(int32_alias_3.is_compatible(int32_alias), TypeConsistency::EQUALS);
+    EXPECT_EQ(int32_alias_alias.is_compatible(int32_alias), TypeConsistency::EQUALS);
+    EXPECT_EQ(int32_alias_alias_alias.is_compatible(int32_alias), TypeConsistency::EQUALS);
+    EXPECT_EQ(int32_alias.is_compatible(int32_alias_alias), TypeConsistency::EQUALS);
+    EXPECT_EQ(int32_alias_2.is_compatible(int32_alias_alias), TypeConsistency::EQUALS);
+    EXPECT_EQ(int32_alias_3.is_compatible(int32_alias_alias), TypeConsistency::EQUALS);
+    EXPECT_EQ(int32_alias_alias_alias.is_compatible(int32_alias_alias), TypeConsistency::EQUALS);
+    EXPECT_EQ(int32_alias.is_compatible(int32_alias_alias_alias), TypeConsistency::EQUALS);
+    EXPECT_EQ(int32_alias_2.is_compatible(int32_alias_alias_alias), TypeConsistency::EQUALS);
+    EXPECT_EQ(int32_alias_3.is_compatible(int32_alias_alias_alias), TypeConsistency::EQUALS);
+    EXPECT_EQ(int32_alias_alias.is_compatible(int32_alias_alias_alias), TypeConsistency::EQUALS);
 }
 
 TEST (Consistency , wstring_and_string_struct)
