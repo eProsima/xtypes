@@ -19,6 +19,7 @@
 #define EPROSIMA_XTYPES_PAIR_TYPE_HPP_
 
 #include <xtypes/DynamicType.hpp>
+#include <xtypes/AliasType.hpp>
 
 namespace eprosima {
 namespace xtypes {
@@ -131,6 +132,12 @@ public:
     virtual TypeConsistency is_compatible(
             const DynamicType& other) const override
     {
+        if (other.kind() == TypeKind::ALIAS_TYPE)
+        {
+            const AliasType& other_alias = static_cast<const AliasType&>(other);
+            return is_compatible(other_alias.rget());
+        }
+
         bool check = other.kind() == TypeKind::PAIR_TYPE;
 
         if (check)
