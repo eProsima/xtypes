@@ -211,6 +211,11 @@ public:
             return is_compatible(other_alias.rget());
         }
 
+        if (other.kind() == TypeKind::STRUCTURE_TYPE) // Resolve one-member structs
+        {
+            return other.is_compatible(*this);
+        }
+
         if(other.kind() != TypeKind::ARRAY_TYPE)
         {
             return TypeConsistency::NONE;
