@@ -111,8 +111,18 @@ public:
             const uint8_t* source,
             const DynamicType& other) const override
     {
-        xtypes_assert(other.kind() == TypeKind::STRUCTURE_TYPE,
-            "Cannot copy data from different types: From '" << other.name() << "' to '" << name() << "'.");
+        if (other.kind() == TypeKind::ALIAS_TYPE)
+        {
+            const AliasType& alias = static_cast<const AliasType&>(other);
+
+            xtypes_assert(alias.rget().kind() == TypeKind::STRUCTURE_TYPE,
+                "Cannot copy data from different types: From '" << alias.rget().name() << "' to '" << name() << "'.");
+        }
+        else
+        {
+            xtypes_assert(other.kind() == TypeKind::STRUCTURE_TYPE,
+                "Cannot copy data from different types: From '" << other.name() << "' to '" << name() << "'.");
+        }
         const StructType& other_struct = static_cast<const StructType&>(other);
 
         auto other_member = other_struct.members().begin();

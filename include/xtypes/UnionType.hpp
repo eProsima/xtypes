@@ -267,8 +267,18 @@ public:
             const uint8_t* source,
             const DynamicType& other) const override
     {
-        xtypes_assert(other.kind() == TypeKind::UNION_TYPE,
-            "Cannot copy data from different types: From '" << other.name() << "' to '" << name() << "'.");
+        if (other.kind() == TypeKind::ALIAS_TYPE)
+        {
+            const AliasType& alias = static_cast<const AliasType&>(other);
+
+            xtypes_assert(alias.rget().kind() == TypeKind::UNION_TYPE,
+                "Cannot copy data from different types: From '" << alias.rget().name() << "' to '" << name() << "'.");
+        }
+        else
+        {
+            xtypes_assert(other.kind() == TypeKind::UNION_TYPE,
+                "Cannot copy data from different types: From '" << other.name() << "' to '" << name() << "'.");
+        }
         const UnionType& other_union = static_cast<const UnionType&>(other);
 
         Member* disc_ = disc();

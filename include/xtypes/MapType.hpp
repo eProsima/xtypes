@@ -88,10 +88,22 @@ public:
             const uint8_t* source,
             const DynamicType& other) const override
     {
-        xtypes_assert(
-            other.kind() == TypeKind::MAP_TYPE
-                && content_type().name() == static_cast<const MapType&>(other).content_type().name(),
-            "Cannot copy data from different types: From '" << other.name() << "' to '" << name() << "'.");
+        if (other.kind() == TypeKind::ALIAS_TYPE)
+        {
+            const AliasType& alias = static_cast<const AliasType&>(other);
+
+            xtypes_assert(
+                alias.rget().kind() == TypeKind::MAP_TYPE
+                    && content_type().name() == static_cast<const MapType&>(alias.rget()).content_type().name(),
+                "Cannot copy data from different types: From '" << alias.rget().name() << "' to '" << name() << "'.");
+        }
+        else
+        {
+            xtypes_assert(
+                other.kind() == TypeKind::MAP_TYPE
+                    && content_type().name() == static_cast<const MapType&>(other).content_type().name(),
+                "Cannot copy data from different types: From '" << other.name() << "' to '" << name() << "'.");
+        }
         (void) other;
         new (target) MapInstance(*reinterpret_cast<const MapInstance*>(source), bounds());
     }

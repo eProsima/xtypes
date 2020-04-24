@@ -99,7 +99,16 @@ public:
             const uint8_t* source,
             const DynamicType& other) const override
     {
-        xtypes_assert(other.kind() == TypeKind::PAIR_TYPE, "PairType only support copy from other PairType.");
+        if (other.kind() == TypeKind::ALIAS_TYPE)
+        {
+            const AliasType& alias = static_cast<const AliasType&>(other);
+
+            xtypes_assert(alias.rget().kind() == TypeKind::PAIR_TYPE, "PairType only support copy from other PairType.");
+        }
+        else
+        {
+            xtypes_assert(other.kind() == TypeKind::PAIR_TYPE, "PairType only support copy from other PairType.");
+        }
         const PairType& pair = static_cast<const PairType&>(other);
         first_->copy_instance_from_type(target, source, pair.first());
         second_->copy_instance_from_type(target + first_->memory_size(), source + first_->memory_size(), pair.second());

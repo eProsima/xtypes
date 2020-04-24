@@ -105,8 +105,18 @@ protected:
             const uint8_t* source,
             const DynamicType& other) const override
     {
-        xtypes_assert(other.is_primitive_type(),
-            "Cannot copy data from type '" + other.name() + "' to type '" + name() + "'.");
+        if (other.kind() == TypeKind::ALIAS_TYPE)
+        {
+            const AliasType& alias = static_cast<const AliasType&>(other);
+
+            xtypes_assert(alias.rget().is_primitive_type() || alias.rget().is_enumerated_type(),
+                "Cannot copy data from type '" + alias.rget().name() + "' to type '" + name() + "'.");
+        }
+        else
+        {
+            xtypes_assert(other.is_primitive_type() || other.is_enumerated_type(),
+                "Cannot copy data from type '" + other.name() + "' to type '" + name() + "'.");
+        }
         (void) other;
         switch(other.kind())
         {
@@ -120,6 +130,7 @@ protected:
                 *reinterpret_cast<T*>(target) = *reinterpret_cast<const uint16_t*>(source);
                 break;
             case TypeKind::UINT_32_TYPE:
+            case TypeKind::ENUMERATION_TYPE:
                 *reinterpret_cast<T*>(target) = *reinterpret_cast<const uint32_t*>(source);
                 break;
             case TypeKind::UINT_64_TYPE:
