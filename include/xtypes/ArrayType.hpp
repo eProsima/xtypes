@@ -128,8 +128,18 @@ public:
             const uint8_t* source,
             const DynamicType& other) const override
     {
-        xtypes_assert(other.kind() == TypeKind::ARRAY_TYPE,
-            "Cannot copy data from different types: From '" << other.name() << "' to '" << name() << "'.");
+        if (other.kind() == TypeKind::ALIAS_TYPE)
+        {
+            const AliasType& alias = static_cast<const AliasType&>(other);
+
+            xtypes_assert(alias.rget().kind() == TypeKind::ARRAY_TYPE,
+                "Cannot copy data from different types: From '" << alias.rget().name() << "' to '" << name() << "'.");
+        }
+        else
+        {
+            xtypes_assert(other.kind() == TypeKind::ARRAY_TYPE,
+                "Cannot copy data from different types: From '" << other.name() << "' to '" << name() << "'.");
+        }
         const ArrayType& other_array = static_cast<const ArrayType&>(other);
         size_t block_size = content_type().memory_size();
         size_t other_block_size = other_array.content_type().memory_size();
