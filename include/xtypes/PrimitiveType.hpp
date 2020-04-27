@@ -19,6 +19,7 @@
 
 #include <xtypes/DynamicType.hpp>
 #include <xtypes/AliasType.hpp>
+#include <xtypes/StructType.hpp>
 
 #include <cstring>
 
@@ -103,20 +104,26 @@ protected:
     virtual void copy_instance_from_type(
             uint8_t* target,
             const uint8_t* source,
-            const DynamicType& other) const override
+            const DynamicType& arg_other) const override
     {
-        if (other.kind() == TypeKind::ALIAS_TYPE)
-        {
-            const AliasType& alias = static_cast<const AliasType&>(other);
+        const DynamicType& other = (arg_other.kind() == TypeKind::ALIAS_TYPE)
+            ? static_cast<const AliasType&>(arg_other).rget()
+            : arg_other;
 
-            xtypes_assert(alias.rget().is_primitive_type() || alias.rget().is_enumerated_type(),
-                "Cannot copy data from type '" + alias.rget().name() + "' to type '" + name() + "'.");
-        }
-        else
+        if (other.kind() == TypeKind::STRUCTURE_TYPE)
         {
-            xtypes_assert(other.is_primitive_type() || other.is_enumerated_type(),
-                "Cannot copy data from type '" + other.name() + "' to type '" + name() + "'.");
+            // Resolve one-member struct compatibility
+            const StructType& struct_type = static_cast<const StructType&>(other);
+            if (struct_type.members().size() == 1)
+            {
+                copy_instance_from_type(target, source, struct_type.members().at(0).type());
+                return;
+            }
         }
+
+        xtypes_assert(other.is_primitive_type() || other.is_enumerated_type(),
+            "Cannot copy data from type '" + other.name() + "' to type '" + name() + "'.");
+
         (void) other;
         switch(other.kind())
         {

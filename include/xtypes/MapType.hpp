@@ -20,6 +20,7 @@
 
 #include <xtypes/MutableCollectionType.hpp>
 #include <xtypes/MapInstance.hpp>
+#include <xtypes/StructType.hpp>
 
 #include <vector>
 
@@ -86,24 +87,28 @@ public:
     virtual void copy_instance_from_type(
             uint8_t* target,
             const uint8_t* source,
-            const DynamicType& other) const override
+            const DynamicType& arg_other) const override
     {
-        if (other.kind() == TypeKind::ALIAS_TYPE)
-        {
-            const AliasType& alias = static_cast<const AliasType&>(other);
+        const DynamicType& other = (arg_other.kind() == TypeKind::ALIAS_TYPE)
+            ? static_cast<const AliasType&>(arg_other).rget()
+            : arg_other;
 
-            xtypes_assert(
-                alias.rget().kind() == TypeKind::MAP_TYPE
-                    && content_type().name() == static_cast<const MapType&>(alias.rget()).content_type().name(),
-                "Cannot copy data from different types: From '" << alias.rget().name() << "' to '" << name() << "'.");
-        }
-        else
+        if (other.kind() == TypeKind::STRUCTURE_TYPE)
         {
-            xtypes_assert(
-                other.kind() == TypeKind::MAP_TYPE
-                    && content_type().name() == static_cast<const MapType&>(other).content_type().name(),
-                "Cannot copy data from different types: From '" << other.name() << "' to '" << name() << "'.");
+            // Resolve one-member struct compatibility
+            const StructType& struct_type = static_cast<const StructType&>(other);
+            if (struct_type.members().size() == 1)
+            {
+                copy_instance_from_type(target, source, struct_type.members().at(0).type());
+                return;
+            }
         }
+
+        xtypes_assert(
+            other.kind() == TypeKind::MAP_TYPE
+                && content_type().name() == static_cast<const MapType&>(other).content_type().name(),
+            "Cannot copy data from different types: From '" << other.name() << "' to '" << name() << "'.");
+
         (void) other;
         new (target) MapInstance(*reinterpret_cast<const MapInstance*>(source), bounds());
     }

@@ -109,20 +109,21 @@ public:
     virtual void copy_instance_from_type(
             uint8_t* target,
             const uint8_t* source,
-            const DynamicType& other) const override
+            const DynamicType& arg_other) const override
     {
-        if (other.kind() == TypeKind::ALIAS_TYPE)
-        {
-            const AliasType& alias = static_cast<const AliasType&>(other);
+        const DynamicType& other = (arg_other.kind() == TypeKind::ALIAS_TYPE)
+            ? static_cast<const AliasType&>(arg_other).rget()
+            : arg_other;
 
-            xtypes_assert(alias.rget().kind() == TypeKind::STRUCTURE_TYPE,
-                "Cannot copy data from different types: From '" << alias.rget().name() << "' to '" << name() << "'.");
-        }
-        else
+        if (members().size() == 1) // Resolve one-member struct compatibility
         {
-            xtypes_assert(other.kind() == TypeKind::STRUCTURE_TYPE,
-                "Cannot copy data from different types: From '" << other.name() << "' to '" << name() << "'.");
+            members().at(0).type().copy_instance_from_type(target, source, other);
+            return;
         }
+
+        xtypes_assert(other.kind() == TypeKind::STRUCTURE_TYPE,
+            "Cannot copy data from different types: From '" << other.name() << "' to '" << name() << "'.");
+
         const StructType& other_struct = static_cast<const StructType&>(other);
 
         auto other_member = other_struct.members().begin();
