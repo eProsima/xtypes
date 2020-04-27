@@ -117,7 +117,10 @@ public:
 
         if (members().size() == 1) // Resolve one-member struct compatibility
         {
-            members().at(0).type().copy_instance_from_type(target, source, other);
+            if (other.kind() != TypeKind::STRUCTURE_TYPE)
+            {
+                members().at(0).type().copy_instance_from_type(target, source, other);
+            }
             return;
         }
 
