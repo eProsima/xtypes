@@ -120,8 +120,8 @@ public:
             if (other.kind() != TypeKind::STRUCTURE_TYPE)
             {
                 members().at(0).type().copy_instance_from_type(target, source, other);
+                return;
             }
-            return;
         }
 
         xtypes_assert(other.kind() == TypeKind::STRUCTURE_TYPE,
