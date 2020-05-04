@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
-*/
+ */
 
 #ifndef EPROSIMA_XTYPES_PAIR_TYPE_HPP_
 #define EPROSIMA_XTYPES_PAIR_TYPE_HPP_
 
 #include <xtypes/DynamicType.hpp>
 #include <xtypes/AliasType.hpp>
+#include <xtypes/StructType.hpp>
 
 namespace eprosima {
 namespace xtypes {
@@ -27,6 +28,7 @@ namespace xtypes {
 class PairType : public DynamicType
 {
 public:
+
     /// \brief Construct a PairType
     PairType(
             const DynamicType& first,
@@ -54,22 +56,26 @@ public:
         return *second_;
     }
 
-    void first(const DynamicType& first)
+    void first(
+            const DynamicType& first)
     {
         first_ = DynamicType::Ptr(first);
     }
 
-    void first(DynamicType&& first)
+    void first(
+            DynamicType&& first)
     {
         first_ = DynamicType::Ptr(std::move(first));
     }
 
-    void second(const DynamicType& second)
+    void second(
+            const DynamicType& second)
     {
         second_ = DynamicType::Ptr(second);
     }
 
-    void second(DynamicType&& second)
+    void second(
+            DynamicType&& second)
     {
         second_ = DynamicType::Ptr(std::move(second));
     }
@@ -97,18 +103,25 @@ public:
     virtual void copy_instance_from_type(
             uint8_t* target,
             const uint8_t* source,
-            const DynamicType& other) const override
+            const DynamicType& arg_other) const override
     {
-        if (other.kind() == TypeKind::ALIAS_TYPE)
-        {
-            const AliasType& alias = static_cast<const AliasType&>(other);
+        const DynamicType& other = (arg_other.kind() == TypeKind::ALIAS_TYPE)
+                ? static_cast<const AliasType&>(arg_other).rget()
+                : arg_other;
 
-            xtypes_assert(alias.rget().kind() == TypeKind::PAIR_TYPE, "PairType only support copy from other PairType.");
-        }
-        else
+        if (other.kind() == TypeKind::STRUCTURE_TYPE)
         {
-            xtypes_assert(other.kind() == TypeKind::PAIR_TYPE, "PairType only support copy from other PairType.");
+            // Resolve one-member struct compatibility
+            const StructType& struct_type = static_cast<const StructType&>(other);
+            if (struct_type.members().size() == 1)
+            {
+                copy_instance_from_type(target, source, struct_type.members().at(0).type());
+                return;
+            }
         }
+
+        xtypes_assert(other.kind() == TypeKind::PAIR_TYPE, "PairType only support copy from other PairType.");
+
         const PairType& pair = static_cast<const PairType&>(other);
         first_->copy_instance_from_type(target, source, pair.first());
         second_->copy_instance_from_type(target + first_->memory_size(), source + first_->memory_size(), pair.second());
@@ -116,10 +129,11 @@ public:
 
     virtual void move_instance(
             uint8_t* target,
-            uint8_t* source) const override
+            uint8_t* source,
+            bool initialized) const override
     {
-        first_->move_instance(target, source);
-        second_->move_instance(target + first_->memory_size(), source + first_->memory_size());
+        first_->move_instance(target, source, initialized);
+        second_->move_instance(target + first_->memory_size(), source + first_->memory_size(), initialized);
     }
 
     virtual void destroy_instance(
@@ -206,6 +220,7 @@ public:
     }
 
 protected:
+
     DynamicType::Ptr first_;
     DynamicType::Ptr second_;
 

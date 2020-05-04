@@ -31,24 +31,29 @@ public:
             const std::string& name)
         : DynamicType(TypeKind::ALIAS_TYPE, name)
         , aliased_(aliased)
-    {}
+    {
+    }
 
     AliasType(
             const DynamicType::Ptr&& aliased,
             const std::string& name)
         : DynamicType(TypeKind::ALIAS_TYPE, name)
         , aliased_(std::move(aliased))
-    {}
+    {
+    }
 
     AliasType(
             const AliasType& aliased,
             const std::string& name)
         : DynamicType(TypeKind::ALIAS_TYPE, name)
         , aliased_(aliased)
-    {}
+    {
+    }
 
-    AliasType(const AliasType& other) = default;
-    AliasType(AliasType&& other) = default;
+    AliasType(
+            const AliasType& other) = default;
+    AliasType(
+            AliasType&& other) = default;
 
     virtual size_t memory_size() const override
     {
@@ -78,9 +83,10 @@ public:
 
     virtual void move_instance(
             uint8_t* target,
-            uint8_t* source) const override
+            uint8_t* source,
+            bool initialized) const override
     {
-        aliased_->move_instance(target, source);
+        aliased_->move_instance(target, source, initialized);
     }
 
     virtual void destroy_instance(
@@ -103,7 +109,8 @@ public:
         aliased_->for_each_instance(node, visitor);
     }
 
-    virtual TypeConsistency is_compatible(const DynamicType& other) const override
+    virtual TypeConsistency is_compatible(
+            const DynamicType& other) const override
     {
         TypeConsistency consistency = TypeConsistency::EQUALS;
         if (other.kind() == TypeKind::ALIAS_TYPE)
@@ -168,12 +175,14 @@ public:
     }
 
 protected:
+
     virtual DynamicType* clone() const override
     {
         return new AliasType(*this);
     }
 
 private:
+
     DynamicType::Ptr aliased_;
 };
 

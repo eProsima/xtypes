@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
-*/
+ */
 
 #ifndef EPROSIMA_XTYPES_INSTANCEABLE_TYPE_HPP_
 #define EPROSIMA_XTYPES_INSTANCEABLE_TYPE_HPP_
@@ -33,6 +33,7 @@ class Member;
 class Instanceable
 {
 public:
+
     virtual ~Instanceable() = default;
 
     /// \brief Calculate the memory size that the instance will occupy in memory.
@@ -41,12 +42,15 @@ public:
 
     /// \brief Constructs an instance in memory.
     /// \param[out] instance Location where the instance will be constructed.
-    virtual void construct_instance(uint8_t* instance) const = 0;
+    virtual void construct_instance(
+            uint8_t* instance) const = 0;
 
     /// \brief Copy construction of a instance.
     /// \param[out] target Location where the instance will be constructed.
     /// \param[in] source Location from the instance will be copied.
-    virtual void copy_instance(uint8_t* target, const uint8_t* source) const = 0;
+    virtual void copy_instance(
+            uint8_t* target,
+            const uint8_t* source) const = 0;
 
     /// \brief Copy construction of a instance from another type.
     /// \pre other type needs to be compatible with the current type
@@ -54,24 +58,34 @@ public:
     /// \param[out] target Location where the instance will be constructed.
     /// \param[in] source Location from the instance will be copied.
     /// \param[in] other Type representing the source instance.
-    virtual void copy_instance_from_type(uint8_t* target, const uint8_t* source, const DynamicType& other) const = 0;
+    virtual void copy_instance_from_type(
+            uint8_t* target,
+            const uint8_t* source,
+            const DynamicType& other) const = 0;
 
     /// \brief Move construction of a instance from another type.
     /// \post source instance will be invalidated.
     /// \param[out] target Location where the instance will be constructed.
     /// \param[in, out] source Location from the instance will be moved.
-    virtual void move_instance(uint8_t* target, uint8_t* source) const = 0;
+    /// \param[in], initialized Indicated whether target was previously initialized.
+    virtual void move_instance(
+            uint8_t* target,
+            uint8_t* source,
+            bool initialized) const = 0;
 
     /// \brief Destroy an instance.
     /// \param[in, out] instance Location where the instance to be removed is placed.
-    virtual void destroy_instance(uint8_t* instance) const = 0;
+    virtual void destroy_instance(
+            uint8_t* instance) const = 0;
 
     /// \brief Deep equality comparation of 2 instances.
     /// \pre the instances must represent the same DynamicType.
     /// \param[in] instance first instance to be checked.
     /// \param[in] instance second instance to be checked.
     /// \returns true if both instance are equals.
-    virtual bool compare_instance(const uint8_t* instance, const uint8_t* other_instance) const = 0;
+    virtual bool compare_instance(
+            const uint8_t* instance,
+            const uint8_t* other_instance) const = 0;
 
     /// \brief Internal structure used to iterate the instance tree.
     struct InstanceNode
@@ -92,7 +106,8 @@ public:
             , deep(0)
             , from_index(0)
             , from_member(nullptr)
-        {}
+        {
+        }
 
         InstanceNode(
                 const InstanceNode& parent,
@@ -106,16 +121,20 @@ public:
             , deep(parent.deep + 1)
             , from_index(from_index)
             , from_member(from_member)
-        {}
+        {
+        }
+
     };
 
-    using InstanceVisitor = std::function<void(const InstanceNode& node)>;
+    using InstanceVisitor = std::function<void (const InstanceNode& node)>;
 
     /// \brief Function used to iterate the instance tree.
     /// The iteration will go through the tree in deep, calling the visitor function for each instance type.
     /// \param[in] node Relative information about the current instance iteration.
     /// \param[in] visitor Function called each time a new node in the tree is visited.
-    virtual void for_each_instance(const InstanceNode& node, InstanceVisitor visitor) const = 0;
+    virtual void for_each_instance(
+            const InstanceNode& node,
+            InstanceVisitor visitor) const = 0;
 
     virtual uint64_t hash(
             const uint8_t* instance) const
@@ -148,15 +167,15 @@ public:
 
         switch (len & 7)
         {
-        case 7: v ^= static_cast<uint64_t>(pos2[6]) << 48;
-        case 6: v ^= static_cast<uint64_t>(pos2[5]) << 40;
-        case 5: v ^= static_cast<uint64_t>(pos2[4]) << 32;
-        case 4: v ^= static_cast<uint64_t>(pos2[3]) << 24;
-        case 3: v ^= static_cast<uint64_t>(pos2[2]) << 16;
-        case 2: v ^= static_cast<uint64_t>(pos2[1]) << 8;
-        case 1: v ^= static_cast<uint64_t>(pos2[0]);
-            h ^= mix(v);
-            h *= m;
+            case 7: v ^= static_cast<uint64_t>(pos2[6]) << 48;
+            case 6: v ^= static_cast<uint64_t>(pos2[5]) << 40;
+            case 5: v ^= static_cast<uint64_t>(pos2[4]) << 32;
+            case 4: v ^= static_cast<uint64_t>(pos2[3]) << 24;
+            case 3: v ^= static_cast<uint64_t>(pos2[2]) << 16;
+            case 2: v ^= static_cast<uint64_t>(pos2[1]) << 8;
+            case 1: v ^= static_cast<uint64_t>(pos2[0]);
+                h ^= mix(v);
+                h *= m;
         }
 
         return mix(h);
@@ -171,6 +190,7 @@ public:
     }
 
 protected:
+
     Instanceable() = default;
 
 private:

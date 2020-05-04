@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
-*/
+ */
 
 #ifndef EPROSIMA_XTYPES_STRUCT_TYPE_HPP_
 #define EPROSIMA_XTYPES_STRUCT_TYPE_HPP_
@@ -32,6 +32,7 @@ namespace xtypes {
 class StructType : public AggregationType
 {
 public:
+
     /// \brief Construct a StructType given a name.
     /// \param[in] name Name of the structure.
     StructType(
@@ -39,10 +40,13 @@ public:
             const StructType* parent = nullptr)
         : AggregationType(TypeKind::STRUCTURE_TYPE, name, parent)
         , memory_size_(parent == nullptr ? 0 : parent->memory_size_)
-    {}
+    {
+    }
 
-    StructType(const StructType& other) = default;
-    StructType(StructType&& other) = default;
+    StructType(
+            const StructType& other) = default;
+    StructType(
+            StructType&& other) = default;
 
     /// \brief Add a member to the structure.
     /// \param[in] member Member to add
@@ -90,7 +94,7 @@ public:
     virtual void construct_instance(
             uint8_t* instance) const override
     {
-        for(auto&& member: members())
+        for (auto&& member: members())
         {
             member.type().construct_instance(instance + member.offset());
         }
@@ -100,7 +104,7 @@ public:
             uint8_t* target,
             const uint8_t* source) const override
     {
-        for(auto&& member: members())
+        for (auto&& member: members())
         {
             member.type().copy_instance(target + member.offset(), source + member.offset());
         }
@@ -109,31 +113,35 @@ public:
     virtual void copy_instance_from_type(
             uint8_t* target,
             const uint8_t* source,
-            const DynamicType& other) const override
+            const DynamicType& arg_other) const override
     {
-        if (other.kind() == TypeKind::ALIAS_TYPE)
-        {
-            const AliasType& alias = static_cast<const AliasType&>(other);
+        const DynamicType& other = (arg_other.kind() == TypeKind::ALIAS_TYPE)
+                ? static_cast<const AliasType&>(arg_other).rget()
+                : arg_other;
 
-            xtypes_assert(alias.rget().kind() == TypeKind::STRUCTURE_TYPE,
-                "Cannot copy data from different types: From '" << alias.rget().name() << "' to '" << name() << "'.");
-        }
-        else
+        if (members().size() == 1) // Resolve one-member struct compatibility
         {
-            xtypes_assert(other.kind() == TypeKind::STRUCTURE_TYPE,
-                "Cannot copy data from different types: From '" << other.name() << "' to '" << name() << "'.");
+            if (other.kind() != TypeKind::STRUCTURE_TYPE)
+            {
+                members().at(0).type().copy_instance_from_type(target, source, other);
+                return;
+            }
         }
+
+        xtypes_assert(other.kind() == TypeKind::STRUCTURE_TYPE,
+                "Cannot copy data from different types: From '" << other.name() << "' to '" << name() << "'.");
+
         const StructType& other_struct = static_cast<const StructType&>(other);
 
         auto other_member = other_struct.members().begin();
-        for(auto&& member: members())
+        for (auto&& member: members())
         {
-            if(other_member != other_struct.members().end())
+            if (other_member != other_struct.members().end())
             {
                 member.type().copy_instance_from_type(
-                        target + member.offset(),
-                        source + other_member->offset(),
-                        other_member->type());
+                    target + member.offset(),
+                    source + other_member->offset(),
+                    other_member->type());
             }
             else
             {
@@ -145,11 +153,12 @@ public:
 
     virtual void move_instance(
             uint8_t* target,
-            uint8_t* source) const override
+            uint8_t* source,
+            bool initialized) const override
     {
-        for(auto&& member: members())
+        for (auto&& member: members())
         {
-            member.type().move_instance(target + member.offset(), source + member.offset());
+            member.type().move_instance(target + member.offset(), source + member.offset(), initialized);
         }
     }
 
@@ -166,9 +175,9 @@ public:
             const uint8_t* instance,
             const uint8_t* other_instance) const override
     {
-        for(auto&& member: members())
+        for (auto&& member: members())
         {
-            if(!member.type().compare_instance(instance + member.offset(), other_instance + member.offset()))
+            if (!member.type().compare_instance(instance + member.offset(), other_instance + member.offset()))
             {
                 return false;
             }
@@ -190,7 +199,7 @@ public:
             return other.is_compatible(members().at(0).type());
         }
 
-        if(other.kind() != TypeKind::STRUCTURE_TYPE)
+        if (other.kind() != TypeKind::STRUCTURE_TYPE)
         {
             return TypeConsistency::NONE;
         }
@@ -199,17 +208,17 @@ public:
 
         TypeConsistency consistency = TypeConsistency::EQUALS;
         auto other_member = other_struct.members().begin();
-        for(auto&& member: members())
+        for (auto&& member: members())
         {
-            if(other_member != other_struct.members().end())
+            if (other_member != other_struct.members().end())
             {
                 TypeConsistency internal_consistency = member.type().is_compatible(other_member->type());
-                if(internal_consistency == TypeConsistency::NONE)
+                if (internal_consistency == TypeConsistency::NONE)
                 {
                     return TypeConsistency::NONE;
                 }
 
-                if(member.name() != other_member->name())
+                if (member.name() != other_member->name())
                 {
                     consistency |= TypeConsistency::IGNORE_MEMBER_NAMES;
                 }
@@ -221,7 +230,7 @@ public:
             }
             other_member++;
         }
-        if(other_member != other_struct.members().end())
+        if (other_member != other_struct.members().end())
         {
             consistency |= TypeConsistency::IGNORE_MEMBERS;
         }
@@ -234,7 +243,7 @@ public:
             InstanceVisitor visitor) const override
     {
         visitor(node);
-        for(size_t i = 0; i < members().size(); i++)
+        for (size_t i = 0; i < members().size(); i++)
         {
             const Member& member = members()[i];
             InstanceNode child(node, member.type(), node.instance + member.offset(), i, &member);
@@ -247,7 +256,7 @@ public:
             TypeVisitor visitor) const override
     {
         visitor(node);
-        for(size_t i = 0; i < members().size(); i++)
+        for (size_t i = 0; i < members().size(); i++)
         {
             const Member& member = members()[i];
             TypeNode child(node, member.type(), i, &member);
@@ -272,12 +281,14 @@ public:
     }
 
 protected:
+
     virtual DynamicType* clone() const override
     {
         return new StructType(*this);
     }
 
 private:
+
     size_t memory_size_;
 };
 

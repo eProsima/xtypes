@@ -45,8 +45,8 @@ static const std::string SECOND_INNER_STRING = "paint_it_black";
 static const size_t STRUCTS_SIZE = 10;
 
 /**********************************
- *        StructType Tests        *
- **********************************/
+*        StructType Tests        *
+**********************************/
 
 TEST (StructType, primitive_struct)
 {
@@ -56,47 +56,47 @@ TEST (StructType, primitive_struct)
 
     size_t mem_size = 0;
     st.add_member(Member("bool", primitive_type<bool>()));
-    mem_size+=sizeof(bool);
+    mem_size += sizeof(bool);
     EXPECT_EQ(mem_size, st.memory_size());
 
     st.add_member(Member("uint8_t", primitive_type<uint8_t>()));
-    mem_size+=sizeof(uint8_t);
+    mem_size += sizeof(uint8_t);
     EXPECT_EQ(mem_size, st.memory_size());
 
     st.add_member(Member("int16_t", primitive_type<int16_t>()));
-    mem_size+=sizeof(int16_t);
+    mem_size += sizeof(int16_t);
     EXPECT_EQ(mem_size, st.memory_size());
 
     st.add_member(Member("uint16_t", primitive_type<uint16_t>()));
-    mem_size+=sizeof(uint16_t);
+    mem_size += sizeof(uint16_t);
     EXPECT_EQ(mem_size, st.memory_size());
 
     st.add_member(Member("int32_t", primitive_type<int32_t>()));
-    mem_size+=sizeof(int32_t);
+    mem_size += sizeof(int32_t);
     EXPECT_EQ(mem_size, st.memory_size());
 
     st.add_member(Member("uint32_t", primitive_type<uint32_t>()));
-    mem_size+=sizeof(uint32_t);
+    mem_size += sizeof(uint32_t);
     EXPECT_EQ(mem_size, st.memory_size());
 
     st.add_member(Member("int64_t", primitive_type<int64_t>()));
-    mem_size+=sizeof(int64_t);
+    mem_size += sizeof(int64_t);
     EXPECT_EQ(mem_size, st.memory_size());
 
     st.add_member(Member("uint64_t", primitive_type<uint64_t>()));
-    mem_size+=sizeof(uint64_t);
+    mem_size += sizeof(uint64_t);
     EXPECT_EQ(mem_size, st.memory_size());
 
     st.add_member(Member("float", primitive_type<float>()));
-    mem_size+=sizeof(float);
+    mem_size += sizeof(float);
     EXPECT_EQ(mem_size, st.memory_size());
 
     st.add_member(Member("double", primitive_type<double>()));
-    mem_size+=sizeof(double);
+    mem_size += sizeof(double);
     EXPECT_EQ(mem_size, st.memory_size());
 
     st.add_member(Member("long_double", primitive_type<long double>()));
-    mem_size+=sizeof(long double);
+    mem_size += sizeof(long double);
     EXPECT_EQ(mem_size, st.memory_size());
 }
 
@@ -105,29 +105,29 @@ TEST (StructType, cascade_api_and_copy)
     StructType st("struct_name");
 
     st.add_member("bool", primitive_type<bool>())
-        .add_member("uint8_t", primitive_type<uint8_t>())
-        .add_member("int16_t", primitive_type<int16_t>())
-        .add_member("uint16_t", primitive_type<uint16_t>())
-        .add_member("int32_t", primitive_type<int32_t>())
-        .add_member("uint32_t", primitive_type<uint32_t>())
-        .add_member("int64_t", primitive_type<int64_t>())
-        .add_member("uint64_t", primitive_type<uint64_t>())
-        .add_member("float", primitive_type<float>())
-        .add_member("double", primitive_type<double>())
-        .add_member("long_double", primitive_type<long double>());
+    .add_member("uint8_t", primitive_type<uint8_t>())
+    .add_member("int16_t", primitive_type<int16_t>())
+    .add_member("uint16_t", primitive_type<uint16_t>())
+    .add_member("int32_t", primitive_type<int32_t>())
+    .add_member("uint32_t", primitive_type<uint32_t>())
+    .add_member("int64_t", primitive_type<int64_t>())
+    .add_member("uint64_t", primitive_type<uint64_t>())
+    .add_member("float", primitive_type<float>())
+    .add_member("double", primitive_type<double>())
+    .add_member("long_double", primitive_type<long double>());
 
     size_t mem_size = 0;
-    mem_size+=sizeof(bool);
-    mem_size+=sizeof(uint8_t);
-    mem_size+=sizeof(int16_t);
-    mem_size+=sizeof(uint16_t);
-    mem_size+=sizeof(int32_t);
-    mem_size+=sizeof(uint32_t);
-    mem_size+=sizeof(int64_t);
-    mem_size+=sizeof(uint64_t);
-    mem_size+=sizeof(float);
-    mem_size+=sizeof(double);
-    mem_size+=sizeof(long double);
+    mem_size += sizeof(bool);
+    mem_size += sizeof(uint8_t);
+    mem_size += sizeof(int16_t);
+    mem_size += sizeof(uint16_t);
+    mem_size += sizeof(int32_t);
+    mem_size += sizeof(uint32_t);
+    mem_size += sizeof(int64_t);
+    mem_size += sizeof(uint64_t);
+    mem_size += sizeof(float);
+    mem_size += sizeof(double);
+    mem_size += sizeof(long double);
 
     StructType cp = st;
     EXPECT_EQ("struct_name", cp.name());
@@ -152,21 +152,22 @@ TEST (StructType, self_assign)
     EXPECT_EQ(TypeKind::STRUCTURE_TYPE, st.member("in_member_name").type().kind());
     EXPECT_EQ(TypeKind::STRUCTURE_TYPE, st.member("selfassign_member_name").type().kind());
     EXPECT_EQ(TypeKind::FLOAT_128_TYPE,
-        static_cast<const StructType&>(st.member("selfassign_member_name").type()).member("long_double").type().kind());
+            static_cast<const StructType&>(st.member("selfassign_member_name").type()).member(
+                "long_double").type().kind());
     EXPECT_EQ(TypeKind::UINT_64_TYPE,
-        static_cast<const StructType&>(st.member("selfassign_member_name").type()).member("uint64_t").type().kind());
+            static_cast<const StructType&>(st.member("selfassign_member_name").type()).member("uint64_t").type().kind());
     EXPECT_EQ(TypeKind::UINT_8_TYPE,
-        static_cast<const StructType&>(st.member("selfassign_member_name").type()).member("uint8_t").type().kind() );
+            static_cast<const StructType&>(st.member("selfassign_member_name").type()).member("uint8_t").type().kind() );
 
     size_t mem_size_in = 0;
-    mem_size_in+=sizeof(long double);
-    mem_size_in+=sizeof(uint64_t);
-    mem_size_in+=sizeof(uint32_t);
+    mem_size_in += sizeof(long double);
+    mem_size_in += sizeof(uint64_t);
+    mem_size_in += sizeof(uint32_t);
     EXPECT_EQ(mem_size_in, st.member("in_member_name").type().memory_size());
 
-    mem_size_in+=sizeof(long double);
-    mem_size_in+=sizeof(uint64_t);
-    mem_size_in+=sizeof(uint8_t);
+    mem_size_in += sizeof(long double);
+    mem_size_in += sizeof(uint64_t);
+    mem_size_in += sizeof(uint8_t);
     EXPECT_EQ(mem_size_in, st.member("selfassign_member_name").type().memory_size());
 }
 
@@ -193,7 +194,7 @@ TEST (StructType, type_verify_test)
 
     EXPECT_EQ(TypeKind::BOOLEAN_TYPE, st.member("bool").type().kind());
     EXPECT_EQ(TypeKind::UINT_8_TYPE, st.member("uint8_t").type().kind());
-    EXPECT_EQ(TypeKind::INT_16_TYPE , st.member("int16_t").type().kind());
+    EXPECT_EQ(TypeKind::INT_16_TYPE, st.member("int16_t").type().kind());
     EXPECT_EQ(TypeKind::UINT_16_TYPE, st.member("uint16_t").type().kind());
     EXPECT_EQ(TypeKind::INT_32_TYPE, st.member("int32_t").type().kind());
     EXPECT_EQ(TypeKind::UINT_32_TYPE, st.member("uint32_t").type().kind());
@@ -243,18 +244,18 @@ TEST (StructType, type_verify_test)
     EXPECT_EQ(true, d["bool"].value<bool>());
     EXPECT_EQ(UINT8, d["uint8_t"].value<uint8_t>());
     EXPECT_EQ(INT16, d["int16_t"].value<int16_t>());
-    EXPECT_EQ(UINT16,d["uint16_t"].value<uint16_t>());
+    EXPECT_EQ(UINT16, d["uint16_t"].value<uint16_t>());
     EXPECT_EQ(INT32, d["int32_t"].value<int32_t>());
     EXPECT_EQ(UINT32, d["uint32_t"].value<uint32_t>());
     EXPECT_EQ(INT64, d["int64_t"].value<int64_t>());
-    EXPECT_EQ(UINT64,d["uint64_t"].value<uint64_t>());
-    EXPECT_EQ( float(FLOAT) , d["float"].value<float>());
-    EXPECT_EQ( double(DOUBLE) , d["double"].value<double>());
+    EXPECT_EQ(UINT64, d["uint64_t"].value<uint64_t>());
+    EXPECT_EQ( float(FLOAT), d["float"].value<float>());
+    EXPECT_EQ( double(DOUBLE), d["double"].value<double>());
     long double ld = LDOUBLE;
-    EXPECT_EQ( ld , d["long double"].value<long double>());
-    EXPECT_EQ( CHAR , d["char"].value<char>());
-    EXPECT_EQ( CHAR16 , d["char16_t"].value<char16_t>());
-    EXPECT_EQ( WCHAR , d["wchar_t"].value<wchar_t>());
+    EXPECT_EQ( ld, d["long double"].value<long double>());
+    EXPECT_EQ( CHAR, d["char"].value<char>());
+    EXPECT_EQ( CHAR16, d["char16_t"].value<char16_t>());
+    EXPECT_EQ( WCHAR, d["wchar_t"].value<wchar_t>());
 
 }
 
@@ -263,14 +264,14 @@ TEST (StructType, empty_struct_data)
     StructType empty("empty_struct");
     DynamicData empty_data(empty);
     EXPECT_EQ(0, empty.memory_size());
-    ASSERT_OR_EXCEPTION(empty_data[0];, "out of bounds");
+    ASSERT_OR_EXCEPTION(empty_data[0]; , "out of bounds");
 }
 
 template<typename T>
 void add_seq_data(
-    WritableDynamicDataRef data,
-    size_t size,
-    T value)
+        WritableDynamicDataRef data,
+        size_t size,
+        T value)
 {
     for (size_t idx = 0; idx < size; ++idx)
     {
@@ -280,9 +281,9 @@ void add_seq_data(
 
 template<typename T>
 void add_array_data(
-    WritableDynamicDataRef data,
-    size_t size,
-    T value)
+        WritableDynamicDataRef data,
+        size_t size,
+        T value)
 {
     for (size_t idx = 0; idx < size; ++idx)
     {
@@ -292,9 +293,9 @@ void add_array_data(
 
 template<typename T>
 void check_collection_data(
-    WritableDynamicDataRef data,
-    size_t size,
-    T value)
+        WritableDynamicDataRef data,
+        size_t size,
+        T value)
 {
     for (size_t idx = 0; idx < size; ++idx)
     {
@@ -344,7 +345,7 @@ DynamicData create_dynamic_data(
     the_data["double"] = DOUBLE;
     the_data["long_double"] = LDOUBLE;
 
-    for(int i = 0; i < STRUCTS_SIZE; ++i) // creating "sequence"
+    for (int i = 0; i < STRUCTS_SIZE; ++i) // creating "sequence"
     {
         DynamicData tmp_data(inner_struct);
         tmp_data["inner_string"] = INNER_STRING_VALUE;
@@ -359,7 +360,7 @@ DynamicData create_dynamic_data(
             add_array_data(tmp_inner_data["second_inner_array"], STRUCTS_SIZE, UINT8);
             tmp_data["inner_sequence_struct"].push(tmp_inner_data);
         }
-        for(int j = 0; j < STRUCTS_SIZE; ++j)
+        for (int j = 0; j < STRUCTS_SIZE; ++j)
         {
             add_array_data(the_data["array"][j], STRUCTS_SIZE, LDOUBLE);
         }
@@ -426,7 +427,8 @@ TEST (StructType, complex_and_member_access)
                 the_data[12][i][3][j][1].value<uint32_t>(),
                 UINT32);
 
-            check_collection_data(the_data["sequence"][i]["inner_sequence_struct"][j]["second_inner_array"], STRUCTS_SIZE, UINT8);
+            check_collection_data(the_data["sequence"][i]["inner_sequence_struct"][j]["second_inner_array"],
+                    STRUCTS_SIZE, UINT8);
             check_collection_data(the_data[12][i][3][j][2], STRUCTS_SIZE, UINT8);
         }
 
@@ -439,7 +441,7 @@ TEST (StructType, simple_string_sequence_struct)
 {
     StructType st("st");
     st.add_member(
-    Member("seq", SequenceType(StringType())));
+        Member("seq", SequenceType(StringType())));
 
     DynamicData the_data(st);
 
@@ -496,6 +498,39 @@ TEST (StructType, inheritance)
     EXPECT_EQ(son.member(3).name(), "grandparent");
     EXPECT_EQ(son.member(3).type().name(), "ParentStruct");
     EXPECT_EQ(son.member(3).type().kind(), TypeKind::STRUCTURE_TYPE);
+}
 
+TEST (StructType, copying_a_structure)
+{
+    StructType my_struct("MyStruct");
+    my_struct.add_member("uint64_t", primitive_type<uint64_t>());
+    my_struct.add_member("uint8_t", primitive_type<uint8_t>());
+    my_struct.add_member("str", StringType());
+
+    DynamicData data(my_struct);
+    data["uint64_t"] = std::numeric_limits<uint64_t>::max();
+    data["uint8_t"] = std::numeric_limits<uint8_t>::max();
+    data["str"] = "Hey!";
+
+    DynamicData copied_data(data);
+
+    EXPECT_EQ(copied_data["uint64_t"].value<uint64_t>(), std::numeric_limits<uint64_t>::max());
+    EXPECT_EQ(copied_data["uint8_t"].value<uint8_t>(), std::numeric_limits<uint8_t>::max());
+    EXPECT_EQ(copied_data["str"].value<std::string>().compare("Hey!"), 0);
+}
+
+TEST (StructType, copying_a_single_value_structure)
+{
+    StructType my_struct("MyStruct");
+    my_struct.add_member("str", StringType());
+    DynamicData data(my_struct);
+    data["str"] = "Hey!";
+    DynamicData copied_data(data);
+    EXPECT_EQ(copied_data["str"].value<std::string>().compare("Hey!"), 0);
+
+    StringType my_str;
+    DynamicData str(my_str);
+    str = data;
+    EXPECT_EQ(str.value<std::string>().compare("Hey!"), 0);
 
 }

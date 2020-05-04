@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
-*/
+ */
 
 #ifndef EPROSIMA_XTYPES_SEQUENCE_TYPE_HPP_
 #define EPROSIMA_XTYPES_SEQUENCE_TYPE_HPP_
 
 #include <xtypes/MutableCollectionType.hpp>
 #include <xtypes/SequenceInstance.hpp>
+#include <xtypes/StructType.hpp>
 
 #include <vector>
 
@@ -31,6 +32,7 @@ namespace xtypes {
 class SequenceType : public MutableCollectionType
 {
 public:
+
     /// \brief Construct a SequenceType.
     /// \param[in] content Content type of the sequence.
     /// \param[in] bounds Size limit of the sequence, 0 means that no limits.
@@ -38,11 +40,12 @@ public:
             const DynamicType& content,
             uint32_t bounds = 0)
         : MutableCollectionType(
-                TypeKind::SEQUENCE_TYPE,
-                "sequence_" + ((bounds > 0) ? std::to_string(bounds) + "_" : "") + content.name(),
-                DynamicType::Ptr(content),
-                bounds)
-    {}
+            TypeKind::SEQUENCE_TYPE,
+            "sequence_" + ((bounds > 0) ? std::to_string(bounds) + "_" : "") + content.name(),
+            DynamicType::Ptr(content),
+            bounds)
+    {
+    }
 
     /// \brief Construct a SequenceType.
     /// \param[in] content Content type of the sequence.
@@ -52,14 +55,17 @@ public:
             const DynamicTypeImpl&& content,
             uint32_t bounds)
         : MutableCollectionType(
-                TypeKind::SEQUENCE_TYPE,
-                "sequence_" + ((bounds > 0) ? std::to_string(bounds) + "_" : "") + content.name(),
-                DynamicType::Ptr(std::move(content)),
-                bounds)
-    {}
+            TypeKind::SEQUENCE_TYPE,
+            "sequence_" + ((bounds > 0) ? std::to_string(bounds) + "_" : "") + content.name(),
+            DynamicType::Ptr(std::move(content)),
+            bounds)
+    {
+    }
 
-    SequenceType(const SequenceType& other) = default;
-    SequenceType(SequenceType&& other) = default;
+    SequenceType(
+            const SequenceType& other) = default;
+    SequenceType(
+            SequenceType&& other) = default;
 
     virtual size_t memory_size() const override
     {
@@ -82,29 +88,39 @@ public:
     virtual void copy_instance_from_type(
             uint8_t* target,
             const uint8_t* source,
-            const DynamicType& other) const override
+            const DynamicType& arg_other) const override
     {
-        if (other.kind() == TypeKind::ALIAS_TYPE)
-        {
-            const AliasType& alias = static_cast<const AliasType&>(other);
+        const DynamicType& other = (arg_other.kind() == TypeKind::ALIAS_TYPE)
+                ? static_cast<const AliasType&>(arg_other).rget()
+                : arg_other;
 
-            xtypes_assert(alias.rget().kind() == TypeKind::SEQUENCE_TYPE,
-                "Cannot copy data from different types: From '" << alias.rget().name() << "' to '" << name() << "'.");
-        }
-        else
+        if (other.kind() == TypeKind::STRUCTURE_TYPE)
         {
-            xtypes_assert(other.kind() == TypeKind::SEQUENCE_TYPE,
-                "Cannot copy data from different types: From '" << other.name() << "' to '" << name() << "'.");
+            // Resolve one-member struct compatibility
+            const StructType& struct_type = static_cast<const StructType&>(other);
+            if (struct_type.members().size() == 1)
+            {
+                copy_instance_from_type(target, source, struct_type.members().at(0).type());
+                return;
+            }
         }
+
+        xtypes_assert(other.kind() == TypeKind::SEQUENCE_TYPE,
+                "Cannot copy data from different types: From '" << other.name() << "' to '" << name() << "'.");
+
         (void) other;
         new (target) SequenceInstance(*reinterpret_cast<const SequenceInstance*>(source), content_type(), bounds());
     }
 
     virtual void move_instance(
             uint8_t* target,
-            uint8_t* source) const override
+            uint8_t* source,
+            bool initialized) const override
     {
-        destroy_instance(target);
+        if (initialized)
+        {
+            destroy_instance(target);
+        }
         new (target) SequenceInstance(std::move(*reinterpret_cast<const SequenceInstance*>(source)));
     }
 
@@ -118,7 +134,7 @@ public:
             uint8_t* instance,
             size_t index) const override
     {
-        return reinterpret_cast<SequenceInstance*>(instance)->operator[](uint32_t(index));
+        return reinterpret_cast<SequenceInstance*>(instance)->operator [](uint32_t(index));
     }
 
     virtual size_t get_instance_size(
@@ -132,7 +148,7 @@ public:
             const uint8_t* other_instance) const override
     {
         return *reinterpret_cast<const SequenceInstance*>(instance)
-            == *reinterpret_cast<const SequenceInstance*>(other_instance);
+               == *reinterpret_cast<const SequenceInstance*>(other_instance);
     }
 
     virtual TypeConsistency is_compatible(
@@ -149,21 +165,21 @@ public:
             return other.is_compatible(*this);
         }
 
-        if(other.kind() != TypeKind::SEQUENCE_TYPE)
+        if (other.kind() != TypeKind::SEQUENCE_TYPE)
         {
             return TypeConsistency::NONE;
         }
 
         const SequenceType& other_sequence = static_cast<const SequenceType&>(other);
 
-        if(bounds() == other_sequence.bounds())
+        if (bounds() == other_sequence.bounds())
         {
             return TypeConsistency::EQUALS
-                | content_type().is_compatible(other_sequence.content_type());
+                   | content_type().is_compatible(other_sequence.content_type());
         }
 
         return TypeConsistency::IGNORE_SEQUENCE_BOUNDS
-            | content_type().is_compatible(other_sequence.content_type());
+               | content_type().is_compatible(other_sequence.content_type());
     }
 
     virtual void for_each_instance(
@@ -172,7 +188,7 @@ public:
     {
         const SequenceInstance& sequence = *reinterpret_cast<const SequenceInstance*>(node.instance);
         visitor(node);
-        for(uint32_t i = 0; i < sequence.size(); i++)
+        for (uint32_t i = 0; i < sequence.size(); i++)
         {
             InstanceNode child(node, content_type(), sequence[i], i, nullptr);
             content_type().for_each_instance(child, visitor);
@@ -197,7 +213,7 @@ public:
             uint8_t* instance,
             const uint8_t* value) const
     {
-        if(get_instance_size(instance) < bounds() || bounds() == 0)
+        if (get_instance_size(instance) < bounds() || bounds() == 0)
         {
             return reinterpret_cast<SequenceInstance*>(instance)->push(value, bounds());
         }
@@ -239,10 +255,12 @@ public:
     }
 
 protected:
+
     virtual DynamicType* clone() const override
     {
         return new SequenceType(*this);
     }
+
 };
 
 } //namespace xtypes
