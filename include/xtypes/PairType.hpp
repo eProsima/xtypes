@@ -129,10 +129,11 @@ public:
 
     virtual void move_instance(
             uint8_t* target,
-            uint8_t* source) const override
+            uint8_t* source,
+            bool initialized) const override
     {
-        first_->move_instance(target, source);
-        second_->move_instance(target + first_->memory_size(), source + first_->memory_size());
+        first_->move_instance(target, source, initialized);
+        second_->move_instance(target + first_->memory_size(), source + first_->memory_size(), initialized);
     }
 
     virtual void destroy_instance(

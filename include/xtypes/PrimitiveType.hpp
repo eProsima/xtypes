@@ -139,6 +139,9 @@ protected:
             case TypeKind::BOOLEAN_TYPE:
                 *reinterpret_cast<T*>(target) = *reinterpret_cast<const bool*>(source);
                 break;
+            case TypeKind::INT_8_TYPE:
+                *reinterpret_cast<T*>(target) = *reinterpret_cast<const int8_t*>(source);
+                break;
             case TypeKind::UINT_8_TYPE:
                 *reinterpret_cast<T*>(target) = *reinterpret_cast<const uint8_t*>(source);
                 break;
@@ -186,7 +189,8 @@ protected:
 
     virtual void move_instance(
             uint8_t* target,
-            uint8_t* source) const override
+            uint8_t* source,
+            bool) const override
     {
         copy_instance(target, source);
     }

@@ -153,11 +153,12 @@ public:
 
     virtual void move_instance(
             uint8_t* target,
-            uint8_t* source) const override
+            uint8_t* source,
+            bool initialized) const override
     {
         for (auto&& member: members())
         {
-            member.type().move_instance(target + member.offset(), source + member.offset());
+            member.type().move_instance(target + member.offset(), source + member.offset(), initialized);
         }
     }
 

@@ -306,13 +306,15 @@ public:
 
     virtual void move_instance(
             uint8_t* target,
-            uint8_t* source) const override
+            uint8_t* source,
+            bool initialized) const override
     {
-        disc()->type().move_instance(target, source);
+        disc()->type().move_instance(target, source, initialized);
 
         if (active_member_ != nullptr)
         {
-            active_member_->type().move_instance(target + active_member_->offset(), source + active_member_->offset());
+            active_member_->type().move_instance(target + active_member_->offset(),
+                    source + active_member_->offset(), initialized);
         }
     }
 

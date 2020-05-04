@@ -303,7 +303,7 @@ private:
                     uint32_t to_move = size_ - get_key_index(source);
                     for (uint32_t i = to_move; i > 0; --i)
                     {
-                        content_.move_instance(target + (i - 1) * block_size_, source + (i - 1) * block_size_);
+                        content_.move_instance(target + (i - 1) * block_size_, source + (i - 1) * block_size_, true);
                     }
                 }
                 else
@@ -311,7 +311,7 @@ private:
                     // Moving full memory
                     for (uint32_t i = 0; i < size_; ++i)
                     {
-                        content_.move_instance(target + i * block_size_, source + i * block_size_);
+                        content_.move_instance(target + i * block_size_, source + i * block_size_, true);
                     }
                 }
             }

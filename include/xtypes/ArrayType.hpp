@@ -178,14 +178,15 @@ public:
 
     virtual void move_instance(
             uint8_t* target,
-            uint8_t* source) const override
+            uint8_t* source,
+            bool initialized) const override
     {
         size_t block_size = content_type().memory_size();
         if (content_type().is_constructed_type())
         {
             for (uint32_t i = 0; i < dimension_; i++)
             {
-                content_type().move_instance(target + i * block_size, source + i * block_size);
+                content_type().move_instance(target + i * block_size, source + i * block_size, initialized);
             }
         }
         else //optimization when the type is primitive

@@ -67,9 +67,11 @@ public:
     /// \post source instance will be invalidated.
     /// \param[out] target Location where the instance will be constructed.
     /// \param[in, out] source Location from the instance will be moved.
+    /// \param[in], initialized Indicated whether target was previously initialized.
     virtual void move_instance(
             uint8_t* target,
-            uint8_t* source) const = 0;
+            uint8_t* source,
+            bool initialized) const = 0;
 
     /// \brief Destroy an instance.
     /// \param[in, out] instance Location where the instance to be removed is placed.

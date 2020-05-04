@@ -284,7 +284,7 @@ private:
             {
                 for (uint32_t i = 0; i < size_; i++)
                 {
-                    content_.move_instance(target + i * block_size_, source + i * block_size_);
+                    content_.move_instance(target + i * block_size_, source + i * block_size_, true);
                 }
             }
             else //optimization when the type is primitive

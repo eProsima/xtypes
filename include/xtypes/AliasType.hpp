@@ -83,9 +83,10 @@ public:
 
     virtual void move_instance(
             uint8_t* target,
-            uint8_t* source) const override
+            uint8_t* source,
+            bool initialized) const override
     {
-        aliased_->move_instance(target, source);
+        aliased_->move_instance(target, source, initialized);
     }
 
     virtual void destroy_instance(

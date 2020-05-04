@@ -114,9 +114,13 @@ public:
 
     virtual void move_instance(
             uint8_t* target,
-            uint8_t* source) const override
+            uint8_t* source,
+            bool initialized) const override
     {
-        destroy_instance(target);
+        if (initialized)
+        {
+            destroy_instance(target);
+        }
         new (target) SequenceInstance(std::move(*reinterpret_cast<const SequenceInstance*>(source)));
     }
 

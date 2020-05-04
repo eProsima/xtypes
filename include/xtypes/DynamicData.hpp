@@ -605,6 +605,7 @@ protected:
 
     const DynamicType& type_;
     uint8_t* instance_;
+    bool initialize_ = false;
 
     /// \brief protected access to other DynamicData instace.
     /// \param[in] other readable reference from who get the instance.
@@ -650,7 +651,7 @@ protected:
     {
         xtypes_assert(type_.is_primitive_type() || type_.is_enumerated_type(),
                 "Expected a primitive type but '" << PrimitiveTypeKindTrait<T>::name <<
-                        "' received while casting data.");
+                "' received while casting data.");
         switch (type_.kind())
         {
             case TypeKind::BOOLEAN_TYPE:
@@ -1263,6 +1264,7 @@ public:
     {
         memset(instance_, 0, type.memory_size());
         type_.construct_instance(instance_);
+        initialize_ = true;
     }
 
     /// \brief Copy constructor from a ReadableDynamicDataRef
@@ -1293,6 +1295,7 @@ public:
                 << type_.name() << "' isn't compatible with '" << other.type().name() << "'.");
         memset(instance_, 0, type.memory_size());
         type_.copy_instance_from_type(instance_, p_instance(other), other.type());
+        initialize_ = true;
     }
 
     /// \brief Copy constructor
@@ -1302,6 +1305,7 @@ public:
     {
         memset(instance_, 0, other.type().memory_size());
         type_.copy_instance(instance_, p_instance(other));
+        initialize_ = true;
     }
 
     /// \brief Move constructor
@@ -1310,7 +1314,8 @@ public:
         : WritableDynamicDataRef(other.type_, new uint8_t[other.type_.memory_size()])
     {
         memset(instance_, 0, other.type().memory_size());
-        type_.move_instance(instance_, p_instance(other));
+        type_.move_instance(instance_, p_instance(other), initialize_);
+        initialize_ = true;
     }
 
     /// \brief Assignment operator

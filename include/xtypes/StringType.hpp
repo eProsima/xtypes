@@ -100,7 +100,8 @@ public:
 
     virtual void move_instance(
             uint8_t* target,
-            uint8_t* source) const override
+            uint8_t* source,
+            bool) const override
     {
         new (target) std::basic_string<CHAR_T>(std::move(*reinterpret_cast<const std::basic_string<CHAR_T>*>(source)));
     }
