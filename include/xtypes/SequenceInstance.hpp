@@ -30,6 +30,7 @@ namespace xtypes {
 class SequenceInstance
 {
 public:
+
     /// \brief Construct a SequenceInstance
     /// \param[in] content Content of the sequence
     /// \param[in] capacity Reserved memory for the sequence.
@@ -53,7 +54,7 @@ public:
     {
         init_memory(memory_, capacity_);
 
-        if(memory_ != nullptr)
+        if (memory_ != nullptr)
         {
             copy_content(other, size_);
         }
@@ -75,7 +76,7 @@ public:
     {
         init_memory(memory_, capacity_);
 
-        if(memory_ != nullptr)
+        if (memory_ != nullptr)
         {
             copy_content(other, size_);
         }
@@ -96,15 +97,15 @@ public:
     bool operator == (
             const SequenceInstance& other) const
     {
-        if(other.size() != size_)
+        if (other.size() != size_)
         {
             return false;
         }
 
-        if(content_.is_constructed_type())
+        if (content_.is_constructed_type())
         {
             bool comp = true;
-            for(uint32_t i = 0; i < size_; i++)
+            for (uint32_t i = 0; i < size_; i++)
             {
                 comp &= content_.compare_instance(memory_ + i * block_size_, other.memory_ + i * block_size_);
             }
@@ -129,7 +130,7 @@ public:
             const uint8_t* instance,
             uint32_t bounds)
     {
-        if(memory_ == nullptr || size_ == capacity_)
+        if (memory_ == nullptr || size_ == capacity_)
         {
             realloc((capacity_ > 0) ? capacity_ * 2 : 1, bounds);
         }
@@ -149,14 +150,14 @@ public:
             size_t new_size,
             uint32_t bounds)
     {
-        if(size_ >= new_size)
+        if (size_ >= new_size)
         {
             return;
         }
 
         realloc(new_size, bounds);
 
-        for(size_t i = size_; i < new_size; i++)
+        for (size_t i = size_; i < new_size; i++)
         {
             uint8_t* place = memory_ + i * block_size_;
             content_.construct_instance(place);
@@ -172,15 +173,19 @@ public:
             uint32_t index) const
     {
         xtypes_assert(index < size_,
-            "operator [" << index << "] is out of bounds.");
+                "operator [" << index << "] is out of bounds.");
         return memory_ + index * block_size_;
     }
 
     /// \brief Size of the sequence.
     /// \returns Size of the sequence.
-    uint32_t size() const { return size_; }
+    uint32_t size() const
+    {
+        return size_;
+    }
 
 private:
+
     friend class SequenceType;
 
     const DynamicType& content_;
@@ -252,14 +257,14 @@ private:
             realloc(min_size, bounds);
         }
 
-        if(content_.is_constructed_type() || block_size_ != other_block_size)
+        if (content_.is_constructed_type() || block_size_ != other_block_size)
         {
-            for(uint32_t i = 0; i < min_size; i++)
+            for (uint32_t i = 0; i < min_size; i++)
             {
                 content_.copy_instance_from_type(
-                        memory_ + i * block_size_,
-                        other.memory_ + i * other_block_size,
-                        other.content_);
+                    memory_ + i * block_size_,
+                    other.memory_ + i * other_block_size,
+                    other.content_);
             }
         }
         else //optimization when the type is primitive with same block_size
@@ -275,9 +280,9 @@ private:
     {
         if (source != nullptr)
         {
-            if(content_.is_constructed_type())
+            if (content_.is_constructed_type())
             {
-                for(uint32_t i = 0; i < size_; i++)
+                for (uint32_t i = 0; i < size_; i++)
                 {
                     content_.move_instance(target + i * block_size_, source + i * block_size_);
                 }
@@ -291,11 +296,11 @@ private:
 
     void free_memory()
     {
-        if(memory_ != nullptr)
+        if (memory_ != nullptr)
         {
-            if(content_.is_constructed_type())
+            if (content_.is_constructed_type())
             {
-                for(int32_t i = capacity_ - 1; i >= 0; i--)
+                for (int32_t i = capacity_ - 1; i >= 0; i--)
                 {
                     content_.destroy_instance(memory_ + i * block_size_);
                 }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
-*/
+ */
 
 #ifndef EPROSIMA_XTYPES_STRING_TYPE_HPP_
 #define EPROSIMA_XTYPES_STRING_TYPE_HPP_
@@ -34,17 +34,19 @@ template<typename CHAR_T, TypeKind KIND, const char* TYPE_NAME>
 class TStringType : public MutableCollectionType
 {
 public:
+
     /// \brief Construct a string
     /// Depends of the specialization used, the string will contain PrimitiveType of char or wchar elements
     /// \param[in] bounds Limits of the string, 0 means no limits.
     TStringType(
             int bounds = 0)
         : MutableCollectionType(
-                KIND,
-                TYPE_NAME + ((bounds > 0) ? "_" + std::to_string(bounds) : ""),
-                DynamicType::Ptr(primitive_type<CHAR_T>()),
-                bounds)
-    {}
+            KIND,
+            TYPE_NAME + ((bounds > 0) ? "_" + std::to_string(bounds) : ""),
+            DynamicType::Ptr(primitive_type<CHAR_T>()),
+            bounds)
+    {
+    }
 
     virtual size_t memory_size() const override
     {
@@ -73,8 +75,8 @@ public:
             const DynamicType& arg_other) const override
     {
         const DynamicType& other = (arg_other.kind() == TypeKind::ALIAS_TYPE)
-            ? static_cast<const AliasType&>(arg_other).rget()
-            : arg_other;
+                ? static_cast<const AliasType&>(arg_other).rget()
+                : arg_other;
 
         if (other.kind() == TypeKind::STRUCTURE_TYPE)
         {
@@ -88,7 +90,7 @@ public:
         }
 
         xtypes_assert(other.kind() == KIND,
-            "Cannot copy data from different types: From '" << other.name() << "' to '" << name() << "'.");
+                "Cannot copy data from different types: From '" << other.name() << "' to '" << name() << "'.");
 
         (void) other;
         const std::basic_string<CHAR_T>& source_string = *reinterpret_cast<const std::basic_string<CHAR_T>*>(source);
@@ -114,7 +116,7 @@ public:
             const uint8_t* other_instance) const override
     {
         return *reinterpret_cast<const std::basic_string<CHAR_T>*>(instance) ==
-                *reinterpret_cast<const std::basic_string<CHAR_T>*>(other_instance);
+               *reinterpret_cast<const std::basic_string<CHAR_T>*>(other_instance);
     }
 
     virtual TypeConsistency is_compatible(
@@ -131,14 +133,14 @@ public:
             return other.is_compatible(*this);
         }
 
-        if(other.kind() != KIND)
+        if (other.kind() != KIND)
         {
             return TypeConsistency::NONE;
         }
 
         const TStringType& other_string = static_cast<const TStringType&>(other);
 
-        if(bounds() == other_string.bounds())
+        if (bounds() == other_string.bounds())
         {
             return TypeConsistency::EQUALS;
         }
@@ -164,7 +166,7 @@ public:
             uint8_t* instance,
             size_t index) const override
     {
-        void* char_addr = &reinterpret_cast<std::basic_string<CHAR_T>*>(instance)->operator[](index);
+        void* char_addr = &reinterpret_cast<std::basic_string<CHAR_T>*>(instance)->operator [](index);
         return static_cast<uint8_t*>(char_addr);
     }
 
@@ -177,15 +179,17 @@ public:
     virtual uint64_t hash(
             const uint8_t* instance) const override
     {
-        std::hash<std::basic_string<CHAR_T>> hash_fn;
+        std::hash<std::basic_string<CHAR_T> > hash_fn;
         return hash_fn(*reinterpret_cast<const std::basic_string<CHAR_T>*>(instance));
     }
 
 protected:
+
     virtual DynamicType* clone() const override
     {
         return new TStringType(*this);
     }
+
 };
 
 /// \brief Specialization for strings that contains chars

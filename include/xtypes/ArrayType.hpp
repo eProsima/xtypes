@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
-*/
+ */
 
 #ifndef EPROSIMA_XTYPES_ARRAY_TYPE_HPP_
 #define EPROSIMA_XTYPES_ARRAY_TYPE_HPP_
@@ -33,6 +33,7 @@ namespace xtypes {
 class ArrayType : public CollectionType
 {
 public:
+
     /// \brief Construct an ArrayType.
     /// \param[in] content Content type of the array.
     /// \param[in] dimension Size of the Array.
@@ -40,11 +41,12 @@ public:
             const DynamicType& content,
             uint32_t dimension)
         : CollectionType(
-                TypeKind::ARRAY_TYPE,
-                "array_" + std::to_string(dimension) + "_" + content.name(),
-                DynamicType::Ptr(content))
+            TypeKind::ARRAY_TYPE,
+            "array_" + std::to_string(dimension) + "_" + content.name(),
+            DynamicType::Ptr(content))
         , dimension_(dimension)
-    {}
+    {
+    }
 
     /// \brief Construct an ArrayType.
     /// \param[in] content Content type of the array.
@@ -54,14 +56,17 @@ public:
             const DynamicTypeImpl&& content,
             uint32_t dimension)
         : CollectionType(
-                TypeKind::ARRAY_TYPE,
-                "array_" + std::to_string(dimension) + "_" + content.name(),
-                DynamicType::Ptr(std::move(content)))
+            TypeKind::ARRAY_TYPE,
+            "array_" + std::to_string(dimension) + "_" + content.name(),
+            DynamicType::Ptr(std::move(content)))
         , dimension_(dimension)
-    {}
+    {
+    }
 
-    ArrayType(const ArrayType& other) = default;
-    ArrayType(ArrayType&& other) = default;
+    ArrayType(
+            const ArrayType& other) = default;
+    ArrayType(
+            ArrayType&& other) = default;
 
     /// \brief Direct multidimensional ArrayType constructor
     /// Allows to create multidimensional ArrayTypes without explicitly create internal sub-arrays. For example:
@@ -89,7 +94,10 @@ public:
 
     /// \brief Dimension of the array.
     /// \returns The dimension.
-    uint32_t dimension() const { return dimension_; }
+    uint32_t dimension() const
+    {
+        return dimension_;
+    }
 
     virtual size_t memory_size() const override
     {
@@ -100,7 +108,7 @@ public:
             uint8_t* instance) const override
     {
         size_t block_size = content_type().memory_size();
-        for(uint32_t i = 0; i < dimension_; i++)
+        for (uint32_t i = 0; i < dimension_; i++)
         {
             content_type().construct_instance(instance + i * block_size);
         }
@@ -111,9 +119,9 @@ public:
             const uint8_t* source) const override
     {
         size_t block_size = content_type().memory_size();
-        if(content_type().is_constructed_type())
+        if (content_type().is_constructed_type())
         {
-            for(uint32_t i = 0; i < dimension_; i++)
+            for (uint32_t i = 0; i < dimension_; i++)
             {
                 content_type().copy_instance(target + i * block_size, source + i * block_size);
             }
@@ -130,8 +138,8 @@ public:
             const DynamicType& arg_other) const override
     {
         const DynamicType& other = (arg_other.kind() == TypeKind::ALIAS_TYPE)
-            ? static_cast<const AliasType&>(arg_other).rget()
-            : arg_other;
+                ? static_cast<const AliasType&>(arg_other).rget()
+                : arg_other;
 
         if (other.kind() == TypeKind::STRUCTURE_TYPE)
         {
@@ -145,21 +153,21 @@ public:
         }
 
         xtypes_assert(other.kind() == TypeKind::ARRAY_TYPE,
-            "Cannot copy data from different types: From '" << other.name() << "' to '" << name() << "'.");
+                "Cannot copy data from different types: From '" << other.name() << "' to '" << name() << "'.");
 
         const ArrayType& other_array = static_cast<const ArrayType&>(other);
         size_t block_size = content_type().memory_size();
         size_t other_block_size = other_array.content_type().memory_size();
         size_t min_dimension = std::min(dimension_, other_array.dimension_);
 
-        if(content_type().is_constructed_type() || block_size != other_block_size)
+        if (content_type().is_constructed_type() || block_size != other_block_size)
         {
-            for(uint32_t i = 0; i < min_dimension; i++)
+            for (uint32_t i = 0; i < min_dimension; i++)
             {
                 content_type().copy_instance_from_type(
-                        target + i * block_size,
-                        source + i * other_block_size,
-                        other_array.content_type());
+                    target + i * block_size,
+                    source + i * other_block_size,
+                    other_array.content_type());
             }
         }
         else //optimization when the type is primitive with same block_size
@@ -173,9 +181,9 @@ public:
             uint8_t* source) const override
     {
         size_t block_size = content_type().memory_size();
-        if(content_type().is_constructed_type())
+        if (content_type().is_constructed_type())
         {
-            for(uint32_t i = 0; i < dimension_; i++)
+            for (uint32_t i = 0; i < dimension_; i++)
             {
                 content_type().move_instance(target + i * block_size, source + i * block_size);
             }
@@ -189,10 +197,10 @@ public:
     virtual void destroy_instance(
             uint8_t* instance) const override
     {
-        if(content_type().is_constructed_type())
+        if (content_type().is_constructed_type())
         {
             size_t block_size = content_type().memory_size();
-            for(int32_t i = dimension_ - 1; i >= 0; i--)
+            for (int32_t i = dimension_ - 1; i >= 0; i--)
             {
                 content_type().destroy_instance(instance + i * block_size);
             }
@@ -204,10 +212,10 @@ public:
             const uint8_t* other_instance) const override
     {
         size_t block_size = content_type().memory_size();
-        if(content_type().is_constructed_type())
+        if (content_type().is_constructed_type())
         {
             bool comp = true;
-            for(uint32_t i = 0; i < dimension_; i++)
+            for (uint32_t i = 0; i < dimension_; i++)
             {
                 comp &= content_type().compare_instance(instance + i * block_size, other_instance + i * block_size);
             }
@@ -233,21 +241,21 @@ public:
             return other.is_compatible(*this);
         }
 
-        if(other.kind() != TypeKind::ARRAY_TYPE)
+        if (other.kind() != TypeKind::ARRAY_TYPE)
         {
             return TypeConsistency::NONE;
         }
 
         const ArrayType& other_array = static_cast<const ArrayType&>(other);
 
-        if(dimension() == other_array.dimension())
+        if (dimension() == other_array.dimension())
         {
             return TypeConsistency::EQUALS
-                | content_type().is_compatible(other_array.content_type());
+                   | content_type().is_compatible(other_array.content_type());
         }
 
         return TypeConsistency::IGNORE_ARRAY_BOUNDS
-            | content_type().is_compatible(other_array.content_type());
+               | content_type().is_compatible(other_array.content_type());
     }
 
     virtual void for_each_instance(
@@ -256,7 +264,7 @@ public:
     {
         visitor(node);
         size_t block_size = content_type().memory_size();
-        for(uint32_t i = 0; i < dimension_; i++)
+        for (uint32_t i = 0; i < dimension_; i++)
         {
             InstanceNode child(node, content_type(), node.instance + i * block_size, i, nullptr);
             content_type().for_each_instance(child, visitor);
@@ -309,12 +317,14 @@ public:
     }
 
 protected:
+
     virtual DynamicType* clone() const override
     {
         return new ArrayType(*this);
     }
 
 private:
+
     uint32_t dimension_;
 };
 

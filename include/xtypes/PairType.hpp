@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
-*/
+ */
 
 #ifndef EPROSIMA_XTYPES_PAIR_TYPE_HPP_
 #define EPROSIMA_XTYPES_PAIR_TYPE_HPP_
@@ -28,6 +28,7 @@ namespace xtypes {
 class PairType : public DynamicType
 {
 public:
+
     /// \brief Construct a PairType
     PairType(
             const DynamicType& first,
@@ -55,22 +56,26 @@ public:
         return *second_;
     }
 
-    void first(const DynamicType& first)
+    void first(
+            const DynamicType& first)
     {
         first_ = DynamicType::Ptr(first);
     }
 
-    void first(DynamicType&& first)
+    void first(
+            DynamicType&& first)
     {
         first_ = DynamicType::Ptr(std::move(first));
     }
 
-    void second(const DynamicType& second)
+    void second(
+            const DynamicType& second)
     {
         second_ = DynamicType::Ptr(second);
     }
 
-    void second(DynamicType&& second)
+    void second(
+            DynamicType&& second)
     {
         second_ = DynamicType::Ptr(std::move(second));
     }
@@ -101,8 +106,8 @@ public:
             const DynamicType& arg_other) const override
     {
         const DynamicType& other = (arg_other.kind() == TypeKind::ALIAS_TYPE)
-            ? static_cast<const AliasType&>(arg_other).rget()
-            : arg_other;
+                ? static_cast<const AliasType&>(arg_other).rget()
+                : arg_other;
 
         if (other.kind() == TypeKind::STRUCTURE_TYPE)
         {
@@ -214,6 +219,7 @@ public:
     }
 
 protected:
+
     DynamicType::Ptr first_;
     DynamicType::Ptr second_;
 

@@ -29,17 +29,19 @@
 namespace eprosima {
 namespace xtypes {
 
-template < template <typename...> class base, typename derived>
+template < template <typename ...> class base, typename derived>
 struct is_base_of_template_impl
 {
-    template<typename... Ts>
-    static constexpr std::true_type  test(const base<Ts...> *);
-    static constexpr std::false_type test(...);
+    template<typename ... Ts>
+    static constexpr std::true_type  test(
+            const base<Ts...>*);
+    static constexpr std::false_type test(
+            ...);
     using type = decltype(test(std::declval<derived*>()));
 };
 
 /// \brief Check if a class inherits from a templated class.
-template < template <typename...> class base, typename derived>
+template < template <typename ...> class base, typename derived>
 using is_base_of_template = typename is_base_of_template_impl<base, derived>::type;
 
 /// \brief Check if a C type can promote to a PrimitiveType or StringType.
@@ -61,6 +63,7 @@ using Primitive = typename std::enable_if<std::is_arithmetic<T>::value>::type;
 class ReadableDynamicDataRef
 {
 public:
+
     virtual ~ReadableDynamicDataRef() = default;
 
     /// \brief Deep equality operator. All DynamicData tree will be evaluated for equality.
@@ -93,11 +96,17 @@ public:
 
     /// \brief The representing type of this DynamicData.
     /// \returns a reference to the representing DynamicType
-    const DynamicType& type() const { return type_; }
+    const DynamicType& type() const
+    {
+        return type_;
+    }
 
     /// \brief Returns the id of the managed instance.
     /// \returns A unique id of the managed instace.
-    size_t instance_id() const { return size_t(instance_); }
+    size_t instance_id() const
+    {
+        return size_t(instance_);
+    }
 
     /// \brief String representing the DynamicData tree.
     /// \returns A string representing the DynamicData tree.
@@ -106,22 +115,22 @@ public:
     /// \brief Returns a value as primitive or string.
     /// \pre The DynamicData must represent a primitive, enumerated or string value.
     /// \returns the value stored in the DynamicData.
-    template<typename T, class = PrimitiveOrString<T>>
+    template<typename T, class = PrimitiveOrString<T> >
     const T& value() const
     {
         xtypes_assert((type_.kind() == TypeKind::STRING_TYPE && std::is_same<std::string, T>::value)
-            || (type_.kind() == TypeKind::WSTRING_TYPE && std::is_same<std::wstring, T>::value)
-            || (type_.kind() == TypeKind::STRING16_TYPE && std::is_same<std::u16string, T>::value)
-            || (type_.kind() == primitive_type<T>().kind())
-            || (type_.is_enumerated_type()),
-            "Expected type '" << type_.name()
-            << "' but '" << PrimitiveTypeKindTrait<T>::name << "' received while getting value.");
+                || (type_.kind() == TypeKind::WSTRING_TYPE && std::is_same<std::wstring, T>::value)
+                || (type_.kind() == TypeKind::STRING16_TYPE && std::is_same<std::u16string, T>::value)
+                || (type_.kind() == primitive_type<T>().kind())
+                || (type_.is_enumerated_type()),
+                "Expected type '" << type_.name()
+                                  << "' but '" << PrimitiveTypeKindTrait<T>::name << "' received while getting value.");
 
         if (type_.is_enumerated_type())
         {
             xtypes_assert(type_.memory_size() == sizeof(T),
-                "Incompatible types: '" << type_.name() << "' and '"
-                << PrimitiveTypeKindTrait<T>::name << "'.");
+                    "Incompatible types: '" << type_.name() << "' and '"
+                                            << PrimitiveTypeKindTrait<T>::name << "'.");
         }
 
         return *reinterpret_cast<T*>(instance_);
@@ -148,10 +157,10 @@ public:
             size_t index) const
     {
         xtypes_assert(type_.is_aggregation_type() || type_.is_collection_type() || type_.kind() == TypeKind::PAIR_TYPE,
-            "operator [size_t] isn't available for type '" << type_.name() << "'.");
+                "operator [size_t] isn't available for type '" << type_.name() << "'.");
         xtypes_assert(index < size(),
-            "operator [" << index << "] is out of bounds.");
-        if(type_.is_collection_type())
+                "operator [" << index << "] is out of bounds.");
+        if (type_.is_collection_type())
         {
             const CollectionType& collection = static_cast<const CollectionType&>(type_);
             // The following assert exists because it may be confusing by the user, it will return the pair instead of
@@ -229,18 +238,18 @@ public:
     size_t size() const
     {
         xtypes_assert(type_.is_collection_type() || type_.is_aggregation_type() || type_.kind() == TypeKind::PAIR_TYPE,
-            "size() isn't available for type '" << type_.name() << "'.");
-        if(type_.is_collection_type())
+                "size() isn't available for type '" << type_.name() << "'.");
+        if (type_.is_collection_type())
         {
             const CollectionType& collection = static_cast<const CollectionType&>(type_);
             return collection.get_instance_size(instance_);
         }
-        if(type_.is_aggregation_type())
+        if (type_.is_aggregation_type())
         {
             const AggregationType& aggregation = static_cast<const AggregationType&>(type_);
             return aggregation.members().size();
         }
-        if(type_.kind() == TypeKind::PAIR_TYPE)
+        if (type_.kind() == TypeKind::PAIR_TYPE)
         {
             return 2;
         }
@@ -254,7 +263,7 @@ public:
     size_t bounds() const
     {
         xtypes_assert(type_.is_collection_type(),
-            "bounds() isn't available for type '" << type_.name() << "'.");
+                "bounds() isn't available for type '" << type_.name() << "'.");
         if (type_.is_collection_type())
         {
             if (type_.kind() == TypeKind::ARRAY_TYPE)
@@ -275,18 +284,19 @@ public:
     /// \brief Returns a std::vector representing the underlying collection of types.
     /// \pre The collection must have primitive or string values.
     /// \returns a std::vector representing the internal collection.
-    template<typename T, class = PrimitiveOrString<T>>
+    template<typename T, class = PrimitiveOrString<T> >
     std::vector<T> as_vector() const
     {
         const CollectionType& collection = static_cast<const CollectionType&>(type_);
         xtypes_assert(type_.is_collection_type(),
-            "as_vector() isn't available for type '" << type_.name() << "'.");
+                "as_vector() isn't available for type '" << type_.name() << "'.");
         xtypes_assert((collection.content_type().kind() == TypeKind::STRING_TYPE && std::is_same<std::string, T>::value)
-            || (collection.content_type().kind() == TypeKind::WSTRING_TYPE && std::is_same<std::wstring, T>::value)
-            || (collection.content_type().kind() == TypeKind::STRING16_TYPE && std::is_same<std::u16string, T>::value)
-            || (collection.content_type().kind() == primitive_type<T>().kind()),
-            "as_vector<" << PrimitiveTypeKindTrait<T>::name << ">() isn't available for type '"
-            << type_.name() << "'.");
+                || (collection.content_type().kind() == TypeKind::WSTRING_TYPE && std::is_same<std::wstring, T>::value)
+                || (collection.content_type().kind() == TypeKind::STRING16_TYPE &&
+                std::is_same<std::u16string, T>::value)
+                || (collection.content_type().kind() == primitive_type<T>().kind()),
+                "as_vector<" << PrimitiveTypeKindTrait<T>::name << ">() isn't available for type '"
+                             << type_.name() << "'.");
 
         const T* location = reinterpret_cast<T*>(collection.get_instance_at(instance_, 0));
         return std::vector<T>(location, location + size());
@@ -301,73 +311,101 @@ public:
     /// \brief Class used by for_each() function to represent a readable DynamicData node in the tree.
     class ReadableNode
     {
-    public:
-        ReadableNode(const Instanceable::InstanceNode& instance_node) : internal_(instance_node) {}
+public:
+
+        ReadableNode(
+                const Instanceable::InstanceNode& instance_node)
+            : internal_(instance_node)
+        {
+        }
 
         /// \brief Check the parent existance in the tree.
         /// \returns true if has parent.
-        bool has_parent() const { return internal_.parent != nullptr; }
+        bool has_parent() const
+        {
+            return internal_.parent != nullptr;
+        }
 
         /// \brief Get the parent
         /// \returns A ReadableNode representing the parent in the DynamicData tree.
         ReadableNode parent() const
         {
             xtypes_assert(has_parent(),
-                "Called 'parent()' from a ReadableNode without parent. Call 'has_parent()' to ensure that the "
-                << "Node has parent.");
+                    "Called 'parent()' from a ReadableNode without parent. Call 'has_parent()' to ensure that the "
+                    << "Node has parent.");
             return ReadableNode(*internal_.parent);
         }
 
         /// \brief Get the associated data.
         /// \returns A readable reference of the data.
-        ReadableDynamicDataRef data() const { return ReadableDynamicDataRef(internal_.type, internal_.instance); }
+        ReadableDynamicDataRef data() const
+        {
+            return ReadableDynamicDataRef(internal_.type, internal_.instance);
+        }
 
         /// \brief Get the representing type.
         /// \returns The DynamicType associated to the data.
-        const DynamicType& type() const { return internal_.type; }
+        const DynamicType& type() const
+        {
+            return internal_.type;
+        }
 
         /// \brief Current deep in the DynamicData tree (starts at deep 0).
         /// \returns The current deep.
-        size_t deep() const { return internal_.deep; }
+        size_t deep() const
+        {
+            return internal_.deep;
+        }
 
         /// \brief The index used to access to this ReadableNode
         /// \returns The index used.
-        size_t from_index() const { return internal_.from_index; }
+        size_t from_index() const
+        {
+            return internal_.from_index;
+        }
 
         /// \brief The Member used to access to this ReadableNode
         /// \returns The member or null if the accessor is not an aggregation type.
-        const Member* from_member() const { return internal_.from_member; }
-    private:
+        const Member* from_member() const
+        {
+            return internal_.from_member;
+        }
+
+private:
+
         const Instanceable::InstanceNode& internal_;
     };
 
     /// \brief Iterate the DynamicData in deep. Each node visited will call to the user visitor function.
     /// \param[in] visitor User visitor function.
     /// \returns true if no exceptions by the user were throw. Otherwise, the user boolean exception value.
-    bool for_each(std::function<void(const ReadableNode& node)> visitor) const
+    bool for_each(
+            std::function<void(const ReadableNode& node)> visitor) const
     {
         Instanceable::InstanceNode root(type_, instance_);
         try
         {
             type_.for_each_instance(root, [&](const Instanceable::InstanceNode& instance_node)
-            {
-                visitor(ReadableNode(instance_node));
-            });
+                    {
+                        visitor(ReadableNode(instance_node));
+                    });
             return true;
         }
-        catch(bool value) { return value; }
+        catch (bool value){ return value; }
     }
 
     /// \brief Class used for iterate ReadableDynamicDataRef
     class Iterator
     {
-    public:
+public:
+
         Iterator(
                 const Iterator& it)
             : type_(it.type_)
             , instance_(it.instance_)
             , index_(it.index_)
-        {}
+        {
+        }
 
         Iterator& operator = (
                 const Iterator& other)
@@ -409,7 +447,7 @@ public:
             return prev;
         }
 
-    protected:
+protected:
 
         friend class ReadableDynamicDataRef;
 
@@ -433,7 +471,7 @@ public:
     Iterator begin() const
     {
         xtypes_assert(type_.is_collection_type(),
-            "begin() isn't available for type '" << type_.name() << "'.");
+                "begin() isn't available for type '" << type_.name() << "'.");
         return Iterator(*this, false);
     }
 
@@ -443,19 +481,21 @@ public:
     Iterator end() const
     {
         xtypes_assert(type_.is_collection_type(),
-            "end() isn't available for type '" << type_.name() << "'.");
+                "end() isn't available for type '" << type_.name() << "'.");
         return Iterator(*this, true);
     }
 
     class MemberPair
     {
-    public:
+public:
+
         MemberPair(
                 const Member& member,
                 uint8_t* data)
             : member_(member)
             , instance_(data)
-        {}
+        {
+        }
 
         const Member& member() const
         {
@@ -473,19 +513,22 @@ public:
             return member_.type().kind();
         }
 
-    protected:
+protected:
+
         const Member& member_;
         uint8_t* instance_;
     };
 
     class MemberIterator : public Iterator
     {
-    public:
+public:
+
         MemberIterator(
                 const MemberIterator& it)
             : Iterator (it)
             , ref_(it.ref_)
-        {}
+        {
+        }
 
         const MemberPair operator * () const
         {
@@ -512,18 +555,19 @@ public:
         MemberIterator begin() const
         {
             xtypes_assert(type_.is_aggregation_type(),
-                "begin() isn't available for type '" << type_.name() << "'.");
+                    "begin() isn't available for type '" << type_.name() << "'.");
             return MemberIterator(ref_, false);
         }
 
         MemberIterator end() const
         {
             xtypes_assert(type_.is_aggregation_type(),
-                "end() isn't available for type '" << type_.name() << "'.");
+                    "end() isn't available for type '" << type_.name() << "'.");
             return MemberIterator(ref_, true);
         }
 
-    protected:
+protected:
+
         friend class ReadableDynamicDataRef;
         friend class WritableDynamicDataRef;
 
@@ -536,6 +580,7 @@ public:
             , ref_(ref)
         {
         }
+
     };
 
     /// \brief Returns an iterable representation of an aggregation dynamic data.
@@ -544,17 +589,19 @@ public:
     MemberIterator items() const
     {
         xtypes_assert(type_.is_aggregation_type(),
-            "items() isn't available for type '" << type_.name() << "'.");
+                "items() isn't available for type '" << type_.name() << "'.");
         return MemberIterator(*this, false);
     }
 
 protected:
+
     ReadableDynamicDataRef(
             const DynamicType& type,
             uint8_t* source)
         : type_(type.kind() == TypeKind::ALIAS_TYPE ? static_cast<const AliasType&>(type).rget() : type)
         , instance_(source)
-    {}
+    {
+    }
 
     const DynamicType& type_;
     uint8_t* instance_;
@@ -562,18 +609,22 @@ protected:
     /// \brief protected access to other DynamicData instace.
     /// \param[in] other readable reference from who get the instance.
     /// \result The raw instance.
-    uint8_t* p_instance(const ReadableDynamicDataRef& other) const { return other.instance_; }
+    uint8_t* p_instance(
+            const ReadableDynamicDataRef& other) const
+    {
+        return other.instance_;
+    }
 
     ReadableDynamicDataRef operator_at_impl (
             const std::string& member_name,
             bool read_only = true) const
     {
         xtypes_assert(type_.is_aggregation_type(),
-            "operator [const std::string&] isn't available for type '" << type_.name() << "'.");
+                "operator [const std::string&] isn't available for type '" << type_.name() << "'.");
         const AggregationType& aggregation = static_cast<const AggregationType&>(type_);
         xtypes_assert(type_.kind() != TypeKind::PAIR_TYPE, "PairType doesn't have operator [const std::string&]");
         xtypes_assert(aggregation.has_member(member_name),
-            "Type '" << type_.name() << "' doesn't have a member named '" << member_name << "'.");
+                "Type '" << type_.name() << "' doesn't have a member named '" << member_name << "'.");
 
         if (type_.kind() == TypeKind::UNION_TYPE)
         {
@@ -585,7 +636,7 @@ protected:
             if (read_only)
             {
                 xtypes_assert(member_name == union_type.get_current_selection(instance_).name(),
-                              "Cannot retrieve a non-selected case member.");
+                        "Cannot retrieve a non-selected case member.");
             }
             union_type.select_case(instance_, member_name);
         }
@@ -594,11 +645,12 @@ protected:
         return ReadableDynamicDataRef(member.type(), instance_ + member.offset());
     }
 
-    template<typename T, class = Primitive<T>>
+    template<typename T, class = Primitive<T> >
     inline T _cast() const
     {
         xtypes_assert(type_.is_primitive_type() || type_.is_enumerated_type(),
-            "Expected a primitive type but '" << PrimitiveTypeKindTrait<T>::name << "' received while casting data.");
+                "Expected a primitive type but '" << PrimitiveTypeKindTrait<T>::name <<
+                        "' received while casting data.");
         switch (type_.kind())
         {
             case TypeKind::BOOLEAN_TYPE:
@@ -698,6 +750,7 @@ protected:
         }
         return T();
     }
+
 };
 
 
@@ -706,6 +759,7 @@ protected:
 class WritableDynamicDataRef : public ReadableDynamicDataRef
 {
 public:
+
     using ReadableDynamicDataRef::operator [];
     using ReadableDynamicDataRef::value;
     using ReadableDynamicDataRef::d;
@@ -721,7 +775,7 @@ public:
 
     /// \brief A shortcut of WritableDynamicDataRef::value()
     /// \returns A reference to this DynamicData.
-    template<typename T, class = PrimitiveOrString<T>>
+    template<typename T, class = PrimitiveOrString<T> >
     WritableDynamicDataRef& operator = (
             const T& other)
     {
@@ -755,10 +809,13 @@ public:
 
     /// \brief Request a readable reference from this DynamicData.
     /// \returns a ReadableDynamicDataRef identifying the writable DynamicData.
-    ReadableDynamicDataRef cref() const { return ReadableDynamicDataRef(*this); }
+    ReadableDynamicDataRef cref() const
+    {
+        return ReadableDynamicDataRef(*this);
+    }
 
     /// \brief See ReadableDynamicDataRef::value()
-    template<typename T, class = PrimitiveOrString<T>>
+    template<typename T, class = PrimitiveOrString<T> >
     const T& value()
     {
         return ReadableDynamicDataRef::value<T>();
@@ -784,7 +841,7 @@ public:
     WritableDynamicDataRef operator [] (
             size_t index)
     {
-        return ReadableDynamicDataRef::operator[](index);
+        return ReadableDynamicDataRef::operator [](index);
     }
 
     /// \brief Modifies the discriminator of an Union.
@@ -880,26 +937,27 @@ public:
     /// \brief Set a primitive or string value into the DynamicData
     /// \input[in] t The primitive, enumerated or string value.
     /// \pre The DynamicData must represent a PrimitiveType, EnumeratedType or W/StringType value.
-    template<typename T, class = PrimitiveOrString<T>>
-    void value(const T& t)
+    template<typename T, class = PrimitiveOrString<T> >
+    void value(
+            const T& t)
     {
         xtypes_assert((type_.kind() == TypeKind::STRING_TYPE && std::is_same<std::string, T>::value)
-            || (type_.kind() == TypeKind::WSTRING_TYPE && std::is_same<std::wstring, T>::value)
-            || (type_.kind() == TypeKind::STRING16_TYPE && std::is_same<std::u16string, T>::value)
-            || (type_.kind() == PrimitiveTypeKindTrait<T>::kind)
-            || (type_.is_enumerated_type()),
-            "Expected type '" << type_.name()
-                << "' but '" << PrimitiveTypeKindTrait<T>::name << "' received while setting value.");
+                || (type_.kind() == TypeKind::WSTRING_TYPE && std::is_same<std::wstring, T>::value)
+                || (type_.kind() == TypeKind::STRING16_TYPE && std::is_same<std::u16string, T>::value)
+                || (type_.kind() == PrimitiveTypeKindTrait<T>::kind)
+                || (type_.is_enumerated_type()),
+                "Expected type '" << type_.name()
+                                  << "' but '" << PrimitiveTypeKindTrait<T>::name << "' received while setting value.");
 
 
         if (type_.is_enumerated_type())
         {
             xtypes_assert(type_.memory_size() == sizeof(T),
-                "Incompatible types: '" << type_.name() << "' and '"
-                << PrimitiveTypeKindTrait<T>::name << "'.");
+                    "Incompatible types: '" << type_.name() << "' and '"
+                                            << PrimitiveTypeKindTrait<T>::name << "'.");
             const EnumeratedType<T>& enum_type = static_cast<const EnumeratedType<T>&>(type_);
             xtypes_assert(enum_type.is_allowed_value(t),
-                "Trying to set an invalid value for enumerated type '" << type_.name() << "'.");
+                    "Trying to set an invalid value for enumerated type '" << type_.name() << "'.");
         }
 
         type_.destroy_instance(instance_);
@@ -911,18 +969,19 @@ public:
     /// \pre The DynamicData must represent a SequenceType.
     /// \pre The sequence must have enough space to place this element or be unbounded.
     /// \returns The writable reference to this DynamicData
-    template<typename T, class = PrimitiveOrString<T>>
-    WritableDynamicDataRef& push(const T& t) // this = SequenceType
+    template<typename T, class = PrimitiveOrString<T> >
+    WritableDynamicDataRef& push(
+            const T& t)                      // this = SequenceType
     {
         xtypes_assert(type_.kind() == TypeKind::SEQUENCE_TYPE,
-            "push() is only available for sequence types but called for '" << type_.name() << "'.");
+                "push() is only available for sequence types but called for '" << type_.name() << "'.");
         const SequenceType& sequence = static_cast<const SequenceType&>(type_);
         xtypes_assert((sequence.content_type().kind() == TypeKind::STRING_TYPE && std::is_same<std::string, T>::value)
-            || (sequence.content_type().kind() == TypeKind::WSTRING_TYPE && std::is_same<std::wstring, T>::value)
-            || (sequence.content_type().kind() == TypeKind::STRING16_TYPE && std::is_same<std::u16string, T>::value)
-            || (sequence.content_type().kind() == primitive_type<T>().kind()),
-            "Expected type '" << static_cast<const SequenceType&>(type_).content_type().name()
-                << "' but '" << PrimitiveTypeKindTrait<T>::name << "' received while pushing value.");
+                || (sequence.content_type().kind() == TypeKind::WSTRING_TYPE && std::is_same<std::wstring, T>::value)
+                || (sequence.content_type().kind() == TypeKind::STRING16_TYPE && std::is_same<std::u16string, T>::value)
+                || (sequence.content_type().kind() == primitive_type<T>().kind()),
+                "Expected type '" << static_cast<const SequenceType&>(type_).content_type().name()
+                                  << "' but '" << PrimitiveTypeKindTrait<T>::name << "' received while pushing value.");
 
         uint8_t* element = sequence.push_instance(instance_, reinterpret_cast<const uint8_t*>(&t));
         xtypes_assert(element != nullptr, "Bound limit reached while pushing value."); (void) element;
@@ -934,10 +993,11 @@ public:
     /// \pre The DynamicData must represent a SequenceType.
     /// \pre The sequence must have enough space to place this element or be unbounded.
     /// \returns The writable reference to this DynamicData
-    WritableDynamicDataRef& push(const ReadableDynamicDataRef& data) // this = SequenceType
+    WritableDynamicDataRef& push(
+            const ReadableDynamicDataRef& data)                      // this = SequenceType
     {
         xtypes_assert(type_.kind() == TypeKind::SEQUENCE_TYPE,
-            "push() is only available for sequence types but called for '" << type_.name() << "'.");
+                "push() is only available for sequence types but called for '" << type_.name() << "'.");
         const SequenceType& sequence = static_cast<const SequenceType&>(type_);
 
         uint8_t* element = sequence.push_instance(instance_, p_instance(data));
@@ -952,21 +1012,23 @@ public:
     /// \pre The DynamicData must represent a SequenceType.
     /// \pre The bounds must be greater or equal to the new size.
     /// \returns The writable reference to this DynamicData
-    WritableDynamicDataRef& resize(size_t size) // this = SequenceType
+    WritableDynamicDataRef& resize(
+            size_t size)                        // this = SequenceType
     {
         xtypes_assert(type_.kind() == TypeKind::SEQUENCE_TYPE,
-            "resize() is only available for sequence types but called for '" << type_.name() << "'.");
+                "resize() is only available for sequence types but called for '" << type_.name() << "'.");
         size_t bound = bounds();
         xtypes_assert(!bound || bound >= size,
-            "The desired size (" << size << ") is bigger than maximum allowed size for the type '"
-            << type_.name() << "' (" << bounds() << ").");
+                "The desired size (" << size << ") is bigger than maximum allowed size for the type '"
+                                     << type_.name() << "' (" << bounds() << ").");
         const SequenceType& sequence = static_cast<const SequenceType&>(type_);
         sequence.resize_instance(instance_, size);
         return *this;
     }
 
     /// \brief (See ReadableDynamicData::for_each())
-    bool for_each(std::function<void(const ReadableNode& node)> visitor) const
+    bool for_each(
+            std::function<void(const ReadableNode& node)> visitor) const
     {
         return ReadableDynamicDataRef::for_each(visitor);
     }
@@ -974,46 +1036,58 @@ public:
     /// \brief Class used by for_each() function to represent a writable DynamicData node in the tree.
     class WritableNode : public ReadableNode
     {
-    public:
-        WritableNode(const Instanceable::InstanceNode& instance_node) : ReadableNode(instance_node) {}
+public:
+
+        WritableNode(
+                const Instanceable::InstanceNode& instance_node)
+            : ReadableNode(instance_node)
+        {
+        }
 
         /// \brief See ReadableNode::data()
         /// \returns A writable reference of the data.
-        WritableDynamicDataRef data() { return ReadableNode::data(); }
+        WritableDynamicDataRef data()
+        {
+            return ReadableNode::data();
+        }
+
     };
 
     /// \brief (See ReadableDynamicData::for_each())
     /// A writable specialization of ReadableDynamicDataRef::for_each() function.
-    bool for_each(std::function<void(WritableNode& node)> visitor)
+    bool for_each(
+            std::function<void(WritableNode& node)> visitor)
     {
         Instanceable::InstanceNode root(type_, instance_);
         try
         {
             type_.for_each_instance(root, [&](const Instanceable::InstanceNode& instance_node)
-            {
-                WritableNode node(instance_node);
-                visitor(node);
-            });
+                    {
+                        WritableNode node(instance_node);
+                        visitor(node);
+                    });
             return true;
         }
-        catch(bool value) { return value; }
+        catch (bool value){ return value; }
     }
 
     /// \brief Class used for iterate WritableDynamicDataRef
     class Iterator : public ReadableDynamicDataRef::Iterator
     {
-    public:
+public:
+
         Iterator(
                 const ReadableDynamicDataRef::Iterator& rit)
             : ReadableDynamicDataRef::Iterator (rit)
-        {}
+        {
+        }
 
         WritableDynamicDataRef operator * ()
         {
-            return ReadableDynamicDataRef::Iterator::operator*();
+            return ReadableDynamicDataRef::Iterator::operator *();
         }
 
-    protected:
+protected:
 
         friend class WritableDynamicDataRef;
 
@@ -1044,12 +1118,14 @@ public:
 
     class MemberPair : public ReadableDynamicDataRef::MemberPair
     {
-    public:
+public:
+
         MemberPair(
                 const Member& member,
                 uint8_t* data)
             : ReadableDynamicDataRef::MemberPair(member, data)
-        {}
+        {
+        }
 
         WritableDynamicDataRef data()
         {
@@ -1065,12 +1141,14 @@ public:
 
     class MemberIterator : public Iterator
     {
-    public:
+public:
+
         MemberIterator(
                 const MemberIterator& it)
             : Iterator(it)
             , ref_(it.ref_)
-        {}
+        {
+        }
 
         MemberPair operator * ()
         {
@@ -1104,7 +1182,8 @@ public:
             return ReadableDynamicDataRef::MemberIterator(ref_, true);
         }
 
-    protected:
+protected:
+
         friend class WritableDynamicDataRef;
 
         WritableDynamicDataRef& ref_;
@@ -1121,7 +1200,9 @@ public:
                 const ReadableDynamicDataRef::MemberIterator& mit)
             : Iterator (mit)
             , ref_(static_cast<WritableDynamicDataRef&>(const_cast<ReadableDynamicDataRef&>(mit.ref_)))
-        {}
+        {
+        }
+
     };
 
     /// \brief Returns an iterable representation of an aggregation dynamic data.
@@ -1130,7 +1211,7 @@ public:
     MemberIterator items()
     {
         xtypes_assert(type_.is_aggregation_type(),
-            "items() isn't available for type '" << type_.name() << "'.");
+                "items() isn't available for type '" << type_.name() << "'.");
         return MemberIterator(*this, false);
     }
 
@@ -1140,27 +1221,31 @@ public:
     ReadableDynamicDataRef::MemberIterator citems()
     {
         xtypes_assert(type_.is_aggregation_type(),
-            "citems() isn't available for type '" << type_.name() << "'.");
+                "citems() isn't available for type '" << type_.name() << "'.");
         return ReadableDynamicDataRef::MemberIterator(*this, false);
     }
 
 protected:
+
     WritableDynamicDataRef(
             const DynamicType& type,
             uint8_t* source)
         : ReadableDynamicDataRef(type, source)
-    {}
+    {
+    }
 
     /// \brief Internal cast from readable to writable
     WritableDynamicDataRef(
             const ReadableDynamicDataRef& other)
         : ReadableDynamicDataRef(other)
-    {}
+    {
+    }
 
     WritableDynamicDataRef(
             ReadableDynamicDataRef&& other)
         : ReadableDynamicDataRef(std::move(other))
-    {}
+    {
+    }
 
 };
 
@@ -1168,6 +1253,7 @@ protected:
 class DynamicData : public WritableDynamicDataRef
 {
 public:
+
     /// \brief Construct a DynamicData from a DynamicType specification.
     /// The required memory for holding the instance is reserved at this point.
     /// \param[in] type DynamicType from which the DynamicData is created.
@@ -1203,14 +1289,15 @@ public:
         : WritableDynamicDataRef(type, new uint8_t[type.memory_size()])
     {
         xtypes_assert(type_.is_compatible(other.type()) != TypeConsistency::NONE,
-            "Incompatible types in DynamicData(const ReadableDynamicDataRef&, const DynamicType&): '"
-              << type_.name() << "' isn't compatible with '" << other.type().name() << "'.");
+                "Incompatible types in DynamicData(const ReadableDynamicDataRef&, const DynamicType&): '"
+                << type_.name() << "' isn't compatible with '" << other.type().name() << "'.");
         memset(instance_, 0, type.memory_size());
         type_.copy_instance_from_type(instance_, p_instance(other), other.type());
     }
 
     /// \brief Copy constructor
-    DynamicData(const DynamicData& other)
+    DynamicData(
+            const DynamicData& other)
         : WritableDynamicDataRef(other.type_, new uint8_t[other.type_.memory_size()])
     {
         memset(instance_, 0, other.type().memory_size());
@@ -1218,7 +1305,8 @@ public:
     }
 
     /// \brief Move constructor
-    DynamicData(DynamicData&& other)
+    DynamicData(
+            DynamicData&& other)
         : WritableDynamicDataRef(other.type_, new uint8_t[other.type_.memory_size()])
     {
         memset(instance_, 0, other.type().memory_size());
@@ -1230,40 +1318,40 @@ public:
             const DynamicData& other)
     {
         xtypes_assert(type_.is_compatible(other.type()) == TypeConsistency::EQUALS,
-            "Cannot assign DynamicData of type '" << other.type().name() << "' to DynamicData of type '"
-            << type_.name() << "'.");
+                "Cannot assign DynamicData of type '" << other.type().name() << "' to DynamicData of type '"
+                                                      << type_.name() << "'.");
         type_.destroy_instance(instance_);
         type_.copy_instance(instance_, p_instance(other));
         return *this;
     }
 
     /// \brief See WritableDynamicDataRef::operator =()
-    template<typename T, class = PrimitiveOrString<T>>
+    template<typename T, class = PrimitiveOrString<T> >
     WritableDynamicDataRef& operator = (
             const T& other)
     {
-        return WritableDynamicDataRef::operator=(other);
+        return WritableDynamicDataRef::operator =(other);
     }
 
     /// \brief See WritableDynamicDataRef::operator =()
     WritableDynamicDataRef& operator = (
             const std::string& other)
     {
-        return WritableDynamicDataRef::operator=(other);
+        return WritableDynamicDataRef::operator =(other);
     }
 
     /// \brief See WritableDynamicDataRef::operator =()
     WritableDynamicDataRef& operator = (
             const std::wstring& other)
     {
-        return WritableDynamicDataRef::operator=(other);
+        return WritableDynamicDataRef::operator =(other);
     }
 
     /// \brief See WritableDynamicDataRef::operator =()
     WritableDynamicDataRef& operator = (
             const std::u16string& other)
     {
-        return WritableDynamicDataRef::operator=(other);
+        return WritableDynamicDataRef::operator =(other);
     }
 
     /// \brief Returns a new DynamicData with the sign changed.
@@ -1283,7 +1371,8 @@ public:
     /// \pre The DynamicData must represent a numeric integer value.
     /// \param[in] int Dummy value.
     /// returns The incremented DynamicData.
-    inline DynamicData operator ++ (int);
+    inline DynamicData operator ++ (
+            int);
 
     /// \brief Pre-decrements the current DynamicData in one unit.
     /// \pre The DynamicData must represent a numeric integer value.
@@ -1294,7 +1383,8 @@ public:
     /// \pre The DynamicData must represent a numeric integer value.
     /// \param[in] int Dummy value.
     /// returns The decremented DynamicData.
-    inline DynamicData operator -- (int);
+    inline DynamicData operator -- (
+            int);
 
     /// \brief Performs logical NOT operation upon a DynamicData.
     /// \pre The DynamicData must represent a numeric or boolean value.
@@ -1304,81 +1394,119 @@ public:
     /// \brief Performs logical AND operation between two DynamicData.
     /// \pre The DynamicData must represent logical or numeric values.
     /// \returns logical AND operation result.
-    inline bool operator && (const ReadableDynamicDataRef&) const;
+    inline bool operator && (
+            const ReadableDynamicDataRef&) const;
 
     /// \brief Performs logical OR operation between two DynamicData.
     /// \pre The DynamicData must represent logical or numeric values.
     /// \returns logical OR operation result.
-    inline bool operator || (const ReadableDynamicDataRef&) const;
+    inline bool operator || (
+            const ReadableDynamicDataRef&) const;
 
     /// \brief Performs logical LESS THAN operation between two DynamicData.
     /// \pre The DynamicData must represent logical or numeric values.
     /// \returns logical LESS THAN operation result.
-    inline bool operator < (const ReadableDynamicDataRef&) const;
+    inline bool operator < (
+            const ReadableDynamicDataRef&) const;
 
     /// \brief Performs logical GREATER THAN operation between two DynamicData.
     /// \pre The DynamicData must represent logical or numeric values.
     /// \returns logical GREATER THAN operation result.
-    inline bool operator > (const ReadableDynamicDataRef&) const;
+    inline bool operator > (
+            const ReadableDynamicDataRef&) const;
 
     /// \brief Performs logical LESS OR EQUAL THAN operation between two DynamicData.
     /// \pre The DynamicData must represent logical or numeric values.
     /// \returns logical LESS OR EQUAL THAN operation result.
-    inline bool operator <= (const ReadableDynamicDataRef&) const;
+    inline bool operator <= (
+            const ReadableDynamicDataRef&) const;
 
     /// \brief Performs logical GREATER OR EQUAL THAN operation between two DynamicData.
     /// \pre The DynamicData must represent logical or numeric values.
     /// \returns logical GREATER OR EQUAL THAN operation result.
-    inline bool operator >= (const ReadableDynamicDataRef&) const;
+    inline bool operator >= (
+            const ReadableDynamicDataRef&) const;
 
-    inline DynamicData operator * (const ReadableDynamicDataRef&) const;
-    inline DynamicData operator / (const ReadableDynamicDataRef&) const;
-    inline DynamicData operator % (const ReadableDynamicDataRef&) const;
-    inline DynamicData operator + (const ReadableDynamicDataRef&) const;
-    inline DynamicData operator - (const ReadableDynamicDataRef&) const;
-    inline DynamicData operator << (const ReadableDynamicDataRef&) const;
-    inline DynamicData operator >> (const ReadableDynamicDataRef&) const;
-    inline DynamicData operator & (const ReadableDynamicDataRef&) const;
-    inline DynamicData operator ^ (const ReadableDynamicDataRef&) const;
-    inline DynamicData operator | (const ReadableDynamicDataRef&) const;
+    inline DynamicData operator * (
+            const ReadableDynamicDataRef&) const;
+    inline DynamicData operator / (
+            const ReadableDynamicDataRef&) const;
+    inline DynamicData operator % (
+            const ReadableDynamicDataRef&) const;
+    inline DynamicData operator + (
+            const ReadableDynamicDataRef&) const;
+    inline DynamicData operator - (
+            const ReadableDynamicDataRef&) const;
+    inline DynamicData operator << (
+            const ReadableDynamicDataRef&) const;
+    inline DynamicData operator >> (
+            const ReadableDynamicDataRef&) const;
+    inline DynamicData operator & (
+            const ReadableDynamicDataRef&) const;
+    inline DynamicData operator ^ (
+            const ReadableDynamicDataRef&) const;
+    inline DynamicData operator | (
+            const ReadableDynamicDataRef&) const;
 
-    inline DynamicData& operator *= (const ReadableDynamicDataRef&);
-    inline DynamicData& operator /= (const ReadableDynamicDataRef&);
-    inline DynamicData& operator %= (const ReadableDynamicDataRef&);
-    inline DynamicData& operator += (const ReadableDynamicDataRef&);
-    inline DynamicData& operator -= (const ReadableDynamicDataRef&);
-    inline DynamicData& operator <<= (const ReadableDynamicDataRef&);
-    inline DynamicData& operator >>= (const ReadableDynamicDataRef&);
-    inline DynamicData& operator &= (const ReadableDynamicDataRef&);
-    inline DynamicData& operator ^= (const ReadableDynamicDataRef&);
-    inline DynamicData& operator |= (const ReadableDynamicDataRef&);
+    inline DynamicData& operator *= (
+            const ReadableDynamicDataRef&);
+    inline DynamicData& operator /= (
+            const ReadableDynamicDataRef&);
+    inline DynamicData& operator %= (
+            const ReadableDynamicDataRef&);
+    inline DynamicData& operator += (
+            const ReadableDynamicDataRef&);
+    inline DynamicData& operator -= (
+            const ReadableDynamicDataRef&);
+    inline DynamicData& operator <<= (
+            const ReadableDynamicDataRef&);
+    inline DynamicData& operator >>= (
+            const ReadableDynamicDataRef&);
+    inline DynamicData& operator &= (
+            const ReadableDynamicDataRef&);
+    inline DynamicData& operator ^= (
+            const ReadableDynamicDataRef&);
+    inline DynamicData& operator |= (
+            const ReadableDynamicDataRef&);
     template <typename B>
     using isBaseDynamicDataCRef = std::enable_if<!std::is_base_of<ReadableDynamicDataRef, B>::value>;
 
     template <typename T, typename = typename isBaseDynamicDataCRef<T>::type>
-    inline DynamicData& operator *= (const T&);
+    inline DynamicData& operator *= (
+            const T&);
     template <typename T, typename = typename isBaseDynamicDataCRef<T>::type>
-    inline DynamicData& operator /= (const T&);
+    inline DynamicData& operator /= (
+            const T&);
     template <typename T, typename = typename isBaseDynamicDataCRef<T>::type>
-    inline DynamicData& operator %= (const T&);
+    inline DynamicData& operator %= (
+            const T&);
     template <typename T, typename = typename isBaseDynamicDataCRef<T>::type>
-    inline DynamicData& operator += (const T&);
+    inline DynamicData& operator += (
+            const T&);
     template <typename T, typename = typename isBaseDynamicDataCRef<T>::type>
-    inline DynamicData& operator -= (const T&);
+    inline DynamicData& operator -= (
+            const T&);
     template <typename T, typename = typename isBaseDynamicDataCRef<T>::type>
-    inline DynamicData& operator <= (const T&);
+    inline DynamicData& operator <= (
+            const T&);
     template <typename T, typename = typename isBaseDynamicDataCRef<T>::type>
-    inline DynamicData& operator >= (const T&);
+    inline DynamicData& operator >= (
+            const T&);
     template <typename T, typename = typename isBaseDynamicDataCRef<T>::type>
-    inline DynamicData& operator <<= (const T&);
+    inline DynamicData& operator <<= (
+            const T&);
     template <typename T, typename = typename isBaseDynamicDataCRef<T>::type>
-    inline DynamicData& operator >>= (const T&);
+    inline DynamicData& operator >>= (
+            const T&);
     template <typename T, typename = typename isBaseDynamicDataCRef<T>::type>
-    inline DynamicData& operator &= (const T&);
+    inline DynamicData& operator &= (
+            const T&);
     template <typename T, typename = typename isBaseDynamicDataCRef<T>::type>
-    inline DynamicData& operator ^= (const T&);
+    inline DynamicData& operator ^= (
+            const T&);
     template <typename T, typename = typename isBaseDynamicDataCRef<T>::type>
-    inline DynamicData& operator |= (const T&);
+    inline DynamicData& operator |= (
+            const T&);
 
     virtual ~DynamicData() override
     {
@@ -1388,7 +1516,10 @@ public:
 
     /// \brief Request a writable reference from this DynamicData.
     /// \returns a WritableDynamicDataRef identifying the DynamicData.
-    WritableDynamicDataRef ref() const { return WritableDynamicDataRef(*this); }
+    WritableDynamicDataRef ref() const
+    {
+        return WritableDynamicDataRef(*this);
+    }
 
 };
 

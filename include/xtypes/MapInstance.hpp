@@ -30,6 +30,7 @@ namespace xtypes {
 class MapInstance
 {
 public:
+
     /// \brief Construct a MapInstance
     /// \param[in] content Content of the map
     /// \param[in] capacity Reserved memory for the map.
@@ -53,7 +54,7 @@ public:
     {
         init_memory(memory_, capacity_);
 
-        if(memory_ != nullptr)
+        if (memory_ != nullptr)
         {
             copy_content(other, size_);
         }
@@ -73,7 +74,7 @@ public:
     {
         init_memory(memory_, capacity_);
 
-        if(memory_ != nullptr)
+        if (memory_ != nullptr)
         {
             copy_content(other, size_);
         }
@@ -94,15 +95,15 @@ public:
     bool operator == (
             const MapInstance& other) const
     {
-        if(other.size() != size_)
+        if (other.size() != size_)
         {
             return false;
         }
 
-        if(content_.first().is_constructed_type() || content_.second().is_constructed_type())
+        if (content_.first().is_constructed_type() || content_.second().is_constructed_type())
         {
             bool comp = true;
-            for(uint32_t i = 0; i < size_; i++)
+            for (uint32_t i = 0; i < size_; i++)
             {
                 comp &= content_.compare_instance(memory_ + i * block_size_, other.memory_ + i * block_size_);
             }
@@ -128,7 +129,7 @@ public:
             const uint8_t* instance,
             uint32_t bounds)
     {
-        if(memory_ == nullptr || size_ == capacity_)
+        if (memory_ == nullptr || size_ == capacity_)
         {
             realloc((capacity_ > 0) ? capacity_ * 2 : 1, bounds);
         }
@@ -163,7 +164,7 @@ public:
     bool contains_key(
             const uint8_t* key_instance) const
     {
-        return operator[](key_instance) != nullptr;
+        return operator [](key_instance) != nullptr;
     }
 
     size_t index_of(
@@ -174,7 +175,10 @@ public:
 
     /// \brief Size of the map.
     /// \returns Size of the map.
-    uint32_t size() const { return size_; }
+    uint32_t size() const
+    {
+        return size_;
+    }
 
     uint64_t map_hash() const
     {
@@ -191,6 +195,7 @@ public:
     }
 
 private:
+
     friend class MapType;
 
     const PairType& content_;
@@ -263,17 +268,17 @@ private:
             realloc(min_size, bounds);
         }
 
-        if(content_.first().is_constructed_type()
-            || content_.second().is_constructed_type()
-            || content_.first().memory_size() != other_first_size
-            || content_.second().memory_size() != other_second_size)
+        if (content_.first().is_constructed_type()
+                || content_.second().is_constructed_type()
+                || content_.first().memory_size() != other_first_size
+                || content_.second().memory_size() != other_second_size)
         {
-            for(uint32_t i = 0; i < min_size; i++)
+            for (uint32_t i = 0; i < min_size; i++)
             {
                 content_.copy_instance_from_type(
-                        memory_ + i * block_size_,
-                        other.memory_ + i * other.content_.memory_size(),
-                        other.content_);
+                    memory_ + i * block_size_,
+                    other.memory_ + i * other.content_.memory_size(),
+                    other.content_);
             }
         }
         else //optimization when the pair are both primitive with same size
@@ -290,13 +295,13 @@ private:
     {
         if (source != nullptr)
         {
-            if(content_.first().is_constructed_type() || content_.second().is_constructed_type())
+            if (content_.first().is_constructed_type() || content_.second().is_constructed_type())
             {
                 if (overlap && check_overlap(target, source))
                 {
                     // Creating a place
                     uint32_t to_move = size_ - get_key_index(source);
-                    for(uint32_t i = to_move; i > 0; --i)
+                    for (uint32_t i = to_move; i > 0; --i)
                     {
                         content_.move_instance(target + (i - 1) * block_size_, source + (i - 1) * block_size_);
                     }
@@ -304,7 +309,7 @@ private:
                 else
                 {
                     // Moving full memory
-                    for(uint32_t i = 0; i < size_; ++i)
+                    for (uint32_t i = 0; i < size_; ++i)
                     {
                         content_.move_instance(target + i * block_size_, source + i * block_size_);
                     }
@@ -331,8 +336,8 @@ private:
         uint8_t* place = find_place(instance);
         xtypes_assert(
             size_ == 0 ||
-                place == get_element(size_) || // Insert at the end
-                hash(instance) != hash(place),
+            place == get_element(size_) ||     // Insert at the end
+            hash(instance) != hash(place),
             "Key already exists.");
         if (place != get_element(size_))
         {
@@ -438,11 +443,11 @@ private:
 
     void free_memory()
     {
-        if(memory_ != nullptr)
+        if (memory_ != nullptr)
         {
-            if(content_.is_constructed_type())
+            if (content_.is_constructed_type())
             {
-                for(int32_t i = capacity_ - 1; i >= 0; i--)
+                for (int32_t i = capacity_ - 1; i >= 0; i--)
                 {
                     content_.destroy_instance(memory_ + i * block_size_);
                 }
