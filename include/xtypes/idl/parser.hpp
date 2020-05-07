@@ -682,23 +682,31 @@ private:
             switch (node->tag){
                 case "IDENTIFIER"_:
                 {
-                    std::string name = resolve_identifier(node, node->token, outer, true);
-                    if (!outer->has_submodule(name))
+                    if (node->original_name == "IDENTIFIER") // MODULE
                     {
-                        // New scope
-                        outer->create_submodule(name);
-                        scope = outer->submodule(name);
-                        context_->log(log::LogLevel::DEBUG, "MODULE_DCL",
-                                "New submodule: " + scope->scope(),
-                                ast);
+                        std::string name = resolve_identifier(node, node->token, outer, true);
+                        if (!outer->has_submodule(name))
+                        {
+                            // New scope
+                            outer->create_submodule(name);
+                            scope = outer->submodule(name);
+                            context_->log(log::LogLevel::DEBUG, "MODULE_DCL",
+                                    "New submodule: " + scope->scope(),
+                                    ast);
+                        }
+                        else
+                        {
+                            // Adding to an already defined scope
+                            scope = outer->submodule(name);
+                            context_->log(log::LogLevel::DEBUG, "MODULE_DCL",
+                                    "Existing submodule: " + scope->scope(),
+                                    ast);
+                        }
                     }
                     else
                     {
-                        // Adding to an already defined scope
-                        scope = outer->submodule(name);
-                        context_->log(log::LogLevel::DEBUG, "MODULE_DCL",
-                                "Existing submodule: " + scope->scope(),
-                                ast);
+                        // Empty struct
+                        struct_def(node, scope);
                     }
                     break;
                 }
