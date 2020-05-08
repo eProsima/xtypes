@@ -25,8 +25,8 @@ using namespace std;
 using namespace eprosima::xtypes;
 
 /**********************************
- *        UnionType Tests         *
- **********************************/
+*        UnionType Tests         *
+**********************************/
 
 TEST (UnionType, checks_and_access)
 {
@@ -35,19 +35,20 @@ TEST (UnionType, checks_and_access)
     EXPECT_EQ(TypeKind::UNION_TYPE, un.kind());
 
     size_t mem_size = 0;
-    mem_size+=sizeof(bool); // the discriminator is bool
+    mem_size += sizeof(bool); // the discriminator is bool
 
     ASSERT_OR_EXCEPTION({un.add_case_member<bool>({true}, Member("discriminator", primitive_type<uint32_t>()));},
-                        "is reserved");
+            "is reserved");
 
-    ASSERT_OR_EXCEPTION({un.add_case_member<int64_t>({DEFAULT_UNION_LABEL}, Member("default_label", primitive_type<uint32_t>()));},
-                        "is reserved");
+    ASSERT_OR_EXCEPTION({un.add_case_member<int64_t>({DEFAULT_UNION_LABEL}, Member("default_label",
+                         primitive_type<uint32_t>()));},
+            "is reserved");
 
     ASSERT_OR_EXCEPTION({un.add_case_member<size_t>({}, Member("no_labels", primitive_type<uint32_t>()));},
-                        "without labels");
+            "without labels");
 
     un.add_case_member<bool>({true}, Member("bool", primitive_type<bool>()));
-    mem_size+=sizeof(bool);
+    mem_size += sizeof(bool);
     EXPECT_EQ(mem_size, un.memory_size());
 
     un.add_case_member<bool>({false}, Member("uint8_t", primitive_type<uint8_t>()));
@@ -55,7 +56,7 @@ TEST (UnionType, checks_and_access)
     EXPECT_EQ(mem_size, un.memory_size());
 
     ASSERT_OR_EXCEPTION({un.add_case_member<bool>({true}, Member("label_taken", primitive_type<uint32_t>()));},
-                        "already in use");
+            "already in use");
 
     DynamicData union_data(un);
     ASSERT_OR_EXCEPTION({bool data = union_data.get_member("bool"); (void)data;}, "member selected");
@@ -252,4 +253,22 @@ TEST (UnionType, labels_as_string)
 
     DynamicData data(union_type);
     EXPECT_EQ(data.d().value<uint32_t>(), static_cast<uint32_t>(100));
+}
+
+// Regression test for #8366
+TEST (UnionType, changing_several_discriminators)
+{
+    UnionType union_type("union_for_disc", primitive_type<uint32_t>());
+    union_type.add_case_member<uint32_t>({6}, Member("field_1", primitive_type<uint32_t>()));
+    union_type.add_case_member<uint32_t>({1}, Member("field_2", primitive_type<uint8_t>()));
+
+    DynamicData data1(union_type);
+    data1["field_2"] = static_cast<uint8_t>(3);
+    EXPECT_EQ(data1.get_member("field_2").value<uint8_t>(), static_cast<uint8_t>(3));
+
+    DynamicData data2(union_type);
+    data2["field_1"] = 1024u;
+    EXPECT_EQ(data2.get_member("field_1").value<uint32_t>(), 1024u);
+
+    EXPECT_EQ(data1.get_member("field_2").value<uint8_t>(), static_cast<uint8_t>(3));
 }
