@@ -850,7 +850,7 @@ public:
     /// \pre The DynamicData must represent an UnionType.
     /// \pre The new discriminator value must be a valid label for the current selected value.
     void d(
-            size_t disc)
+            int64_t disc)
     {
         xtypes_assert(type_.kind() == TypeKind::UNION_TYPE, "discriminator is only available for UnionType.");
         UnionType& un = const_cast<UnionType&>(static_cast<const UnionType&>(type_));

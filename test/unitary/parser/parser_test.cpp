@@ -1295,7 +1295,7 @@ TEST (IDLParser, union_tests)
     data["wstr_b"] = L"Testing Wstring";
     EXPECT_EQ(data.d().value<uint32_t>(), 1);
 
-    EXPECT_EQ(data["union_c"].d().value<size_t>(), static_cast<size_t>(DEFAULT_UNION_LABEL));
+    EXPECT_EQ(data["union_c"].d().value<size_t>(), static_cast<size_t>(default_union_label(sizeof(uint64_t))));
     data["union_c"]["my_string"] = "Correct";
     data["union_c"]["my_float"] = 3.14f;
     EXPECT_EQ(data["union_c"].d().value<size_t>(), 2);
@@ -1485,7 +1485,8 @@ TEST (IDLParser, empty_struct)
 
 TEST (IDLParser, scoped_empty_struct)
 {
-    Context context = parse(R"(
+    Context context = parse(
+        R"(
         module a
         {
             module b

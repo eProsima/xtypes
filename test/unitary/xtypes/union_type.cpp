@@ -40,7 +40,7 @@ TEST (UnionType, checks_and_access)
     ASSERT_OR_EXCEPTION({un.add_case_member<bool>({true}, Member("discriminator", primitive_type<uint32_t>()));},
             "is reserved");
 
-    ASSERT_OR_EXCEPTION({un.add_case_member<int64_t>({DEFAULT_UNION_LABEL}, Member("default_label",
+    ASSERT_OR_EXCEPTION({un.add_case_member<int64_t>({default_union_label(sizeof(bool))}, Member("default_label",
                          primitive_type<uint32_t>()));},
             "is reserved");
 
@@ -233,7 +233,7 @@ TEST (UnionType, default_behavior)
     union_type.add_case_member(labels, Member("a", primitive_type<uint32_t>()));
 
     DynamicData data(union_type);
-    EXPECT_EQ(data.d().value<uint32_t>(), static_cast<uint32_t>(DEFAULT_UNION_LABEL));
+    EXPECT_EQ(data.d().value<uint32_t>(), static_cast<uint32_t>(default_union_label(sizeof(uint32_t))));
     data["default"] = my_enum.value("C");
     EXPECT_EQ(data.get_member("default").value<uint32_t>(), 9);
 }
