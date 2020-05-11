@@ -38,8 +38,20 @@ class ReadableDynamicDataRef;
 class WritableDynamicDataRef;
 
 static const std::string UNION_DISCRIMINATOR("discriminator");
-static const int64_t DEFAULT_UNION_LABEL = std::numeric_limits<int64_t>::max();
-static const int64_t INVALID_UNION_LABEL = DEFAULT_UNION_LABEL - 1;
+
+constexpr int64_t default_union_label(
+        size_t type_size)
+{
+    return std::numeric_limits<int64_t>::max() >> ((sizeof(int64_t) - type_size) * 8);
+}
+
+template<typename T>
+constexpr int64_t shrink_label(
+        T value,
+        size_t type_size)
+{
+    return static_cast<int64_t>(value) & (std::numeric_limits<uint64_t>::max()  >> ((sizeof(int64_t) - type_size) * 8));
+}
 
 /// \brief DynamicType representing an union.
 /// A UnionType represents a TypeKind::UNION_TYPE.
@@ -54,8 +66,9 @@ public:
             const DynamicType& discriminator)
         : AggregationType(TypeKind::UNION_TYPE, name)
         , memory_size_(0)
-        , default_(INVALID_UNION_LABEL)
-        , active_member_(nullptr)
+        , default_value_(default_union_label(discriminator.memory_size()))
+        , invalid_value_(default_value_ - 1)
+        , default_(invalid_value_)
         , maximum_case_member_memory_(0)
     {
         xtypes_assert(
@@ -86,7 +99,7 @@ public:
         // Check labels
         for (T label : labels)
         {
-            int64_t l = static_cast<int64_t>(label);
+            int64_t l = shrink_label<T>(label, disc()->type().memory_size());
             check_label_value(l);
             xtypes_assert(
                 labels_.count(l) == 0,
@@ -108,14 +121,14 @@ public:
         }
 
         // Add labels
-        int64_t first_label = DEFAULT_UNION_LABEL;
+        int64_t first_label = default_value_;
         for (T label : labels)
         {
-            int64_t l = static_cast<int64_t>(label);
-            if (l != DEFAULT_UNION_LABEL)
+            int64_t l = shrink_label<T>(label, disc()->type().memory_size());
+            if (l != default_value_)
             {
                 labels_[l] = inner.name();
-                if (first_label == DEFAULT_UNION_LABEL)
+                if (first_label == default_value_)
                 {
                     first_label = l;
                 }
@@ -124,9 +137,9 @@ public:
 
         if (is_default)
         {
-            xtypes_assert(default_ == INVALID_UNION_LABEL, "Cannot set more than one case member as default.");
+            xtypes_assert(default_ == invalid_value_, "Cannot set more than one case member as default.");
             default_ = first_label;
-            if (default_ == DEFAULT_UNION_LABEL)
+            if (default_ == default_value_)
             {
                 labels_[default_] = inner.name(); // If this default has no other labels, must be added now.
             }
@@ -191,7 +204,7 @@ public:
         std::vector<int64_t> result;
         for (const auto& pair : labels_)
         {
-            if (pair.second == member && pair.first != DEFAULT_UNION_LABEL)
+            if (pair.second == member && pair.first != default_value_)
             {
                 result.push_back(pair.first);
             }
@@ -202,7 +215,7 @@ public:
     /// \brief Returns the default case member name.
     std::string get_default() const
     {
-        if (default_ != INVALID_UNION_LABEL)
+        if (default_ != invalid_value_)
         {
             return labels_.at(default_);
         }
@@ -213,7 +226,7 @@ public:
     bool is_default(
             const std::string& name) const
     {
-        if (default_ != INVALID_UNION_LABEL)
+        if (default_ != invalid_value_)
         {
             const std::string& member = labels_.at(default_);
             return member == name;
@@ -244,12 +257,15 @@ public:
         disc()->type().construct_instance(instance);
 
         // If a default exists, built it too. And set it as active.
-        if (default_ != INVALID_UNION_LABEL)
+        if (default_ != invalid_value_)
         {
             const Member& def = member(labels_.at(default_));
             def.type().construct_instance(instance + def.offset());
-            active_member_ = &const_cast<Member&>(def);
-            select_disc(instance, default_);
+            current_label(instance, default_);
+        }
+        else
+        {
+            current_label(instance, invalid_value_);
         }
     }
 
@@ -258,11 +274,10 @@ public:
             const uint8_t* source) const override
     {
         disc()->type().copy_instance(target, source);
-
-        if (active_member_ != nullptr)
-        {
-            active_member_->type().copy_instance(target + active_member_->offset(), source + active_member_->offset());
-        }
+        int64_t label = current_label(disc()->type(), source);
+        xtypes_assert(labels_.count(label) != 0, "Stored label in source is invalid");
+        Member* member = &const_cast<Member&>(AggregationType::member(labels_.at(label)));
+        member->type().copy_instance(target + member->offset(), source + member->offset());
     }
 
     virtual void copy_instance_from_type(
@@ -276,7 +291,7 @@ public:
 
             xtypes_assert(alias.rget().kind() == TypeKind::UNION_TYPE,
                     "Cannot copy data from different types: From '" << alias.rget().name() << "' to '" << name() <<
-                            "'.");
+                    "'.");
         }
         else
         {
@@ -288,19 +303,14 @@ public:
         Member* disc_ = disc();
         disc_->type().copy_instance_from_type(target, source, other_union.disc()->type());
 
-        if (active_member_ != nullptr)
+        int64_t label = current_label(disc_->type(), target);
+        if (0 < labels_.count(label))
         {
-            if (other_union.active_member_ != nullptr)
-            {
-                active_member_->type().copy_instance_from_type(
-                    target + active_member_->offset(),
-                    source + other_union.active_member_->offset(),
-                    other_union.active_member_->type());
-            }
-            else
-            {
-                active_member_->type().construct_instance(target + active_member_->offset());
-            }
+            Member* member = &const_cast<Member&>(AggregationType::member(labels_.at(label)));
+            member->type().copy_instance_from_type(
+                target + member->offset(),
+                source + member->offset(),
+                member->type());
         }
     }
 
@@ -310,11 +320,12 @@ public:
             bool initialized) const override
     {
         disc()->type().move_instance(target, source, initialized);
-
-        if (active_member_ != nullptr)
+        int64_t label = current_label(disc()->type(), target);
+        if (0 < labels_.count(label))
         {
-            active_member_->type().move_instance(target + active_member_->offset(),
-                    source + active_member_->offset(), initialized);
+            Member* member = &const_cast<Member&>(AggregationType::member(labels_.at(label)));
+            member->type().move_instance(target + member->offset(),
+                    source + member->offset(), initialized);
         }
     }
 
@@ -322,10 +333,11 @@ public:
             uint8_t* instance) const override
     {
         disc()->type().destroy_instance(instance);
-
-        if (active_member_ != nullptr)
+        int64_t label = current_label(disc()->type(), instance);
+        if (0 < labels_.count(label))
         {
-            active_member_->type().destroy_instance(instance + active_member_->offset());
+            Member* member = &const_cast<Member&>(AggregationType::member(labels_.at(label)));
+            member->type().destroy_instance(instance + member->offset());
         }
     }
 
@@ -337,13 +349,14 @@ public:
 
         if (result)
         {
-            // Compare active members
-            if (active_member_ != nullptr)
+            int64_t label = current_label(disc()->type(), instance);
+            if (0 < labels_.count(label))
             {
-                result =
-                        result
-                        && active_member_->type().compare_instance(instance + active_member_->offset(),
-                                other_instance + active_member_->offset());
+                Member* member = &const_cast<Member&>(AggregationType::member(labels_.at(label)));
+                // Compare active members
+                result = result
+                        && member->type().compare_instance(instance + member->offset(),
+                                other_instance + member->offset());
             }
         }
 
@@ -409,14 +422,16 @@ public:
     {
         int64_t disc_value = current_label(disc()->type(), node.instance);
 
-        xtypes_assert(active_member_ != nullptr, "UnionType '" << name() << "' doesn't have a case member selected.");
+        xtypes_assert(0 < labels_.count(disc_value),
+                "UnionType '" << name() << "' doesn't have a case member selected.");
+        Member* member = &const_cast<Member&>(AggregationType::member(labels_.at(disc_value)));
         visitor(node);
         InstanceNode child(
             node,
-            active_member_->type(),
-            node.instance + active_member_->offset(),
-            disc_value, active_member_);
-        active_member_->type().for_each_instance(child, visitor);
+            member->type(),
+            node.instance + member->offset(),
+            disc_value, member);
+        member->type().for_each_instance(child, visitor);
     }
 
     virtual void for_each_type(
@@ -436,9 +451,10 @@ public:
             const uint8_t* instance) const override
     {
         uint64_t h = disc()->type().hash(instance);
-        if (active_member_ != nullptr)
+        if (0 < labels_.count(h))
         {
-            Instanceable::hash_combine(h, active_member_->type().hash(instance + active_member_->offset()));
+            Member* member = &const_cast<Member&>(AggregationType::member(labels_.at(h)));
+            Instanceable::hash_combine(h, member->type().hash(instance + member->offset()));
         }
         return h;
     }
@@ -488,7 +504,7 @@ protected:
     void check_label_value(
             int64_t label)
     {
-        xtypes_assert(label != DEFAULT_UNION_LABEL, "Label '" << label << "' is reserved.");
+        xtypes_assert(label != default_value_, "Label '" << label << "' is reserved.");
         DynamicType* type = &const_cast<DynamicType&>(disc()->type());
 
         if (type->kind() == TypeKind::ALIAS_TYPE)
@@ -521,12 +537,6 @@ protected:
         switch (type.kind())
         {
             case TypeKind::BOOLEAN_TYPE:
-            {
-                bool lvalue = *reinterpret_cast<bool*>(label_instance);
-                int64_t new_value = static_cast<int64_t>(lvalue);
-                current_label(instance, new_value);
-            }
-            break;
             case TypeKind::INT_8_TYPE:
             {
                 int8_t lvalue = *reinterpret_cast<int8_t*>(label_instance);
@@ -639,12 +649,6 @@ protected:
         switch (kind)
         {
             case TypeKind::BOOLEAN_TYPE:
-            {
-                bool lvalue = static_cast<bool>(new_value);
-                bool& value = *reinterpret_cast<bool*>(instance);
-                value = lvalue;
-            }
-            break;
             case TypeKind::INT_8_TYPE:
             {
                 int8_t lvalue = static_cast<int8_t>(new_value);
@@ -743,7 +747,7 @@ protected:
     /// \brief This method returns the value of the discriminator represented by instance and its type.
     int64_t current_label(
             const DynamicType& type,
-            uint8_t* instance) const
+            const uint8_t* instance) const
     {
         // Direct instance memory hack to avoid using DynamicData
         // NOTE: THe discriminator offset is always 0.
@@ -751,80 +755,75 @@ protected:
         switch (type.kind())
         {
             case TypeKind::BOOLEAN_TYPE:
-            {
-                bool value = *reinterpret_cast<bool*>(instance);
-                disc_value = static_cast<int64_t>(value);
-            }
-            break;
             case TypeKind::INT_8_TYPE:
             {
-                int8_t value = *reinterpret_cast<int8_t*>(instance);
+                int8_t value = *reinterpret_cast<const int8_t*>(instance);
                 disc_value = static_cast<int64_t>(value);
             }
             break;
             case TypeKind::UINT_8_TYPE:
             {
-                uint8_t value = *reinterpret_cast<uint8_t*>(instance);
+                uint8_t value = *reinterpret_cast<const uint8_t*>(instance);
                 disc_value = static_cast<int64_t>(value);
             }
             break;
             case TypeKind::INT_16_TYPE:
             {
-                int16_t value = *reinterpret_cast<int16_t*>(instance);
+                int16_t value = *reinterpret_cast<const int16_t*>(instance);
                 disc_value = static_cast<int64_t>(value);
             }
             break;
             case TypeKind::UINT_16_TYPE:
             {
-                uint16_t value = *reinterpret_cast<uint16_t*>(instance);
+                uint16_t value = *reinterpret_cast<const uint16_t*>(instance);
                 disc_value = static_cast<int64_t>(value);
             }
             break;
             case TypeKind::INT_32_TYPE:
             {
-                int32_t value = *reinterpret_cast<int32_t*>(instance);
+                int32_t value = *reinterpret_cast<const int32_t*>(instance);
                 disc_value = static_cast<int64_t>(value);
             }
             break;
             case TypeKind::UINT_32_TYPE:
             {
-                uint32_t value = *reinterpret_cast<uint32_t*>(instance);
+                uint32_t value = *reinterpret_cast<const uint32_t*>(instance);
                 disc_value = static_cast<int64_t>(value);
             }
             break;
             case TypeKind::INT_64_TYPE:
             {
-                disc_value = *reinterpret_cast<int64_t*>(instance);
+                disc_value = *reinterpret_cast<const int64_t*>(instance);
             }
             break;
             case TypeKind::UINT_64_TYPE:
             {
-                uint64_t value = *reinterpret_cast<uint64_t*>(instance);
+                uint64_t value = *reinterpret_cast<const uint64_t*>(instance);
                 disc_value = static_cast<int64_t>(value);
             }
             break;
             case TypeKind::CHAR_8_TYPE:
             {
-                char value = *reinterpret_cast<char*>(instance);
+                char value = *reinterpret_cast<const char*>(instance);
                 disc_value = static_cast<int64_t>(value);
             }
             break;
             case TypeKind::CHAR_16_TYPE:
             {
-                char16_t value = *reinterpret_cast<char16_t*>(instance);
+                char16_t value = *reinterpret_cast<const char16_t*>(instance);
                 disc_value = static_cast<int64_t>(value);
             }
             break;
             case TypeKind::WIDE_CHAR_TYPE:
             {
-                wchar_t value = *reinterpret_cast<wchar_t*>(instance);
+                wchar_t value = *reinterpret_cast<const wchar_t*>(instance);
                 disc_value = static_cast<int64_t>(value);
             }
             break;
             case TypeKind::ENUMERATION_TYPE:
             {
                 // TODO: If other enumeration types are added, switch again.
-                uint32_t value = *reinterpret_cast<uint32_t*>(instance);
+                uint32_t value = *reinterpret_cast<const uint32_t*>(instance);
                 disc_value = static_cast<int64_t>(value);
             }
             break;
@@ -855,26 +854,25 @@ protected:
             uint8_t* instance,
             int64_t value) const
     {
-        if (labels_.count(value) == 0)
+        if (labels_.count(value) == 0 &&
+                default_ == invalid_value_)
         {
-            if (default_ != INVALID_UNION_LABEL)
-            {
-                Member* def = &const_cast<Member&>(member(labels_.at(default_)));
-                xtypes_assert(def == active_member_, "Cannot switch member using direct discriminator value.");
-                return def == active_member_;
-            }
             return false;
         }
 
-        const Member* member = &AggregationType::member(labels_.at(value));
+        // Retrieve current label.
+        int64_t current_value = current_label(disc()->type(), instance);
 
-        xtypes_assert(member == active_member_, "Cannot switch member using direct disciminator value.");
-        if (member == active_member_)
+        if (0 < labels_.count(current_value) &&
+                0 != labels_.at(current_value).compare(labels_.at(
+                    value)))
         {
-            current_label(instance, value);
-            return true;
+            xtypes_assert(false, "Cannot switch member using direct disciminator value.");
+            return false;
         }
-        return false;
+
+        current_label(instance, value);
+        return true;
     }
 
     /// \brief This method switches the current selected case member by its name.
@@ -887,8 +885,8 @@ protected:
             Member* member = &const_cast<Member&>(AggregationType::member(pair.second));
             if (member->name() == case_member_name)
             {
-                current_label(instance, pair.first);
                 activate_member(instance, member);
+                current_label(instance, pair.first);
                 return true;
             }
         }
@@ -899,7 +897,7 @@ protected:
     bool select_default(
             uint8_t* instance)
     {
-        if (default_ != INVALID_UNION_LABEL)
+        if (default_ != invalid_value_)
         {
             Member* def = &const_cast<Member&>(member(labels_.at(default_)));
             activate_member(instance, def);
@@ -913,16 +911,20 @@ protected:
     Member& get_current_selection(
             uint8_t* instance)
     {
-        xtypes_assert(active_member_ != nullptr, "UnionType '" << name() << "' doesn't have a case member selected.");
-        return *active_member_;
+        int64_t label = current_label(disc()->type(), instance);
+        xtypes_assert(0 < labels_.count(label), "UnionType '" << name() << "' doesn't have a case member selected.");
+        Member* member = &const_cast<Member&>(AggregationType::member(labels_.at(label)));
+        return *member;
     }
 
     /// \brief This method allows to retrieve the current selected case member (const).
     const Member& get_current_selection(
             const uint8_t* instance) const
     {
-        xtypes_assert(active_member_ != nullptr, "UnionType '" << name() << "' doesn't have a case member selected.");
-        return *active_member_;
+        int64_t label = current_label(disc()->type(), instance);
+        xtypes_assert(0 < labels_.count(label), "UnionType '" << name() << "' doesn't have a case member selected.");
+        Member* member = &const_cast<Member&>(AggregationType::member(labels_.at(label)));
+        return *member;
     }
 
     /// \brief This method destroys previous active member, if any, and constructs the new one,
@@ -931,16 +933,18 @@ protected:
             uint8_t* instance,
             Member* member)
     {
-        if (active_member_ != nullptr && active_member_ != member)
+        int64_t label = current_label(disc()->type(), instance);
+        if (0 < labels_.count(label))
         {
-            active_member_->type().destroy_instance(instance + active_member_->offset());
-            member->type().construct_instance(instance + member->offset());
+            Member* active_member = &const_cast<Member&>(AggregationType::member(labels_.at(label)));
+            if (active_member == member)
+            {
+                return;
+            }
+            active_member->type().destroy_instance(instance + active_member->offset());
         }
-        else if (active_member_ == nullptr)
-        {
-            member->type().construct_instance(instance + member->offset());
-        }
-        active_member_ = member;
+
+        member->type().construct_instance(instance + member->offset());
     }
 
     /// \brief This method converts labels represented as strings to the internal int64_t representation.
@@ -1139,8 +1143,9 @@ private:
     std::map<int64_t, std::string> labels_;
     size_t memory_size_;
     // Direct access
+    const int64_t default_value_;
+    const int64_t invalid_value_;
     int64_t default_;
-    mutable Member* active_member_;
     // Aux memory_size_ calculations
     size_t maximum_case_member_memory_;
 
