@@ -836,6 +836,8 @@ protected:
             default:
                 xtypes_assert(false, "Unsupported discriminator type: " << type.name());
         }
+        disc_value = disc_value &
+                (std::numeric_limits<uint64_t>::max()  >> ((sizeof(int64_t) - type.memory_size()) * 8));
         return disc_value;
     }
 
