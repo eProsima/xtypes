@@ -1330,6 +1330,18 @@ public:
         return *this;
     }
 
+    /// \brief Assignment operator
+    DynamicData& operator = (
+            ReadableDynamicDataRef other)
+    {
+        xtypes_assert(type_.is_compatible(other.type()) == TypeConsistency::EQUALS,
+                "Cannot assign DynamicData of type '" << other.type().name() << "' to DynamicData of type '"
+                                                      << type_.name() << "'.");
+        type_.destroy_instance(instance_);
+        type_.copy_instance(instance_, p_instance(other));
+        return *this;
+    }
+
     /// \brief See WritableDynamicDataRef::operator =()
     template<typename T, class = PrimitiveOrString<T> >
     WritableDynamicDataRef& operator = (
