@@ -272,3 +272,33 @@ TEST (UnionType, changing_several_discriminators)
 
     EXPECT_EQ(data1.get_member("field_2").value<uint8_t>(), static_cast<uint8_t>(3));
 }
+
+// Regression test for #8361 - Negative signed values converted into int64_t positive values by shrink_label
+TEST (UnionType, signed_int)
+{
+    StructType struct_type("MyStruct");
+    UnionType union_type("MyUnion", primitive_type<int32_t>());
+    StructType member_a_type("StructA");
+    StructType member_b_type("StructB");
+
+    member_a_type.add_member("aa", primitive_type<int32_t>());
+
+    union_type.add_case_member({"3112858602"}, Member("a", member_a_type));
+
+    struct_type.add_member("union", union_type);
+
+    DynamicData st_data(struct_type);
+    DynamicData member_a_data(member_a_type);
+    member_a_data["aa"] = 55;
+
+    st_data["union"]["a"] = member_a_data;
+
+    EXPECT_EQ(st_data["union"]["a"]["aa"].value<int32_t>(), member_a_data["aa"].value<int32_t>());
+
+    st_data["union"]["a"]["aa"] = 66;
+
+    member_a_data = st_data["union"]["a"];
+
+    EXPECT_EQ(st_data["union"]["a"]["aa"].value<int32_t>(), member_a_data["aa"].value<int32_t>());
+    EXPECT_EQ(66, member_a_data["aa"].value<int32_t>());
+}

@@ -758,37 +758,37 @@ protected:
             case TypeKind::INT_8_TYPE:
             {
                 int8_t value = *reinterpret_cast<const int8_t*>(instance);
-                disc_value = static_cast<int64_t>(value);
+                disc_value = shrink_label(value, type.memory_size());
             }
             break;
             case TypeKind::UINT_8_TYPE:
             {
                 uint8_t value = *reinterpret_cast<const uint8_t*>(instance);
-                disc_value = static_cast<int64_t>(value);
+                disc_value = shrink_label(value, type.memory_size());
             }
             break;
             case TypeKind::INT_16_TYPE:
             {
                 int16_t value = *reinterpret_cast<const int16_t*>(instance);
-                disc_value = static_cast<int64_t>(value);
+                disc_value = shrink_label(value, type.memory_size());
             }
             break;
             case TypeKind::UINT_16_TYPE:
             {
                 uint16_t value = *reinterpret_cast<const uint16_t*>(instance);
-                disc_value = static_cast<int64_t>(value);
+                disc_value = shrink_label(value, type.memory_size());
             }
             break;
             case TypeKind::INT_32_TYPE:
             {
                 int32_t value = *reinterpret_cast<const int32_t*>(instance);
-                disc_value = static_cast<int64_t>(value);
+                disc_value = shrink_label(value, type.memory_size());
             }
             break;
             case TypeKind::UINT_32_TYPE:
             {
                 uint32_t value = *reinterpret_cast<const uint32_t*>(instance);
-                disc_value = static_cast<int64_t>(value);
+                disc_value = shrink_label(value, type.memory_size());
             }
             break;
             case TypeKind::INT_64_TYPE:
@@ -799,32 +799,32 @@ protected:
             case TypeKind::UINT_64_TYPE:
             {
                 uint64_t value = *reinterpret_cast<const uint64_t*>(instance);
-                disc_value = static_cast<int64_t>(value);
+                disc_value = shrink_label(value, type.memory_size());
             }
             break;
             case TypeKind::CHAR_8_TYPE:
             {
                 char value = *reinterpret_cast<const char*>(instance);
-                disc_value = static_cast<int64_t>(value);
+                disc_value = shrink_label(value, type.memory_size());
             }
             break;
             case TypeKind::CHAR_16_TYPE:
             {
                 char16_t value = *reinterpret_cast<const char16_t*>(instance);
-                disc_value = static_cast<int64_t>(value);
+                disc_value = shrink_label(value, type.memory_size());
             }
             break;
             case TypeKind::WIDE_CHAR_TYPE:
             {
                 wchar_t value = *reinterpret_cast<const wchar_t*>(instance);
-                disc_value = static_cast<int64_t>(value);
+                disc_value = shrink_label(value, type.memory_size());
             }
             break;
             case TypeKind::ENUMERATION_TYPE:
             {
                 // TODO: If other enumeration types are added, switch again.
                 uint32_t value = *reinterpret_cast<const uint32_t*>(instance);
-                disc_value = static_cast<int64_t>(value);
+                disc_value = shrink_label(value, type.memory_size());
             }
             break;
             case TypeKind::ALIAS_TYPE:
