@@ -1544,7 +1544,7 @@ public:
 
 /// \brief Ostream operator overload.
 /// \pre The DynamicData to be sent to ostream.
-std::ostream& operator << (std::ostream& os, const DynamicData& data)
+inline std::ostream& operator << (std::ostream& os, const DynamicData& data)
 {
     os << data.to_string();
     return os;
