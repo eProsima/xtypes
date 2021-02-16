@@ -26,6 +26,8 @@
 #include <xtypes/AliasType.hpp>
 #include <xtypes/MapType.hpp>
 
+#include <ostream>
+
 namespace eprosima {
 namespace xtypes {
 
@@ -1539,6 +1541,14 @@ public:
     }
 
 };
+
+/// \brief Ostream operator overload.
+/// \pre The DynamicData to be sent to ostream.
+inline std::ostream& operator << (std::ostream& os, const DynamicData& data)
+{
+    os << data.to_string();
+    return os;
+}
 
 } //namespace xtypes
 } //namespace eprosima

@@ -61,6 +61,8 @@ int main()
     data["om12"][map_key]["im2"] = 35.9f;                  //...
 
     std::cout << data.to_string() << std::endl; //See to_string() implementation as an example of data instrospection
+    std::cout << "Now, print the same using the << operator overload:" << std::endl;
+    std::cout << data << std::endl;
 
     idl::Module root;
     idl::Module& submod_a = root.create_submodule("a");
