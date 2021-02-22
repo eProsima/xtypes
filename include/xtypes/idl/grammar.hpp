@@ -197,7 +197,7 @@ CHAR_LITERAL <- < "'" (!["'"\\] .)+ "'" > / "'" ESCAPE_SEQUENCE "'"
 WIDE_CHAR_LITERAL <- < 'L' CHAR_LITERAL >
 # String literals must avoid '\0' inside them. Check after parsing!
 STRING_LITERAL <- ( SUBSTRING_LITERAL )+
-SUBSTRING_LITERAL <- < '"' (ESCAPE_SEQUENCE / (!['"'\\] .))* '"' > STRING_WS
+SUBSTRING_LITERAL <- < '"' (ESCAPE_SEQUENCE / (!["\\] .))* '"' / "'" (ESCAPE_SEQUENCE / (!['\\] .))* "'"> STRING_WS
 ~STRING_WS <- '"' WS? '"' / WS?
 WIDE_STRING_LITERAL <- ('L' WIDE_SUBSTRING_LITERAL)+
 WIDE_SUBSTRING_LITERAL <- < SUBSTRING_LITERAL >
