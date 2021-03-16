@@ -1,5 +1,12 @@
 # xtypes
-Fast and lightweight C++11 header-only implementation of [OMG DDS-XTYPES](https://www.omg.org/spec/DDS-XTypes) standard.
+Fast and lightweight C++17 header-only implementation of [OMG DDS-XTYPES](https://www.omg.org/spec/DDS-XTypes) standard.
+
+To properly download this library, please consider cloning it using the `--recursive` options, as it includes the [cpp-peglib](https://github.com/yhirose/cpp-peglib) library as a submodule:
+
+```bash
+git clone https://github.com/eProsima/xtypes.git --recursive
+```
+
 
 ## Getting Started
 Given the following IDL,
@@ -48,7 +55,7 @@ int32_t my_value = data["c"]["a"];
 ## Why should you use *eProsima xtypes*?
 - **OMG standard**: *eProsima xtypes* is based on the
   [DDS-XTYPES standard](https://www.omg.org/spec/DDS-XTypes/About-DDS-XTypes/) from the *OMG*.
-- **C++11 API**: *eProsima xtypes* uses C++11 latest features, providing  an easy-to-use API.
+- **C++17 API**: *eProsima xtypes* uses C++17 latest features, providing  an easy-to-use API.
 - **Memory lightweight**: data instances use the same memory as types built by the compiler.
   No memory penalty is introduced by using *eProsima xtypes* in relation to compiled types.
 - **Fast**: Accessing to data members is swift and quick.
@@ -552,7 +559,7 @@ left-side operand, overriding its current value: `+=`, `-=`, `*=`, `/=`, `%=`, `
 
 There exists two kinds of iterators:
 - Collection iterators: Allows to iterate through collections (`ArrayType`, `SequenceType`, and `MapType`)
-  in the same way of native C++11 types. They can be
+  in the same way of native C++17 types. They can be
   accessed from `ReadableDynamicDataRef::Iterator` (for read-only operations) or `WritableDynamicDataRef::Iterator`
   (for read-write operations).
   ```cpp
@@ -561,7 +568,7 @@ There exists two kinds of iterators:
   for (ReadableDynamicDataRef&& elem : data) { [...] }
   for (WritableDynamicDataRef&& elem : data) { [...] }
   ```
-  While iterating a `MapType`, similarly as in the C++11 map iterator, a `PairType` instance is returned.
+  While iterating a `MapType`, similarly as in the C++17 map iterator, a `PairType` instance is returned.
   To access the elements of the pair (the map's key)
   the `operator[](size_t)` must be used. Only indexes `0` and `1` are allowed.
   ```cpp
