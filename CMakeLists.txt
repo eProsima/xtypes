@@ -30,14 +30,14 @@ add_library(${PROJECT_NAME} INTERFACE)
 target_include_directories(${PROJECT_NAME}
     INTERFACE
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/thirdparty/cpp-peglib/include>
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/thirdparty/cpp-peglib>
         $<INSTALL_INTERFACE:include>
         $<INSTALL_INTERFACE:thirdparty/cpp-peglib/include>
     )
 
 target_compile_features(${PROJECT_NAME}
     INTERFACE
-        cxx_std_11
+        cxx_std_17
     )
 
 #####################################################################################
@@ -71,7 +71,7 @@ macro(compile_example)
 
     set_target_properties(${EXAMPLE_NAME}
         PROPERTIES
-            CXX_STANDARD 11
+            CXX_STANDARD 17
         )
 endmacro()
 
@@ -101,6 +101,11 @@ macro(compile_test)
     target_link_libraries(${TEST_NAME}
         PRIVATE
             libgtest
+        )
+
+    set_target_properties(${TEST_NAME}
+        PROPERTIES
+            CXX_STANDARD 17
         )
 
     add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
@@ -216,7 +221,7 @@ install(
 
 install(
     DIRECTORY
-        ${PROJECT_SOURCE_DIR}/thirdparty/cpp-peglib/include/
+        ${PROJECT_SOURCE_DIR}/thirdparty/cpp-peglib/
     DESTINATION
         thirdparty/cpp-peglib/include
     FILES_MATCHING

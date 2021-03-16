@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
-*/
+ */
 
 #ifndef EPROSIMA_XTYPES_IDL_GRAMMAR_HPP_
 #define EPROSIMA_XTYPES_IDL_GRAMMAR_HPP_
@@ -299,7 +299,7 @@ FLOAT_TYPE_SUFFIX <- [dD]
 ~COLON <- WS? < ':' > WS?
 ~DOUBLE_COLON <- "::"
 ~COMMA <- WS? < ',' > WS?
-~DOT <- '.'
+# ~DOT <- '.'
 ~OPEN_PARENTHESES <- WS? < '(' > WS?
 ~CLOSE_PARENTHESES <- WS? < ')' > WS?
 ~OPEN_BRACKET <- WS? < '[' > WS?
@@ -330,8 +330,8 @@ HEX_DIGIT <- [0-9a-fA-F]
     return IDL_GRAMMAR;
 }
 
-}
-}
-}
+} // namespace idl
+} // namespace xtypes
+} // namespace eprosima
 
 #endif //EPROSIMA_XTYPES_IDL_GRAMMAR_HPP_
