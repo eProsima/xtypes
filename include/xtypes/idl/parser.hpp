@@ -37,6 +37,13 @@
 #include <locale>
 #include <regex>
 #include <functional>
+#include <string_view>
+
+namespace peg {
+
+using Ast = AstBase<EmptyType>;
+
+} // namespace peg
 
 namespace eprosima {
 namespace xtypes {
@@ -112,7 +119,7 @@ struct LogEntry
 
 };
 
-}
+} // namespace log
 
 class Parser;
 
@@ -368,12 +375,12 @@ public:
 
     class exception : public std::runtime_error
     {
-private:
+    private:
 
         std::string message_;
         std::shared_ptr<peg::Ast> ast_;
 
-public:
+    public:
 
         exception(
                 const std::string& message,
@@ -592,50 +599,46 @@ private:
 
     std::string resolve_identifier(
             const std::shared_ptr<peg::Ast>& ast,
-            const std::string& identifier,
+            const std::string_view& identifier,
             std::shared_ptr<Module>& scope,
             bool ignore_already_used = false)
     {
         if (identifier.find("_") == 0)
         {
-            context_->log(log::LogLevel::INFO, "ESCAPED_IDENTIFIER",
-                    "The identifier \"" + identifier + "\" is escaped. It will be replaced by \""
-                    + identifier.substr(1) + "\"",
-                    ast);
-            return identifier.substr(1); // If the identifier starts with "_", remove the underscode and return.
+            std::stringstream message;
+            message << "The identifier \"" << identifier << "\" is escaped. It will be replaced by \""
+                    << identifier.substr(1) << "\"";
+            context_->log(log::LogLevel::INFO, "ESCAPED_IDENTIFIER", message.str(), ast);
+            return std::string(identifier.substr(1).data(), identifier.substr(1).size()); // If the identifier starts with "_", remove the underscode and return.
         }
 
         if (is_token(identifier))
         {
+            std::stringstream message;
+            message << "The identifier \"" << identifier << "\" is a reserved word.";
             if (!context_->allow_keyword_identifiers)
             {
-                context_->log(log::LogLevel::ERROR, "EXCEPTION",
-                        "The identifier \"" + identifier + "\" is a reserved word.",
-                        ast);
-                throw exception("The identifier \"" + identifier + "\" is a reserved word.", ast);
+                context_->log(log::LogLevel::ERROR, "EXCEPTION", message.str(), ast);
+                throw exception(message.str(), ast);
             }
-            context_->log(log::LogLevel::INFO, "RESERVED_WORD",
-                    "The identifier \"" + identifier + "\" is a reserved word.",
-                    ast);
+            context_->log(log::LogLevel::INFO, "RESERVED_WORD", message.str(), ast);
         }
 
-        if (scope->has_symbol(identifier))
+        if (scope->has_symbol(std::string(identifier.data(), identifier.size())))
         {
+            std::stringstream message;
+            message << "The identifier \"" << identifier << "\" is already used.";
             if (!ignore_already_used)
             {
-                context_->log(log::LogLevel::ERROR, "EXCEPTION",
-                        "The identifier \"" + identifier + "\" is already used.",
-                        ast);
-                throw exception("The identifier \"" + identifier + "\" is already used.", ast);
+                context_->log(log::LogLevel::ERROR, "EXCEPTION", message.str(), ast);
+                throw exception(message.str(), ast);
             }
-            context_->log(log::LogLevel::INFO, "ALREADY_USED",
-                    "The identifier \"" + identifier + "\" is already used.",
-                    ast);
+            context_->log(log::LogLevel::INFO, "ALREADY_USED", message.str(), ast);
         }
 
         context_->log(log::LogLevel::DEBUG, "RESOLVE_IDENTIFIER",
-                identifier, ast);
-        return identifier;
+                identifier.data(), ast);
+        return std::string(identifier.data(), identifier.size());
     }
 
     void to_lower(
@@ -643,15 +646,15 @@ private:
     {
         std::transform(str.begin(), str.end(), str.begin(),
                 [](unsigned char c)
-                    {
-                        return std::tolower(c);
-                    });
+                {
+                    return std::tolower(c);
+                });
     }
 
     bool is_token(
-            const std::string& identifier)
+            const std::string_view& identifier)
     {
-        std::string aux_id = identifier;
+        std::string aux_id(identifier.data(), identifier.size());
 
         if (!context_->ignore_case)
         {
@@ -737,7 +740,7 @@ private:
             name = resolve_identifier(node, node->nodes[0]->token, outer);
             for (size_t idx = 1; idx < node->nodes.size(); ++idx)
             {
-                dimensions.push_back(std::atoi(node->nodes[idx]->token.c_str()));
+                dimensions.push_back(std::atoi(node->nodes[idx]->token.data()));
             }
             type = get_array_type(dimensions, type);
         }
@@ -752,15 +755,15 @@ private:
         using namespace peg::udl;
 
         DynamicType::Ptr type = type_spec(ast->nodes[0], outer);
-        std::string identifier = ast->nodes[1]->token;
+        const auto& identifier = ast->nodes[1]->token;
         DynamicData expr(*type);
         expr = solve_expr(*type, ast->nodes[2], outer);
 
-        context_->log(log::LogLevel::DEBUG, "DECLARATION",
-                "Found const " + type->name() + " " + identifier + " = " + expr.to_string(),
-                ast);
+        std::stringstream message;
+        message << "Found const " << type->name() << " " << identifier << " = " << expr.to_string();
+        context_->log(log::LogLevel::DEBUG, "DECLARATION", message.str(), ast);
 
-        outer->create_constant(identifier, expr);
+        outer->create_constant(std::string(identifier.data(), identifier.size()), expr);
     }
 
     bool get_literal_value(
@@ -769,7 +772,7 @@ private:
     {
         using namespace peg::udl;
         const unsigned int tag = ast->tag;
-        const std::string& literal = ast->token;
+        const auto& literal = ast->token;
         int base = 10;
         if (literal.find("0x") == 0 || literal.find("0X") == 0)
         {
@@ -780,17 +783,23 @@ private:
             base = 8;
         }
 
+        auto message =
+                [&](const char* type) -> const std::string
+                {
+                    std::stringstream ss;
+                    ss << "Expected an " << type << "_LITERAL, found " << literal;
+                    return ss.str();
+                };
+
         switch (data.type().kind())
         {
             case TypeKind::INT_8_TYPE:
             {
                 if (tag != "INTEGER_LITERAL"_)
                 {
-                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
-                            "Expected an INTEGER_LITERAL, found " + literal,
-                            ast);
+                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL", message("INTEGER"), ast);
                 }
-                int8_t value = static_cast<int8_t>(std::strtoll(literal.c_str(), nullptr, base));
+                int8_t value = static_cast<int8_t>(std::strtoll(literal.data(), nullptr, base));
                 data = value;
                 break;
             }
@@ -798,11 +807,9 @@ private:
             {
                 if (tag != "INTEGER_LITERAL"_)
                 {
-                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
-                            "Expected an INTEGER_LITERAL, found " + literal,
-                            ast);
+                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL", message("INTEGER"), ast);
                 }
-                uint8_t value = static_cast<uint8_t>(std::strtoull(literal.c_str(), nullptr, base));
+                uint8_t value = static_cast<uint8_t>(std::strtoull(literal.data(), nullptr, base));
                 data = value;
                 break;
             }
@@ -810,11 +817,9 @@ private:
             {
                 if (tag != "INTEGER_LITERAL"_)
                 {
-                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
-                            "Expected an INTEGER_LITERAL, found " + literal,
-                            ast);
+                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL", message("INTEGER"), ast);
                 }
-                int16_t value = static_cast<int16_t>(std::strtoll(literal.c_str(), nullptr, base));
+                int16_t value = static_cast<int16_t>(std::strtoll(literal.data(), nullptr, base));
                 data = value;
                 break;
             }
@@ -822,11 +827,9 @@ private:
             {
                 if (tag != "INTEGER_LITERAL"_)
                 {
-                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
-                            "Expected an INTEGER_LITERAL, found " + literal,
-                            ast);
+                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL", message("INTEGER"), ast);
                 }
-                uint16_t value = static_cast<uint16_t>(std::strtoull(literal.c_str(), nullptr, base));
+                uint16_t value = static_cast<uint16_t>(std::strtoull(literal.data(), nullptr, base));
                 data = value;
                 break;
             }
@@ -834,11 +837,9 @@ private:
             {
                 if (tag != "INTEGER_LITERAL"_)
                 {
-                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
-                            "Expected an INTEGER_LITERAL, found " + literal,
-                            ast);
+                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL", message("INTEGER"), ast);
                 }
-                int32_t value = static_cast<int32_t>(std::strtoll(literal.c_str(), nullptr, base));
+                int32_t value = static_cast<int32_t>(std::strtoll(literal.data(), nullptr, base));
                 data = value;
                 break;
             }
@@ -846,11 +847,9 @@ private:
             {
                 if (tag != "INTEGER_LITERAL"_)
                 {
-                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
-                            "Expected an INTEGER_LITERAL, found " + literal,
-                            ast);
+                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL", message("INTEGER"), ast);
                 }
-                uint32_t value = static_cast<uint32_t>(std::strtoull(literal.c_str(), nullptr, base));
+                uint32_t value = static_cast<uint32_t>(std::strtoull(literal.data(), nullptr, base));
                 data = value;
                 break;
             }
@@ -858,11 +857,9 @@ private:
             {
                 if (tag != "INTEGER_LITERAL"_)
                 {
-                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
-                            "Expected an INTEGER_LITERAL, found " + literal,
-                            ast);
+                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL", message("INTEGER"), ast);
                 }
-                int64_t value = static_cast<int64_t>(std::strtoll(literal.c_str(), nullptr, base));
+                int64_t value = static_cast<int64_t>(std::strtoll(literal.data(), nullptr, base));
                 data = value;
                 break;
             }
@@ -870,11 +867,9 @@ private:
             {
                 if (tag != "INTEGER_LITERAL"_)
                 {
-                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
-                            "Expected an INTEGER_LITERAL, found " + literal,
-                            ast);
+                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL", message("INTEGER"), ast);
                 }
-                uint64_t value = static_cast<uint64_t>(std::strtoull(literal.c_str(), nullptr, base));
+                uint64_t value = static_cast<uint64_t>(std::strtoull(literal.data(), nullptr, base));
                 data = value;
                 break;
             }
@@ -882,11 +877,9 @@ private:
             {
                 if (tag != "CHAR_LITERAL"_)
                 {
-                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
-                            "Expected an CHAR_LITERAL, found " + literal,
-                            ast);
+                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL", message("CHAR"), ast);
                 }
-                char value = literal.c_str()[0];
+                char value = literal.at(0);
                 data = value;
                 break;
             }
@@ -894,9 +887,7 @@ private:
             {
                 if (tag != "WIDE_CHAR_LITERAL"_)
                 {
-                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
-                            "Expected an WIDE_CHAR_LITERAL, found " + literal,
-                            ast);
+                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL", message("WIDE_CHAR"), ast);
                 }
                 std::u16string temp = u"";
                 char16_t c16str[3] = u"\0";
@@ -915,30 +906,27 @@ private:
             {
                 if (tag != "WIDE_CHAR_LITERAL"_)
                 {
-                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
-                            "Expected an WIDE_CHAR_LITERAL, found " + literal,
-                            ast);
+                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL", message("WIDE_CHAR"), ast);
                 }
                 using convert_type = std::codecvt_utf8<wchar_t>;
                 std::wstring_convert<convert_type, wchar_t> converter;
-                std::wstring temp = converter.from_bytes(literal);
+                std::wstring temp = converter.from_bytes(std::string(literal.data(), literal.size()));
                 wchar_t value = temp[0];
                 data = value;
                 break;
             }
             case TypeKind::STRING_TYPE:
             {
-                std::string aux = literal.substr(literal.find("\"") + 1, literal.rfind("\"") - 1);
+                const auto& aux_view = literal.substr(literal.find("\"") + 1, literal.rfind("\"") - 1);
+                std::string aux(aux_view.data(), aux_view.size());
                 for (auto& node : ast->nodes) // SUBSTRING_LITERAL
                 {
-                    aux += node->token.substr(node->token.find("\"") + 1, node->token.rfind("\"") - 1);
+                    aux.append(node->token.substr(node->token.find("\"") + 1, node->token.rfind("\"") - 1));
                 }
 
                 if (tag != "STRING_LITERAL"_ && tag != "UNEXPECTED_LITERAL"_)
                 {
-                    context_->log(log::LogLevel::WARNING, "STRING",
-                            "Expected an STRING_LITERAL, found " + literal,
-                            ast);
+                    context_->log(log::LogLevel::WARNING, "STRING", message("STRING"), ast);
                 }
 
                 data = aux;
@@ -946,17 +934,16 @@ private:
             }
             case TypeKind::WSTRING_TYPE:
             {
-                std::string aux = literal.substr(literal.find("\"") + 1, literal.rfind("\"") - 1);
+                const auto& aux_view = literal.substr(literal.find("\"") + 1, literal.rfind("\"") - 1);
+                std::string aux(aux_view.data(), aux_view.size());
                 for (auto& node : ast->nodes) // SUBSTRING_LITERAL
                 {
-                    aux += node->token.substr(node->token.find("\"") + 1, node->token.rfind("\"") - 1);
+                    aux.append(node->token.substr(node->token.find("\"") + 1, node->token.rfind("\"") - 1));
                 }
 
                 if (tag != "WIDE_STRING_LITERAL"_ && tag != "WIDE_SUBSTRING_LITERAL"_)
                 {
-                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
-                            "Expected an WIDE_STRING_LITERAL, found " + literal,
-                            ast);
+                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL", message("WIDE_STRING"), ast);
                 }
                 using convert_type = std::codecvt_utf8<wchar_t>;
                 std::wstring_convert<convert_type, wchar_t> converter;
@@ -983,9 +970,7 @@ private:
             {
                 if (tag != "BOOLEAN_LITERAL"_)
                 {
-                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
-                            "Expected an BOOLEAN_LITERAL, found " + literal,
-                            ast);
+                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL", message("BOOLEAN"), ast);
                 }
                 if (literal == "TRUE")
                 {
@@ -997,10 +982,10 @@ private:
                 }
                 else
                 {
-                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
-                            "Expected bool value (TRUE or FALSE) but found '" + literal
-                            + "'. It will be take the value 'FALSE'.",
-                            ast);
+                    std::stringstream message;
+                    message << "Expected bool value (TRUE or FALSE) but found '" << literal
+                            << "'. It will be take the value 'FALSE'.";
+                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL", message.str(), ast);
                     data = false;
                 }
                 break;
@@ -1009,11 +994,9 @@ private:
             {
                 if (tag != "FLOAT_LITERAL"_)
                 {
-                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
-                            "Expected a FLOAT_LITERAL, found " + literal,
-                            ast);
+                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL", message("FLOAT"), ast);
                 }
-                float value = std::stof(literal, nullptr);
+                float value = std::stof(literal.data(), nullptr);
                 data = value;
                 break;
             }
@@ -1021,11 +1004,9 @@ private:
             {
                 if (tag != "FLOAT_LITERAL"_)
                 {
-                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
-                            "Expected a FLOAT_LITERAL, found " + literal,
-                            ast);
+                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL", message("FLOAT"), ast);
                 }
-                double value = std::stod(literal, nullptr);
+                double value = std::stod(literal.data(), nullptr);
                 data = value;
                 break;
             }
@@ -1033,18 +1014,15 @@ private:
             {
                 if (tag != "FLOAT_LITERAL"_)
                 {
-                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL",
-                            "Expected a FLOAT_LITERAL, found " + literal,
-                            ast);
+                    context_->log(log::LogLevel::WARNING, "UNEXPECTED_LITERAL", message("FLOAT"), ast);
                 }
-                long double value = std::stold(literal, nullptr);
+                long double value = std::stold(literal.data(), nullptr);
                 data = value;
                 break;
             }
             default:
                 context_->log(log::LogLevel::ERROR, "UNEXPECTED_LITERAL_TYPE",
-                        "Unknown literal type: " + data.type().name() + " (" + literal + ")",
-                        ast);
+                        message(data.type().name().c_str()), ast);
                 return false;
         }
         return true;
@@ -1074,7 +1052,7 @@ private:
                 break;
             }
             case "SCOPED_NAME"_:
-                result = outer->constant(ast->token);
+                result = outer->constant(std::string(ast->token.data(), ast->token.size()));
                 break;
             case "UNARY_EXPR"_:
             {
@@ -1093,7 +1071,7 @@ private:
 
                 if (ast->nodes[1]->tag == "MULT_OP"_)
                 {
-                    DynamicData temp(lho * rho);
+                    DynamicData temp(lho* rho);
                     result = temp;
                 }
                 else if (ast->nodes[1]->tag == "DIV_OP"_)
@@ -1177,14 +1155,16 @@ private:
     {
         using namespace peg::udl;
 
-        std::string name = ast->nodes[0]->token;
+        const auto& name_view = ast->nodes[0]->token;
+        const std::string name(name_view.data(), name_view.size());
         EnumerationType<uint32_t> result(name); // TODO: Support other Enum types?, the grammar should be upgraded.
         context_->log(log::LogLevel::DEBUG, "ENUM_DCL",
                 "Found enum \"" + name + "\"",
                 ast);
         for (size_t idx = 1; idx < ast->nodes.size(); ++idx)
         {
-            const std::string& token = ast->nodes[idx]->token;
+            const auto& token_view = ast->nodes[idx]->token;
+            const std::string token(token_view.data(), token_view.size());
             context_->log(log::LogLevel::DEBUG, "ENUM_DCL_VALUE",
                     "Adding \"" + token + "\" to enum \"" + name + "\"",
                     ast);
@@ -1207,10 +1187,10 @@ private:
         std::string name = resolve_identifier(ast, ast->token, outer);
         if (outer->has_symbol(name, false))
         {
-            context_->log(log::LogLevel::ERROR, "EXCEPTION",
-                    "Struct " + ast->token + " was already declared.",
-                    ast);
-            throw exception("Struct " + ast->token + " was already declared.", ast);
+            std::stringstream message;
+            message << "Struct " << ast->token << " was already declared.";
+            context_->log(log::LogLevel::ERROR, "EXCEPTION", message.str(), ast);
+            throw exception(message.str(), ast);
         }
 
         StructType result(name);
@@ -1228,10 +1208,10 @@ private:
         std::string name = resolve_identifier(ast, ast->token, outer);
         if (outer->has_symbol(name, false))
         {
-            context_->log(log::LogLevel::ERROR, "EXCEPTION",
-                    "Union " + ast->token + " was already declared.",
-                    ast);
-            throw exception("Union " + ast->token + " was already declared.", ast);
+            std::stringstream message;
+            message << "Union " << ast->token << " was already declared.";
+            context_->log(log::LogLevel::ERROR, "EXCEPTION", message.str(), ast);
+            throw exception(message.str(), ast);
         }
 
         // TODO Replace by Unions. Kept as Struct to allow name solving.
@@ -1251,7 +1231,7 @@ private:
         using namespace peg::udl;
         std::string name;
         std::vector<Member> member_list;
-        std::string parent_name;
+        std::string_view parent_name;
         for (const auto& node : ast->nodes)
         {
             switch (node->original_tag)
@@ -1264,16 +1244,17 @@ private:
                     break;
                 }
                 case "INHERITANCE"_:
-                    if (outer->has_structure(node->token))
+                    if (outer->has_structure(std::string(node->token.data(), node->token.size())))
                     {
                         parent_name = node->token;
                     }
                     else
                     {
-                        std::string message =  "Struct \"" + name + "\" cannot inherit from \""
-                                + node->token + "\": Struct was not found.";
-                        context_->log(log::LogLevel::ERROR, "STRUCT_DEF", message, ast);
-                        throw exception(message, ast);
+                        std::stringstream message;
+                        message << "Struct \"" << name << "\" cannot inherit from \""
+                                << node->token.data() << "\": Struct was not found.";
+                        context_->log(log::LogLevel::ERROR, "STRUCT_DEF", message.str(), ast);
+                        throw exception(message.str(), ast);
                     }
                     break;
                 case "MEMBER"_:
@@ -1312,7 +1293,7 @@ private:
         if (!parent_name.empty())
         {
             // Replace already existing struct with a new one which inherits
-            StructType replace_struct(name, &outer->structure(parent_name));
+            StructType replace_struct(name, &outer->structure(std::string(parent_name.data(), parent_name.size())));
             outer->structure(std::move(replace_struct), true);
             struct_type = &outer->structure(name);
         }
@@ -1428,13 +1409,14 @@ private:
             {
                 case "CASE_LABEL"_:
                 {
-                    std::string value = node->token;
+                    const auto& value_view = node->token;
+                    std::string value(value_view.data(), value_view.size());
                     if (outer->has_constant(value))
                     {
                         DynamicData constant = outer->constant(value);
                         value = constant.cast<std::string>();
                     }
-                    labels.push_back(value);
+                    labels.emplace_back(std::move(value));
                     break;
                 }
                 case "ELEMENT_SPEC"_:
@@ -1491,10 +1473,10 @@ private:
 
             if (already_defined)
             {
-                context_->log(log::LogLevel::ERROR, "EXCEPTION",
-                        "Member identifier " + ast->token + " already defined",
-                        ast);
-                throw exception("Member identifier " + ast->token + " already defined", ast);
+                std::stringstream message;
+                message << "Member identifier " << ast->token << " already defined";
+                context_->log(log::LogLevel::ERROR, "EXCEPTION", message.str(), ast);
+                throw exception(message.str(), ast);
             }
             if (dimensions.empty())
             {
@@ -1675,18 +1657,22 @@ private:
             std::shared_ptr<Module>& outer)
     {
         using namespace peg::udl;
+
+        const auto& token_view = node->token;
+        const std::string token(token_view.data(), token_view.size());
+
         switch (node->tag)
         {
             case "SCOPED_NAME"_: // Scoped name
             case "IDENTIFIER"_:
             {
-                DynamicType::Ptr type = outer->type(node->token);
+                DynamicType::Ptr type = outer->type(token);
                 if (type.get() == nullptr)
                 {
                     context_->log(log::LogLevel::ERROR, "EXCEPTION",
-                            "Member type " + node->token + " is unknown",
+                            "Member type " + token + " is unknown",
                             node);
-                    throw exception("Member type " + node->token + " is unknown", node);
+                    throw exception("Member type " + token + " is unknown", node);
                 }
                 return type;
             }
@@ -1743,21 +1729,21 @@ private:
             case "STRING_TYPE"_:
                 return StringType();
             case "STRING_SIZE"_:
-                if (outer->has_constant(node->token))
+                if (outer->has_constant(token))
                 {
-                    return StringType(get_dimension(node->token, outer, node));
+                    return StringType(get_dimension(token, outer, node));
                 }
-                return StringType(std::atoi(node->token.c_str()));
+                return StringType(std::atoi(token.c_str()));
             case "WIDE_STRING_TYPE"_:
-                if (outer->has_constant(node->token))
+                if (outer->has_constant(token))
                 {
                     if (context_->wchar_type == Context::WCHAR_T)
                     {
-                        return WStringType(get_dimension(node->token, outer, node));
+                        return WStringType(get_dimension(token, outer, node));
                     }
                     else // CHAR16_T
                     {
-                        return String16Type(get_dimension(node->token, outer, node));
+                        return String16Type(get_dimension(token, outer, node));
                     }
                 }
                 if (context_->wchar_type == Context::WCHAR_T)
@@ -1771,11 +1757,11 @@ private:
             case "WSTRING_SIZE"_:
                 if (context_->wchar_type == Context::WCHAR_T)
                 {
-                    return WStringType(std::atoi(node->token.c_str()));
+                    return WStringType(std::atoi(token.c_str()));
                 }
                 else // CHAR16_T
                 {
-                    return String16Type(std::atoi(node->token.c_str()));
+                    return String16Type(std::atoi(token.c_str()));
                 }
             case "SEQUENCE_TYPE"_:
             {
@@ -1803,7 +1789,7 @@ private:
         }
 
         context_->log(log::LogLevel::ERROR, "UNKNOWN_TYPE",
-                node->token,
+                token,
                 node);
 
         return DynamicType::Ptr();
@@ -1857,13 +1843,16 @@ private:
     {
         using namespace peg::udl;
 
+        const auto& token_view = node->token;
+        const std::string token(token_view.data(), token_view.size());
+
         if (node->tag == "SCOPED_NAME"_)
         {
-            return get_dimension(node->token, outer, node);
+            return get_dimension(token, outer, node);
         }
-        else if (!node->token.empty())
+        else if (!token.empty())
         {
-            return std::stoul(node->token);
+            return std::stoul(token);
         }
         return 0;
     }
@@ -1926,10 +1915,10 @@ private:
 
             if (already_defined)
             {
-                context_->log(log::LogLevel::ERROR, "EXCEPTION",
-                        "Member identifier " + ast->token + " already defined",
-                        ast);
-                throw exception("Member identifier " + ast->token + " already defined", ast);
+                std::stringstream message;
+                message << "Member identifier " << ast->token << " already defined";
+                context_->log(log::LogLevel::ERROR, "EXCEPTION", message.str(), ast);
+                throw exception(message.str(), ast);
             }
             if (dimensions.empty())
             {
@@ -1991,12 +1980,14 @@ private:
                         }
                         case "INTEGER_LITERAL"_:
                         {
-                            dimensions.push_back(std::stoul(subnode->token.c_str()));
+                            dimensions.push_back(std::stoul(subnode->token.data()));
                             break;
                         }
                         case "SCOPED_NAME"_:
                         {
-                            DynamicData c_data = outer->constant(subnode->token);
+                            DynamicData c_data =
+                                    outer->constant(std::string(subnode->token.data(),
+                                            subnode->token.size()));
                             size_t dim = 0;
                             switch (c_data.type().kind())
                             {
