@@ -313,7 +313,7 @@ public:
                     "The parser found errors while parsing.");
             return false;
         }
-        ast = peg::AstOptimizer(true).optimize(ast);
+        ast = parser_.optimize_ast(ast);
         build_on_ast(ast);
         context.module_ = root_scope_;
         context.success = true;
@@ -354,7 +354,7 @@ public:
                 return false;
             }
 
-            ast = peg::AstOptimizer(true).optimize(ast);
+            ast = parser_.optimize_ast(ast);
             build_on_ast(ast);
             context.module_ = root_scope_;
             context.success = true;
