@@ -18,6 +18,8 @@
 #ifndef EPROSIMA_XTYPES_IDL_PARSER_HPP_
 #define EPROSIMA_XTYPES_IDL_PARSER_HPP_
 
+#define CPP_PEGLIB_LINE_COUNT_ERROR 7
+
 #include <peglib.h>
 
 #include <xtypes/ArrayType.hpp>
@@ -441,7 +443,7 @@ private:
             size_t c,
             const std::string& msg) const
     {
-        context_->log(log::DEBUG, "PEGLIB_PARSER", msg + " (" + std::to_string(l) + ":" + std::to_string(c) + ")");
+        context_->log(log::DEBUG, "PEGLIB_PARSER", msg + " (" + std::to_string(l - CPP_PEGLIB_LINE_COUNT_ERROR) + ":" + std::to_string(c) + ")");
     }
 
     bool read_file(
