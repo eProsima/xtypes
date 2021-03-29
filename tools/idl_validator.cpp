@@ -7,12 +7,12 @@ int main(
     int argc, 
     char** argv)
 {
-    if (argc == 1)
+    if (argc != 2)
     {
         std::cout << "The IDL must be passed as argument" << std::endl;
         return -1;
     }
-    else if (argc == 2)
+    else
     {
         std::string idl_spec = argv[1];
         std::cout << "IDL: " << idl_spec << std::endl;
