@@ -11,6 +11,7 @@ project(xtypes
 option(XTYPES_BUILD_TESTS "Build tests." OFF)
 option(XTYPES_BUILD_EXAMPLES "Build examples." OFF)
 option(XTYPES_EXCEPTIONS "Enable xtypes exceptions in release (which are asserts in debug)." OFF)
+option(XTYPES_BUILD_TOOLS "Build tools." OFF)
 
 if(XTYPES_EXCEPTIONS)
     #add_compile_definitions(XTYPES_EXCEPTIONS) #CMake 3.16
@@ -39,6 +40,53 @@ target_compile_features(${PROJECT_NAME}
     INTERFACE
         cxx_std_17
     )
+
+#####################################################################################
+#                                    Tools
+#####################################################################################
+macro(compile_tool)
+    # Parse arguments
+    if("${ARGV0}" STREQUAL "NAME")
+        set(uniValueArgs NAME)
+    else()
+        set(TOOL_NAME "${ARGV0}")
+    endif()
+
+    set(multiValueArgs SOURCE)
+    cmake_parse_arguments(TOOL "" "${uniValueArgs}" "${multiValueArgs}" ${ARGN})
+
+    add_executable(${TOOL_NAME} ${TOOL_SOURCE})
+
+    target_link_libraries(${TOOL_NAME}
+        PUBLIC
+            Threads::Threads
+        PRIVATE
+            ${PROJECT_NAME}
+        )
+
+    target_compile_options(${TOOL_NAME}
+        INTERFACE
+            $<$<CXX_COMPILER_ID:GNU>:-Wall>
+            $<$<CXX_COMPILER_ID:GNU>:-Wextra>
+        )
+
+    set_target_properties(${TOOL_NAME}
+        PROPERTIES
+            CXX_STANDARD 17
+        )
+endmacro()
+
+find_program(NODERED_EXECUTABLE NAMES node-red node-red@ PATH_SUFFIXES bin)
+
+if(XTYPES_BUILD_TOOLS OR NODERED_EXECUTABLE)
+    compile_tool(${PROJECT_NAME}_idl_validator SOURCE tools/idl_validator.cpp)
+   
+    if (NODERED_EXECUTABLE)
+        file(WRITE $ENV{HOME}/idl_parser_path.txt "${PROJECT_BINARY_DIR}")
+        message("${PROJECT_BINARY_DIR}")
+    endif()
+    # ...
+endif()
 
 #####################################################################################
 #                                    Examples
