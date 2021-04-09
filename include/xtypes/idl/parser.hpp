@@ -443,7 +443,8 @@ private:
             size_t c,
             const std::string& msg) const
     {
-        context_->log(log::DEBUG, "PEGLIB_PARSER", msg + " (" + std::to_string(l - CPP_PEGLIB_LINE_COUNT_ERROR) + ":" + std::to_string(c) + ")");
+        context_->log(log::DEBUG, "PEGLIB_PARSER", msg + " (" + std::to_string(
+                    l - CPP_PEGLIB_LINE_COUNT_ERROR) + ":" + std::to_string(c) + ")");
     }
 
     bool read_file(
@@ -1303,8 +1304,8 @@ private:
         for (auto& member : member_list)
         {
             context_->log(log::LogLevel::DEBUG, "STRUCT_DEF_MEMBER",
-                    "Struct \"" + name + "\" member: " + member.name(),
-                    ast);
+                    "Struct \"" + name + "\" member: {" + member.name() +
+                    ": " + member.type().name() + "}", ast);
             struct_type->add_member(std::move(member));
         }
     }
