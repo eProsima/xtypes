@@ -659,7 +659,7 @@ private:
     {
         std::string aux_id(identifier.data(), identifier.size());
 
-        if (!context_->ignore_case)
+        if (context_->ignore_case)
         {
             to_lower(aux_id);
         }
