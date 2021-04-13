@@ -4,9 +4,9 @@ on:
   push:
     branches:
       - master
-    pull_request:
-      branches:
-        - '**'
+  pull_request:
+    branches:
+      - '**'
 
 jobs:
   xtypes_CI:
@@ -39,5 +39,6 @@ jobs:
 
       - name: Valgrind
         working-directory: src/xtypes
+        if: startsWith(github.head_ref, 'valgrind')
         run: |
           ctest -VV -D ExperimentalMemCheck --no-compress-output -LE NoMemoryCheck
