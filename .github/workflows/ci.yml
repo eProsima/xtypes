@@ -1,0 +1,42 @@
+name: CI for eProsima xTypes
+
+on:
+  push:
+    branches:
+      - master
+    pull_request:
+      branches:
+        - '**'
+
+jobs:
+  xtypes_CI:
+    runs-on: ubuntu-20.04
+    container: ubuntu:focal
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          path: src/xtypes
+          submodules: true
+
+      - name: Download required dependencies
+        run: |
+          apt update
+          DEBIAN_FRONTEND=noninteractive apt install -y cmake ctest gcc g++ valgrind
+
+      - name: Install colcon
+        run: |
+          apt install -y python3-pip
+          pip3 install -U colcon-common-extensions
+
+      - name: Build
+        run: |
+          colcon build --cmake-args "-DXTYPES_BUILD_TESTS=ON -DXTYPES_BUILD_EXAMPLES=ON -DXTYPES_EXCEPTIONS=ON -DMEMORYCHECK_COMMAND_OPTIONS=-q --tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=50 --xml=yes --xml-file=test_%p_memcheck.xml"
+
+      - name: Test
+        run: |
+          . install/local_setup.sh && ctest -VV -D ExperimentalTest --no-compress-output
+
+      - name: Valgrind
+        run: |
+          . install/local_setup.sh && ctest -VV -D ExperimentalMemCheck --no-compress-output -LE NoMemoryCheck
