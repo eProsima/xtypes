@@ -17,18 +17,12 @@ jobs:
       - uses: actions/checkout@v2
         with:
           path: src/xtypes
+          submodules: recursive
 
       - name: Download required dependencies
         run: |
           apt update
           DEBIAN_FRONTEND=noninteractive apt install -y cmake gcc g++ git valgrind
-
-      - name: Init submodules
-        run: |
-          cd src/xtypes
-          git submodule init
-          git submodule update
-          cd ../..
 
       - name: Install colcon
         run: |
