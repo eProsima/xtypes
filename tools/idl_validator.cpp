@@ -4,8 +4,8 @@
 using namespace eprosima::xtypes;
 
 int main(
-    int argc, 
-    char** argv)
+        int argc,
+        char** argv)
 {
     if (argc != 2)
     {
@@ -21,6 +21,10 @@ int main(
         context.print_log(true);
         context = idl::parse(idl_spec, context);
         std::cout << "Parse Success: " << std::boolalpha << context.success << std::endl;
+        for (auto [name, type] : context.get_all_types())
+        {
+            std::cout << "Type: " << name << std::endl;
+        }
         return context.success ? 0 : 1;
     }
 }
