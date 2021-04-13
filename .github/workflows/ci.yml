@@ -21,7 +21,7 @@ jobs:
       - name: Download required dependencies
         run: |
           apt update
-          DEBIAN_FRONTEND=noninteractive apt install -y cmake ctest gcc g++ git valgrind
+          DEBIAN_FRONTEND=noninteractive apt install -y cmake gcc g++ git valgrind
 
       - name: Init submodules
         run: |
