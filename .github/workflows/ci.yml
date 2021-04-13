@@ -39,6 +39,6 @@ jobs:
 
       - name: Valgrind
         working-directory: src/xtypes
-        if: startsWith(github.ref, 'refs/heads/valgrind')
+        if: startsWith(github.head_ref, 'valgrind')
         run: |
-          ctest -VV -D ExperimentalMemCheck --no-compress-output -LE NoMemoryCheck
+          test -VV -D ExperimentalMemCheck --no-compress-output -LE NoMemoryCheck
