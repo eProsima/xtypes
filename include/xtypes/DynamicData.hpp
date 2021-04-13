@@ -834,6 +834,14 @@ public:
     /// \brief See ReadableDynamicDataRef::operator[]()
     /// \returns A writable reference to the DynamicData accessed.
     WritableDynamicDataRef operator [] (
+            const char* member_name)
+    {
+        return operator_at_impl(member_name, false);
+    }
+
+    /// \brief See ReadableDynamicDataRef::operator[]()
+    /// \returns A writable reference to the DynamicData accessed.
+    WritableDynamicDataRef operator [] (
             const std::string& member_name)
     {
         return operator_at_impl(member_name, false);
@@ -845,6 +853,14 @@ public:
             size_t index)
     {
         return ReadableDynamicDataRef::operator [](index);
+    }
+
+    /// \brief See ReadableDynamicDataRef::operator[]()
+    /// \returns A writable reference to the DynamicData accessed.
+    WritableDynamicDataRef operator [] (
+            int index)
+    {
+        return ReadableDynamicDataRef::operator [](static_cast<size_t>(index));
     }
 
     /// \brief Modifies the discriminator of an Union.
