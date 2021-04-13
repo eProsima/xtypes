@@ -1,0 +1,43 @@
+name: CI for eProsima xTypes
+
+on:
+  push:
+    branches:
+      - master
+    pull_request:
+      branches:
+        - '**'
+
+jobs:
+  xtypes_CI:
+    runs-on: ubuntu-20.04
+    container: ubuntu:focal
+
+    steps:
+
+      - name: Download required dependencies
+        run: |
+          apt update
+          DEBIAN_FRONTEND=noninteractive apt install -y cmake gcc g++ git valgrind
+
+      - uses: actions/checkout@v2
+        with:
+          path: src/xtypes
+          submodules: true
+
+      - name: Build
+        working-directory: src/xtypes
+        run: |
+          ls -la
+          cmake . -DXTYPES_BUILD_TESTS=ON -DXTYPES_BUILD_EXAMPLES=ON -DXTYPES_EXCEPTIONS=ON -DCTEST_MEMORYCHECK_COMMAND=valgrind -DCTEST_MEMORYCHECK_COMMAND_OPTIONS='-q --tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=50'
+          make -j${nproc}
+
+      - name: Test
+        working-directory: src/xtypes
+        run: |
+          ctest -VV -D ExperimentalTest --no-compress-output
+
+      - name: Valgrind
+        working-directory: src/xtypes
+        run: |
+          ctest -VV -D ExperimentalMemCheck --no-compress-output -LE NoMemoryCheck

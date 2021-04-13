@@ -556,6 +556,9 @@ private:
             scope = root_scope_;
         }
         switch (ast->tag){
+            case "ANNOTATION_APPL"_:
+                // Not supported yet
+                break;
             case "MODULE_DCL"_:
                 module_dcl(ast, scope);
                 break;
