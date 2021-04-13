@@ -297,13 +297,15 @@ TEST (IDLParser, name_collision)
         // Test that the parser throws an exception when using a keyword (ignoring case) as identifier.
         try
         {
-            Context context = parse(R"(
+            Context context;
+            context.ignore_case = true;
+
+            context = parse(R"(
                 struct MyStruct
                 {
                     string STRUCT;
-                };
-                           )"
-                            );
+                };)", context);
+
             FAIL() << " Exception wasn't thrown!" << std::endl;
         }
         catch (const Parser::exception& e)
@@ -321,16 +323,13 @@ TEST (IDLParser, name_collision)
 
     {
         // Test that the parser accepts an uppercase keyword when case isn't ignored.
-        Context context;
-        context.ignore_case = true;
-        parse(R"(
+        Context context = parse(
+            R"(
             struct Struct
             {
                 string STRUCT;
-            };
-                       )",
-                context
-                );
+            };)");
+
         std::map<std::string, DynamicType::Ptr> result = context.module().get_all_types();
         EXPECT_EQ(1, result.size());
         const DynamicType* my_struct = result["Struct"].get();
@@ -345,10 +344,8 @@ TEST (IDLParser, name_collision)
             struct struct
             {
                 string string;
-            };
-                       )",
-                context
-                );
+            };)", context);
+
         std::map<std::string, DynamicType::Ptr> result = context.module().get_all_types();
         EXPECT_EQ(1, result.size());
     }
@@ -360,9 +357,8 @@ TEST (IDLParser, name_collision)
             struct MyStruct
             {
                 string _struct;
-            };
-                       )"
-                        );
+            };)");
+
         std::map<std::string, DynamicType::Ptr> result = context.module().get_all_types();
         EXPECT_EQ(1, result.size());
 
@@ -380,9 +376,8 @@ TEST (IDLParser, name_collision)
                 struct MyStruct
                 {
                     uint32 MyStruct;
-                };
-                           )"
-                            );
+                };)");
+
             FAIL() << " Exception wasn't thrown!" << std::endl;
         }
         catch (const Parser::exception& e)
@@ -407,9 +402,8 @@ TEST (IDLParser, name_collision)
                 {
                     uint32 a;
                     string a;
-                };
-                           )"
-                            );
+                };)");
+
             FAIL() << " Exception wasn't thrown!" << std::endl;
         }
         catch (const Parser::exception& e)
@@ -433,9 +427,8 @@ TEST (IDLParser, name_collision)
                 struct MyStruct
                 {
                     uint32 a, a;
-                };
-                           )"
-                            );
+                };)");
+
             FAIL() << " Exception wasn't thrown!" << std::endl;
         }
         catch (const Parser::exception& e)
@@ -1055,6 +1048,7 @@ TEST (IDLParser, logging)
     context.preprocess = false;
     context.allow_keyword_identifiers = true;
     context.ignore_redefinition = true;
+    context.ignore_case = true;
     parse(R"~~(
         struct Struct
         {
