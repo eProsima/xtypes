@@ -36,7 +36,7 @@ struct is_base_of_template_impl
 {
     template<typename ... Ts>
     static constexpr std::true_type  test(
-            const base<Ts...>*);
+            const base<Ts ...>*);
     static constexpr std::false_type test(
             ...);
     using type = decltype(test(std::declval<derived*>()));
@@ -144,6 +144,17 @@ public:
     /// \pre The member_name must exists
     /// \returns A readable reference of the DynamicData accessed.
     ReadableDynamicDataRef operator [] (
+            const char* member_name) const
+    {
+        return operator_at_impl(member_name);
+    }
+
+    /// \brief Member access operator by name.
+    /// \param[in] member_name Name of the member to access.
+    /// \pre The DynamicData must represent an AggregationType.
+    /// \pre The member_name must exists
+    /// \returns A readable reference of the DynamicData accessed.
+    ReadableDynamicDataRef operator [] (
             const std::string& member_name) const
     {
         return operator_at_impl(member_name);
@@ -190,6 +201,18 @@ public:
         const AggregationType& aggregation = static_cast<const StructType&>(type_);
         const Member& member = aggregation.member(index);
         return ReadableDynamicDataRef(member.type(), instance_ + member.offset());
+    }
+
+    /// \brief index access operator by name.
+    /// Depends of the underlying DynamicType, the index can be represent the member or element position.
+    /// \param[in] index Index requested.
+    /// \pre The DynamicData must represent an AggregationType (except an UnionType) or a CollectionType.
+    /// \pre index < size()
+    /// \returns A readable reference of the DynamicData accessed.
+    ReadableDynamicDataRef operator [] (
+            int index) const
+    {
+        return operator [](static_cast<size_t>(index));
     }
 
     /// \brief access to Union discriminator.
@@ -313,7 +336,7 @@ public:
     /// \brief Class used by for_each() function to represent a readable DynamicData node in the tree.
     class ReadableNode
     {
-public:
+    public:
 
         ReadableNode(
                 const Instanceable::InstanceNode& instance_node)
@@ -373,7 +396,7 @@ public:
             return internal_.from_member;
         }
 
-private:
+    private:
 
         const Instanceable::InstanceNode& internal_;
     };
@@ -393,13 +416,16 @@ private:
                     });
             return true;
         }
-        catch (bool value){ return value; }
+        catch (bool value)
+        {
+            return value;
+        }
     }
 
     /// \brief Class used for iterate ReadableDynamicDataRef
     class Iterator
     {
-public:
+    public:
 
         Iterator(
                 const Iterator& it)
@@ -449,7 +475,7 @@ public:
             return prev;
         }
 
-protected:
+    protected:
 
         friend class ReadableDynamicDataRef;
 
@@ -489,7 +515,7 @@ protected:
 
     class MemberPair
     {
-public:
+    public:
 
         MemberPair(
                 const Member& member,
@@ -515,7 +541,7 @@ public:
             return member_.type().kind();
         }
 
-protected:
+    protected:
 
         const Member& member_;
         uint8_t* instance_;
@@ -523,7 +549,7 @@ protected:
 
     class MemberIterator : public Iterator
     {
-public:
+    public:
 
         MemberIterator(
                 const MemberIterator& it)
@@ -568,7 +594,7 @@ public:
             return MemberIterator(ref_, true);
         }
 
-protected:
+    protected:
 
         friend class ReadableDynamicDataRef;
         friend class WritableDynamicDataRef;
@@ -1055,7 +1081,7 @@ public:
     /// \brief Class used by for_each() function to represent a writable DynamicData node in the tree.
     class WritableNode : public ReadableNode
     {
-public:
+    public:
 
         WritableNode(
                 const Instanceable::InstanceNode& instance_node)
@@ -1087,13 +1113,16 @@ public:
                     });
             return true;
         }
-        catch (bool value){ return value; }
+        catch (bool value)
+        {
+            return value;
+        }
     }
 
     /// \brief Class used for iterate WritableDynamicDataRef
     class Iterator : public ReadableDynamicDataRef::Iterator
     {
-public:
+    public:
 
         Iterator(
                 const ReadableDynamicDataRef::Iterator& rit)
@@ -1106,7 +1135,7 @@ public:
             return ReadableDynamicDataRef::Iterator::operator *();
         }
 
-protected:
+    protected:
 
         friend class WritableDynamicDataRef;
 
@@ -1137,7 +1166,7 @@ protected:
 
     class MemberPair : public ReadableDynamicDataRef::MemberPair
     {
-public:
+    public:
 
         MemberPair(
                 const Member& member,
@@ -1160,7 +1189,7 @@ public:
 
     class MemberIterator : public Iterator
     {
-public:
+    public:
 
         MemberIterator(
                 const MemberIterator& it)
@@ -1201,7 +1230,7 @@ public:
             return ReadableDynamicDataRef::MemberIterator(ref_, true);
         }
 
-protected:
+    protected:
 
         friend class WritableDynamicDataRef;
 
@@ -1560,7 +1589,9 @@ public:
 
 /// \brief Ostream operator overload.
 /// \pre The DynamicData to be sent to ostream.
-inline std::ostream& operator << (std::ostream& os, const DynamicData& data)
+inline std::ostream& operator << (
+        std::ostream& os,
+        const DynamicData& data)
 {
     os << data.to_string();
     return os;
