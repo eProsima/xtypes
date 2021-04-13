@@ -14,15 +14,16 @@ jobs:
     container: ubuntu:focal
 
     steps:
-      - uses: actions/checkout@v2
-        with:
-          path: src/xtypes
-          submodules: recursive
 
       - name: Download required dependencies
         run: |
           apt update
           DEBIAN_FRONTEND=noninteractive apt install -y cmake gcc g++ git valgrind
+
+      - uses: actions/checkout@v2
+        with:
+          path: src/xtypes
+          submodules: true
 
       - name: Install colcon
         run: |
