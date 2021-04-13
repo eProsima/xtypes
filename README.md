@@ -89,6 +89,9 @@ $ cmake .. -DXTYPES_BUILD_TESTS=ON
 $ make
 ```
 
+Tests are automatically deployed and executed via GitHub Actions each time new changes are introduced to the `master` branch or when a *pull request* is created.
+By default, Valgrind tests will be omitted; if the introduced changes are considered to be deep enough to need a complete memcheck, please name your branch using the pattern `valgrind/<branch_name>`, so that GitHub Action step for Valgrind does not get bypassed and the memory check tests are executed.
+
 ## API usage
 *Examples can be found in [example folder](examples).*
 
