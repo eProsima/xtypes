@@ -3,7 +3,7 @@ name: CI for eProsima xTypes
 on:
   push:
     branches:
-      - bugfix/parser_annotations
+      - master
     pull_request:
       branches:
         - '**'
