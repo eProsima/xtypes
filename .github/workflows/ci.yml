@@ -39,5 +39,6 @@ jobs:
 
       - name: Valgrind
         working-directory: src/xtypes
+        if: github.ref == 'refs/heads/valgrind/*'
         run: |
           ctest -VV -D ExperimentalMemCheck --no-compress-output -LE NoMemoryCheck
