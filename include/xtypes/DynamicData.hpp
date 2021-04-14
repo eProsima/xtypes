@@ -166,29 +166,32 @@ public:
     /// \pre The DynamicData must represent an AggregationType (except an UnionType) or a CollectionType.
     /// \pre index < size()
     /// \returns A readable reference of the DynamicData accessed.
+    template<typename T, typename = typename std::enable_if<std::is_integral<T>::value>::type>
     ReadableDynamicDataRef operator [] (
-            size_t index) const
+            T index) const
     {
+        size_t s_index(static_cast<size_t>(index));
+
         xtypes_assert(type_.is_aggregation_type() || type_.is_collection_type() || type_.kind() == TypeKind::PAIR_TYPE,
                 "operator [size_t] isn't available for type '" << type_.name() << "'.");
-        xtypes_assert(index < size(),
-                "operator [" << index << "] is out of bounds.");
+        xtypes_assert(s_index < size(),
+                "operator [" << s_index << "] is out of bounds.");
         if (type_.is_collection_type())
         {
             const CollectionType& collection = static_cast<const CollectionType&>(type_);
             // The following assert exists because it may be confusing by the user, it will return the pair instead of
             // the value associated to the "key" representation of the index.
             xtypes_assert(type_.kind() != TypeKind::MAP_TYPE, "Cannot access a MapType by index");
-            return ReadableDynamicDataRef(collection.content_type(), collection.get_instance_at(instance_, index));
+            return ReadableDynamicDataRef(collection.content_type(), collection.get_instance_at(instance_, s_index));
         }
 
         xtypes_assert(type_.kind() != TypeKind::UNION_TYPE, "Members of UnionType cannot be accessed by index.");
 
         if (type_.kind() == TypeKind::PAIR_TYPE)
         {
-            xtypes_assert(index < 2, "operator[" << index << "] is out of bounds.");
+            xtypes_assert(s_index < 2, "operator[" << s_index << "] is out of bounds.");
             const PairType& pair = static_cast<const PairType&>(type_);
-            if (index == 0)
+            if (s_index == 0)
             {
                 return ReadableDynamicDataRef(pair.first(), instance_);
             }
@@ -199,20 +202,8 @@ public:
         }
 
         const AggregationType& aggregation = static_cast<const StructType&>(type_);
-        const Member& member = aggregation.member(index);
+        const Member& member = aggregation.member(s_index);
         return ReadableDynamicDataRef(member.type(), instance_ + member.offset());
-    }
-
-    /// \brief index access operator by name.
-    /// Depends of the underlying DynamicType, the index can be represent the member or element position.
-    /// \param[in] index Index requested.
-    /// \pre The DynamicData must represent an AggregationType (except an UnionType) or a CollectionType.
-    /// \pre index < size()
-    /// \returns A readable reference of the DynamicData accessed.
-    ReadableDynamicDataRef operator [] (
-            int index) const
-    {
-        return operator [](static_cast<size_t>(index));
     }
 
     /// \brief access to Union discriminator.
@@ -875,18 +866,11 @@ public:
 
     /// \brief See ReadableDynamicDataRef::operator[]()
     /// \returns A writable reference to the DynamicData accessed.
+    template<typename T, typename = typename std::enable_if<std::is_integral<T>::value>::type>
     WritableDynamicDataRef operator [] (
-            size_t index)
+            T index)
     {
         return ReadableDynamicDataRef::operator [](index);
-    }
-
-    /// \brief See ReadableDynamicDataRef::operator[]()
-    /// \returns A writable reference to the DynamicData accessed.
-    WritableDynamicDataRef operator [] (
-            int index)
-    {
-        return ReadableDynamicDataRef::operator [](static_cast<size_t>(index));
     }
 
     /// \brief Modifies the discriminator of an Union.
