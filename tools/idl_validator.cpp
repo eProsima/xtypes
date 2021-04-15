@@ -23,7 +23,15 @@ int main(
         std::cout << "Parse Success: " << std::boolalpha << context.success << std::endl;
         for (auto [name, type] : context.get_all_types())
         {
-            std::cout << "Type: " << name << std::endl;
+            if (type->kind() == TypeKind::STRUCTURE_TYPE)
+            {
+                std::cout << "Struct Name:" << name << std::endl;
+                auto members = static_cast<const StructType*>(type.get())->members();
+                for (auto &m: members)
+                {
+                    std::cout << "Struct Member:" << name << "[" << m.name() << "," << m.type().name() << "]" << std::endl;
+                }
+            }
         }
         return context.success ? 0 : 1;
     }
