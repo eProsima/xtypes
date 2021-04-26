@@ -271,7 +271,7 @@ install(
     DIRECTORY
         ${PROJECT_SOURCE_DIR}/thirdparty/cpp-peglib/
     DESTINATION
-        thirdparty/cpp-peglib/include
+        ${INCLUDE_INSTALL_DIR}/cpp-peglib
     FILES_MATCHING
         PATTERN "*.h"
     )
