@@ -20,7 +20,7 @@
 
 #define CPP_PEGLIB_LINE_COUNT_ERROR 7
 
-#include <peglib.h>
+#include <cpp-peglib/peglib.h>
 
 #include <xtypes/ArrayType.hpp>
 #include <xtypes/StringType.hpp>
