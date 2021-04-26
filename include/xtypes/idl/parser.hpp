@@ -502,10 +502,18 @@ private:
         size_t froms = from.size();
         size_t tos = to.size();
         size_t pos = str.find(from);
+        const std::string escaped = "\\\\\"";
+        size_t escaped_size = escaped.size();
         while (pos != std::string::npos)
         {
             str.replace(pos, froms, to);
             pos = str.find(from, pos + tos);
+            while (str[pos - 1] == '\\')
+            {
+                str.replace(pos, froms, escaped);
+                pos = str.find(from, pos + escaped_size);
+            }
+            
         }
     }
 
