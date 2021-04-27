@@ -746,12 +746,12 @@ private:
 
         if (ast->nodes[1]->tag == "IDENTIFIER"_)
         {
-            name = resolve_identifier(ast, ast->nodes[1]->token, outer);
+            name = resolve_identifier(ast, ast->nodes[1]->token, outer, context_->ignore_redefinition);
         }
         else if (ast->nodes[1]->tag == "ARRAY_DECLARATOR"_)
         {
             auto& node = ast->nodes[1];
-            name = resolve_identifier(node, node->nodes[0]->token, outer);
+            name = resolve_identifier(node, node->nodes[0]->token, outer, context_->ignore_redefinition);
             for (size_t idx = 1; idx < node->nodes.size(); ++idx)
             {
                 dimensions.push_back(std::atoi(node->nodes[idx]->token.data()));
