@@ -1237,6 +1237,22 @@ TEST(IDLParser, alias_test)
     EXPECT_EQ(static_cast<const AliasType&>(dst4).get().kind(), TypeKind::ARRAY_TYPE);
 }
 
+TEST (IDLParser, alias_redefinition)
+{
+    std::string idl_spec =
+            R"(
+        typedef uint32 u32;
+        typedef double longfloat;
+        typedef longfloat lfloat;
+        typedef uint32 u32;
+    )";
+
+    Context context;
+    context.ignore_redefinition = true;
+    parse(idl_spec, context);
+    ASSERT_TRUE(context.success);
+}
+
 TEST (IDLParser, union_tests)
 {
     Context context = parse(

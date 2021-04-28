@@ -30,7 +30,15 @@ int main(
                 auto members = static_cast<const StructType*>(type.get())->members();
                 for (auto &m: members)
                 {
-                    std::cout << "Struct Member:" << name << "[" << m.name() << "," << m.type().name() << "]" << std::endl;
+                    if (m.type().kind() == TypeKind::ALIAS_TYPE)
+                    {
+                        auto alias = static_cast<const AliasType&>(m.type());
+                        std::cout << "Struct Member:" << name << "[" << m.name() << "," << alias.rget().name() << "]" << std::endl;
+                    }
+                    else
+                    {
+                        std::cout << "Struct Member:" << name << "[" << m.name() << "," << m.type().name() << "]" << std::endl;
+                    }
                 }
             }
         }
