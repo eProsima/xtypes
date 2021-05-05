@@ -22,7 +22,7 @@ int main(
         context.ignore_redefinition = true;
         context = idl::parse(idl_spec, context);
         std::cout << "Parse Success: " << std::boolalpha << context.success << std::endl;
-        for (auto [name, type] : context.get_all_types())
+        for (auto [name, type] : context.get_all_scoped_types())
         {
             if (type->kind() == TypeKind::STRUCTURE_TYPE)
             {
