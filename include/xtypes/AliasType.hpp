@@ -106,7 +106,8 @@ public:
             const InstanceNode& node,
             InstanceVisitor visitor) const override
     {
-        aliased_->for_each_instance(node, visitor);
+        InstanceNode alias(*node.parent, *aliased_, node.instance, node.from_index, node.from_member);
+        aliased_->for_each_instance(alias, visitor);
     }
 
     virtual TypeConsistency is_compatible(
