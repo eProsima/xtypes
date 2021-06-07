@@ -1,12 +1,9 @@
 # xtypes
 Fast and lightweight C++17 header-only implementation of [OMG DDS-XTYPES](https://www.omg.org/spec/DDS-XTypes) standard.
 
-To properly download this library, please consider cloning it using the `--recursive` options, as it includes the [cpp-peglib](https://github.com/yhirose/cpp-peglib) library as a submodule:
-
 ```bash
 git clone https://github.com/eProsima/xtypes.git --recursive
 ```
-
 
 ## Getting Started
 Given the following IDL,
@@ -60,8 +57,14 @@ int32_t my_value = data["c"]["a"];
   No memory penalty is introduced by using *eProsima xtypes* in relation to compiled types.
 - **Fast**: Accessing to data members is swift and quick.
 - **Header only library**: avoids the linking problems.
-- **No external dependency**: *eProsima xtypes*'s only dependencies are from *std*.
+- **No external dependency**: *eProsima xtypes*'s only dependencies are from *std*
+    (except cpp-peglib that will be downloaded in compilation time automatically in case it is not found in the system).
 - **Easy to use**: Comprehensive API and intuitive concepts.
+
+## Dependencies
+*eprosima xtypes* only dependency is `cpp-peglib`.
+This repository will be downloaded automatically if cmake option `THIRDPARTY` is set to `ON` (default value)
+or if `--recursive` argument is used to download this repository.
 
 ## Build
 *eprosima xtypes* is a header-only library: in order to use it you simply have to copy the files located in the include folder into your project and include them.
