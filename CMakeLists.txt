@@ -285,7 +285,8 @@ install(
     FILES
         ${cpp-peglib_INCLUDE_DIR}/peglib.h
     DESTINATION
-        ${INCLUDE_INSTALL_DIR}/thirdparty/cpp-peglib/include
+        # This could be ${INCLUDE_INSTALL_DIR}/ but is left like this so it does not break compatibilitys
+        thirdparty/cpp-peglib/include
     )
 
 install(
