@@ -1,7 +1,7 @@
 #####################################################################################
-#                             Top xtypes build system
+# Top xtypes build system
 #####################################################################################
-cmake_minimum_required(VERSION 3.1.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.5)
 
 project(xtypes
     VERSION "0.1.0"
@@ -12,6 +12,7 @@ option(XTYPES_BUILD_TESTS "Build tests." OFF)
 option(XTYPES_BUILD_EXAMPLES "Build examples." OFF)
 option(XTYPES_EXCEPTIONS "Enable xtypes exceptions in release (which are asserts in debug)." OFF)
 option(XTYPES_BUILD_TOOLS "Build tools." OFF)
+option(THIRDPARTY "Allow to download thidparty repository when needed." ON)
 
 if(XTYPES_EXCEPTIONS)
     #add_compile_definitions(XTYPES_EXCEPTIONS) #CMake 3.16
@@ -24,14 +25,27 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 #####################################################################################
-#                                    Library
+# Load CMake modules
+#####################################################################################
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake/modules)
+include(${PROJECT_SOURCE_DIR}/cmake/common/eprosima_thirdparty_libraries.cmake)
+
+#####################################################################################
+# Thirdparty library
+#####################################################################################
+find_package(cpp-peglib REQUIRED)
+
+message(STATUS "Found peglib.h: ${cpp-peglib_INCLUDE_DIR}")
+
+#####################################################################################
+# Library
 #####################################################################################
 add_library(${PROJECT_NAME} INTERFACE)
 
 target_include_directories(${PROJECT_NAME}
     INTERFACE
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/thirdparty/cpp-peglib>
+        $<BUILD_INTERFACE:${cpp-peglib_INCLUDE_DIR}>        # Path to peglib.h
         $<INSTALL_INTERFACE:include>
         $<INSTALL_INTERFACE:thirdparty/cpp-peglib/include>
     )
@@ -42,7 +56,7 @@ target_compile_features(${PROJECT_NAME}
     )
 
 #####################################################################################
-#                                    Tools
+# Tools
 #####################################################################################
 macro(compile_tool)
     # Parse arguments
@@ -80,7 +94,7 @@ find_program(NODERED_EXECUTABLE NAMES node-red node-red@ PATH_SUFFIXES bin)
 
 if(XTYPES_BUILD_TOOLS OR NODERED_EXECUTABLE)
     compile_tool(${PROJECT_NAME}_idl_validator SOURCE tools/idl_validator.cpp)
-   
+
     if (NODERED_EXECUTABLE)
         file(WRITE $ENV{HOME}/idl_parser_path.txt "${PROJECT_BINARY_DIR}")
         message("${PROJECT_BINARY_DIR}")
@@ -89,7 +103,7 @@ if(XTYPES_BUILD_TOOLS OR NODERED_EXECUTABLE)
 endif()
 
 #####################################################################################
-#                                    Examples
+# Examples
 #####################################################################################
 macro(compile_example)
     # Parse arguments
@@ -132,7 +146,7 @@ if(XTYPES_BUILD_EXAMPLES)
 endif()
 
 #####################################################################################
-#                                      Tests
+# Tests
 #####################################################################################
 macro(compile_test)
     # Parse arguments
@@ -215,7 +229,7 @@ if(XTYPES_BUILD_TESTS)
 endif()
 
 #####################################################################################
-#                                   Installation
+# Installation
 #####################################################################################
 include(GNUInstallDirs)
 set(BIN_INSTALL_DIR     ${CMAKE_INSTALL_BINDIR}     CACHE PATH "Installation directory for binaries")
@@ -268,12 +282,10 @@ install(
     )
 
 install(
-    DIRECTORY
-        ${PROJECT_SOURCE_DIR}/thirdparty/cpp-peglib/
+    FILES
+        ${cpp-peglib_INCLUDE_DIR}/peglib.h
     DESTINATION
-        thirdparty/cpp-peglib/include
-    FILES_MATCHING
-        PATTERN "*.h"
+        ${INCLUDE_INSTALL_DIR}/thirdparty/cpp-peglib/include
     )
 
 install(

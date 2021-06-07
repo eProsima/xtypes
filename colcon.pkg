@@ -1,0 +1,5 @@
+{
+    "name": "xtypes",
+    "type": "cmake",
+    "dependencies" : ["cpp-peglib"]
+}
