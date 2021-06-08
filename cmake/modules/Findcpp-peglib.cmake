@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# THIRDPARTY
-
-message(STATUS "Module Find cpp-peglib")
+# XTYPES_THIRDPARTY
 
 find_package(cpp-peglib CONFIG)
 if (NOT cpp-peglib_INCLUDE_DIR)
@@ -35,5 +33,3 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(cpp-peglib DEFAULT_MSG cpp-peglib_INCLUDE_DIR)
 
 mark_as_advanced(cpp-peglib_INCLUDE_DIR)
-
-message(STATUS "Module Find cpp-peglib end. Found peglib.h in ${cpp-peglib_INCLUDE_DIR}")

@@ -62,8 +62,8 @@ int32_t my_value = data["c"]["a"];
 - **Easy to use**: Comprehensive API and intuitive concepts.
 
 ## Dependencies
-*eprosima xtypes* only dependency is `cpp-peglib`.
-This repository will be downloaded automatically if cmake option `THIRDPARTY` is set to `ON` (default value)
+*eProsima xtypes* only dependency is `cpp-peglib`.
+This repository will be downloaded automatically if CMake option `THIRDPARTY` is set to `ON` (default value)
 or if `--recursive` argument is used to download this repository.
 
 ## Build

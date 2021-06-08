@@ -40,7 +40,7 @@ macro(eprosima_download_thirdparty package)
     set(ALLOWED_VALUES ON OFF FORCE)
 
     # Create the THIRDPARTY variable defaulting to OFF
-    set(THIRDPARTY ON CACHE STRING "Activate use of internal submodules.")
+    set(THIRDPARTY ${XTYPES_THIRDPARTY} CACHE STRING "Activate use of internal submodules.")
     # Define list of values GUI will offer for the variable
     set_property(CACHE THIRDPARTY PROPERTY STRINGS ON OFF FORCE)
     # Check that specified value is allowed

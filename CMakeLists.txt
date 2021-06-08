@@ -1,7 +1,7 @@
 #####################################################################################
 # Top xtypes build system
 #####################################################################################
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 
 project(xtypes
     VERSION "0.1.0"
@@ -12,7 +12,7 @@ option(XTYPES_BUILD_TESTS "Build tests." OFF)
 option(XTYPES_BUILD_EXAMPLES "Build examples." OFF)
 option(XTYPES_EXCEPTIONS "Enable xtypes exceptions in release (which are asserts in debug)." OFF)
 option(XTYPES_BUILD_TOOLS "Build tools." OFF)
-option(THIRDPARTY "Allow to download thidparty repository when needed." ON)
+option(XTYPES_THIRDPARTY "Allow to download thidparty repository when needed." ON)
 
 if(XTYPES_EXCEPTIONS)
     #add_compile_definitions(XTYPES_EXCEPTIONS) #CMake 3.16
@@ -35,7 +35,7 @@ include(${PROJECT_SOURCE_DIR}/cmake/common/eprosima_thirdparty_libraries.cmake)
 #####################################################################################
 find_package(cpp-peglib REQUIRED)
 
-message(STATUS "Found peglib.h: ${cpp-peglib_INCLUDE_DIR}")
+message(STATUS "Found peglib.h in directory: ${cpp-peglib_INCLUDE_DIR}")
 
 #####################################################################################
 # Library
@@ -285,7 +285,7 @@ install(
     FILES
         ${cpp-peglib_INCLUDE_DIR}/peglib.h
     DESTINATION
-        # This could be ${INCLUDE_INSTALL_DIR}/ but is left like this so it does not break compatibilitys
+        # This could be ${INCLUDE_INSTALL_DIR}/ but is left like this so it does not break compatibility
         thirdparty/cpp-peglib/include
     )
 
