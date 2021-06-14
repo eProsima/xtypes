@@ -678,6 +678,110 @@ private:
                     l - CPP_PEGLIB_LINE_COUNT_ERROR) + ":" + std::to_string(c) + ")");
     }
 
+    bool read_file(
+            const char* path,
+            std::vector<char>& buff) const
+    {
+        std::ifstream ifs(path, std::ios::in | std::ios::binary);
+
+        if (ifs.fail())
+        {
+            context_->log(log::LogLevel::DEBUG, "FILE",
+                    "Cannot open file: " + std::string(path));
+            return false;
+        }
+
+        buff.resize(static_cast<unsigned int>(ifs.seekg(0, std::ios::end).tellg()));
+
+        if (!buff.empty())
+        {
+            ifs.seekg(0, std::ios::beg).read(&buff[0], static_cast<std::streamsize>(buff.size()));
+        }
+        context_->log(log::LogLevel::DEBUG, "FILE",
+                "Loaded file: " + std::string(path));
+        return true;
+    }
+
+    static std::string exec(
+            const std::string& cmd,
+            bool filter_stderr = true)
+    {
+        std::array<char, 256> buffer;
+        std::string command = cmd;
+        if (filter_stderr)
+        {
+            command.append(" 2> /dev/null");
+        }
+        std::string result;
+        std::unique_ptr<FILE, decltype(& pclose)> pipe(popen(command.c_str(), "r"), pclose);
+        if (!pipe)
+        {
+            throw std::runtime_error("popen() failed!");
+        }
+        while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr)
+        {
+            result += buffer.data();
+        }
+        return result;
+    }
+
+    void replace_all_string(
+            std::string& str,
+            const std::string& from,
+            const std::string& to) const
+    {
+        size_t froms = from.size();
+        size_t tos = to.size();
+        size_t pos = str.find(from);
+        const std::string escaped = "\\\\\"";
+        size_t escaped_size = escaped.size();
+        while (pos != std::string::npos)
+        {
+            str.replace(pos, froms, to);
+            pos = str.find(from, pos + tos);
+            while (str[pos - 1] == '\\')
+            {
+                str.replace(pos, froms, escaped);
+                pos = str.find(from, pos + escaped_size);
+            }
+
+        }
+    }
+
+    std::string preprocess_string(
+            const std::string& idl_string) const
+    {
+        std::string args = "-H ";
+        for (const std::string inc_path : context_->include_paths)
+        {
+            args += "-I " + inc_path + " ";
+        }
+        // Escape double quotes inside the idl_string
+        std::string escaped_idl_string = idl_string;
+        replace_all_string(escaped_idl_string, "\"", "\\\"");
+        replace_all_string(escaped_idl_string, "#include", "\n#include");
+        std::string cmd = "echo \"" + escaped_idl_string + "\" | " + context_->preprocessor_exec + " " + args;
+        context_->log(log::LogLevel::DEBUG, "PREPROCESS",
+                "Calling preprocessor '" + context_->preprocessor_exec + "' for an IDL string.");
+        return exec(cmd);
+    }
+
+    std::string preprocess_file(
+            const std::string& idl_file)
+    {
+        std::vector<std::string> includes;
+        std::string args = "-H ";
+        for (const std::string inc_path : context_->include_paths)
+        {
+            args += "-I " + inc_path + " ";
+        }
+        std::string cmd = context_->preprocessor_exec + " " + args + idl_file;
+        context_->log(log::LogLevel::DEBUG, "PREPROCESS",
+                "Calling preprocessor with command: " + cmd);
+        std::string output = exec(cmd);
+        return output;
+    }
+
     std::shared_ptr<Module> build_on_ast(
             const std::shared_ptr<peg::Ast>& ast,
             std::shared_ptr<Module> scope = nullptr)

@@ -196,7 +196,7 @@ inline std::string type_name(
             {
                 size_t scope_end = type_name.rfind("::");
                 std::string scope = type_name.substr(0, scope_end);
-                if (scope == node->module().scope()) // Redundant scope: get rid of it
+                if (node && (scope == node->module().scope())) // Redundant scope: get rid of it
                 {
                     ss << type_name.substr(scope_end + 2);
                 }

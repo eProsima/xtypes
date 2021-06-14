@@ -71,6 +71,11 @@ public:
         return inner_[submodule];
     }
 
+    size_t submodule_size()
+    {
+        return inner_.size();
+    }
+
     using ModuleVisitor = std::function<void (const Module& mod)>;
 
     void for_each_submodule(
@@ -589,9 +594,19 @@ public:
 
     // Generic type retrieval.
     DynamicType::Ptr type(
-            const std::string& name)
+            const std::string& name,
+            bool recursive = false)
     {
         DynamicType::Ptr ret_type;
+
+        if (recursive)
+        {
+            for (auto [key, mod]: inner_)
+            {
+                ret_type = mod.get()->type(name, recursive);
+            }
+        }
+
         // Solve scope
         PairModuleSymbol module = resolve_scope(name);
         if (module.first == nullptr)
