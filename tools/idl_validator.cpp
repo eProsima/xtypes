@@ -19,6 +19,7 @@ int main(
         idl::Context context;
         context.log_level(idl::log::LogLevel::xDEBUG);
         context.print_log(true);
+        context.include_paths.push_back("/opt/ros/foxy/share/");
         context.ignore_redefinition = true;
         context.allow_keyword_identifiers = true;
         context = idl::parse(idl_spec, context);
