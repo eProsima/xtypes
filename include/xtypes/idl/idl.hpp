@@ -90,9 +90,10 @@ inline std::string generate(
 /// \param[in] module Module to represent into IDL
 /// \return An IDL that represents the Module given.
 inline std::string generate(
-        const Module& module)
+        const Module& module,
+        std::map<std::string, std::string>* module_idl = nullptr)
 {
-    return generator::module(module);
+    return generator::module(module, module_idl);
 }
 
 } //namespace idl

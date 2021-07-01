@@ -133,7 +133,8 @@ inline std::string type_scope(
 
 inline std::string type_name(
         dependencytree::DependencyNode* node,
-        const DynamicType& type)
+        const DynamicType& type,
+        bool scoped)
 {
     static const std::map<TypeKind, std::string> mapping =
     {
@@ -196,7 +197,7 @@ inline std::string type_name(
             {
                 size_t scope_end = type_name.rfind("::");
                 std::string scope = type_name.substr(0, scope_end);
-                if (node && (scope == node->module().scope())) // Redundant scope: get rid of it
+                if (node && (scope == node->module().scope()) && !scoped) // Redundant scope: get rid of it
                 {
                     ss << type_name.substr(scope_end + 2);
                 }
@@ -282,7 +283,8 @@ inline std::string structure(
         const std::string& name,
         const StructType& type,
         dependencytree::DependencyNode* struct_node,
-        size_t tabs)
+        size_t tabs,
+        std::map<std::string, std::string>* struct_idl)
 {
     if (struct_node != nullptr)
     {
@@ -307,7 +309,15 @@ inline std::string structure(
         }
         else
         {
-            ss << generator::type_name(struct_node, member.type()) << " " << member.name() << ";";
+            if (member.type().kind() == TypeKind::STRUCTURE_TYPE && struct_idl != nullptr)
+            {
+                if (struct_idl->find(struct_node->type().name() + ":dependencies") != struct_idl->end())
+                {
+                    (*struct_idl)[struct_node->type().name() + ":dependencies"] += ",";
+                }
+                (*struct_idl)[struct_node->type().name() + ":dependencies"] += member.type().name();
+            }
+            ss << generator::type_name(struct_node, member.type(), true) << " " << member.name() << ";";
         }
         ss << std::endl;
     }

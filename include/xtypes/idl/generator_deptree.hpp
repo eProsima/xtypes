@@ -39,7 +39,8 @@ class DependencyModule;
 // "idl/generator.hpp" and forget about this file.
 inline std::string type_name(
         dependencytree::DependencyNode* node,
-        const DynamicType& type);
+        const DynamicType& type,
+        bool scoped = false);
 
 inline std::string aliase(
         const std::string& name,
@@ -58,7 +59,8 @@ inline std::string structure(
         const std::string& name,
         const StructType& type,
         dependencytree::DependencyNode* struct_node = nullptr,
-        size_t tabs = 0);
+        size_t tabs = 0,
+        std::map<std::string, std::string>* struct_idl = nullptr);
 
 inline std::string generate_union(
         const std::string& name,
@@ -279,7 +281,8 @@ public:
     /// \param[in] tabs Padding relative to module's scope.
     /// \return the generated sentence for this DependencyNode object.
     std::string generate_idl_sentence(
-            unsigned int tabs)
+            unsigned int tabs,
+            std::map<std::string, std::string>* type_idl = nullptr)
     {
         using namespace generator;
 
@@ -319,7 +322,7 @@ public:
             }
             case ModuleElementKind::xSTRUCT:
             {
-                ss << structure(name(), static_cast<const StructType&>(type()), this, tabs);
+                ss << structure(name(), static_cast<const StructType&>(type()), this, tabs, type_idl);
                 break;
             }
             case ModuleElementKind::xUNION:
@@ -1004,11 +1007,12 @@ public:
     /// \returns An string with the generated IDL sentence, if node belongs to this module.
     std::string generate_idl_sentence(
             DependencyNode& node,
-            unsigned int tabs) const
+            unsigned int tabs,
+            std::map<std::string, std::string>* module_idl = nullptr) const
     {
         if (std::find(node_set_.begin(), node_set_.end(), node) != node_set_.end())
         {
-            return node.generate_idl_sentence(tabs);
+            return node.generate_idl_sentence(tabs, module_idl);
         }
         else
         {
@@ -1022,7 +1026,8 @@ public:
     /// the "is_child" DependencyModule reference.
     /// \returns An string with the generated IDL.
     std::string generate_idl_module(
-            unsigned int tabs=0)
+            unsigned int tabs = 0,
+            std::map<std::string, std::string>* struct_idl = nullptr)
     {
         std::stringstream ss;
 
@@ -1033,7 +1038,7 @@ public:
                 for (const auto& ancestor : node.ancestors())
                 {
                     std::stringstream ss_ancestor;
-                    ss_ancestor << ancestor.get().generate_idl_sentence(tabs);
+                    ss_ancestor << ancestor.get().generate_idl_sentence(tabs, struct_idl);
 
                     if (ss_ancestor.rdbuf()->in_avail())
                     {
@@ -1043,7 +1048,7 @@ public:
             }
 
             std::stringstream ss_node;
-            ss_node << node.generate_idl_sentence(tabs);
+            ss_node << node.generate_idl_sentence(tabs, struct_idl);
 
             if (ss_node.rdbuf()->in_avail() &&
                 (!all_nodes_iterated() || (!d_inner_.empty() && !all_inner_iterated())))
@@ -1052,6 +1057,11 @@ public:
             }
 
             ss << ss_node.str();
+
+            if (struct_idl != nullptr)
+            {
+                (*struct_idl)[node.type().name()] = ss_node.str();
+            }
         }
 
         return ss.str();
@@ -1119,7 +1129,8 @@ public:
     /// \returns A string representing IDL definition for the given module.
     std::string generate_idl(
             DependencyModule* dep_mod,
-            unsigned int tabs=0) const
+            unsigned int tabs=0,
+            std::map<std::string, std::string>* module_idl = nullptr) const
     {
         if (dep_mod->iterated())
         {
@@ -1137,7 +1148,7 @@ public:
                 DependencyModule* p_ancestor = ancestor.lock().get();
                 if (!p_ancestor->iterated())
                 {
-                    ss << generate_idl(p_ancestor, root ? 0 : tabs) << std::endl;
+                    ss << generate_idl(p_ancestor, root ? 0 : tabs, module_idl) << std::endl;
                 }
             }
         }
@@ -1149,7 +1160,7 @@ public:
             {
                 if (onode.has_child_module(dep_mod))
                 {
-                    ss << outer->generate_idl_sentence(onode, tabs);
+                    ss << outer->generate_idl_sentence(onode, tabs, module_idl);
 
                     if (!outer->all_nodes_iterated())
                     {
@@ -1163,6 +1174,22 @@ public:
         {
             ss << std::string(4 * tabs, ' ') << "module " << dep_mod->module().name() << std::endl;
             ss << std::string(4 * tabs, ' ') << "{" << std::endl;
+
+            if (module_idl != nullptr)
+            {
+                if (module_idl->find(dep_mod->module().name() + ":DependencyModule") == module_idl->end() && !root)
+                {
+                    if (dep_mod->has_outer() && module_idl->find(dep_mod->outer()->module().name() + ":DependencyModule")
+                         != module_idl->end())
+                    {
+                        (*module_idl)[dep_mod->outer()->module().name() + ":DependencyModule"] += ss.str();
+                    }
+                    else
+                    {
+                        (*module_idl)[dep_mod->module().name() + ":DependencyModule"] = ss.str();
+                    }
+                }
+            }
         }
 
         for (auto& node : dep_mod->node_set())
@@ -1173,18 +1200,18 @@ public:
                 {
                     if (!parent.lock().get()->iterated())
                     {
-                        ss << generate_idl(parent.lock().get(), root ? 0 : tabs + 1) << std::endl;
+                        ss << generate_idl(parent.lock().get(), root ? 0 : tabs + 1, module_idl) << std::endl;
                     }
                 }
             }
         }
 
-        ss << dep_mod->generate_idl_module(root ? 0 : tabs + 1);
+        ss << dep_mod->generate_idl_module(root ? 0 : tabs + 1, module_idl);
 
         // Iterate over inner DependencyModule list
         for (const auto& inner : dep_mod->inner())
         {
-            ss << generate_idl(inner.get(), root ? 0 : tabs + 1);
+            ss << generate_idl(inner.get(), root ? 0 : tabs + 1, module_idl);
 
             if (!dep_mod->all_inner_iterated())
             {
@@ -1192,21 +1219,66 @@ public:
             }
         }
 
+        if (module_idl != nullptr)
+        {
+            for (const auto& pair : *module_idl)
+            {
+                if (pair.first.find(":DependencyModule") == std::string::npos
+                        && pair.first.find(":dependencies") == std::string::npos
+                        && pair.first.find(dep_mod->module().name()) != std::string::npos)
+                {
+                    std::string dep = "";
+
+                    if (module_idl->find(dep_mod->module().name() + ":DependencyModule") != module_idl->end())
+                    {
+                        dep = (*module_idl)[dep_mod->module().name() + ":DependencyModule"];
+                    }
+
+                    (*module_idl)[pair.first] = dep + pair.second;
+                }
+            }
+        }
+
         if (!root)
         {
             ss << std::string(4 * tabs, ' ') << "};" << std::endl;
+
+            if (module_idl != nullptr)
+            {
+                for (const auto& pair : *module_idl)
+                {
+                    if (pair.first.find(":DependencyModule") == std::string::npos
+                            && pair.first.find(":dependencies") == std::string::npos
+                            && pair.first.find(dep_mod->module().name()) != std::string::npos)
+                    {
+                        if ((dep_mod->has_outer() && pair.first.find(dep_mod->outer()->module().name()) != std::string::npos)
+                                || !dep_mod->has_outer())
+                        {
+                            (*module_idl)[pair.first] = pair.second + std::string(4 * tabs, ' ') + "};\n";
+                        }
+
+                    }
+                }
+            }
         }
 
         dep_mod->set_iterated(true);
+
+        auto it = module_idl->find(dep_mod->module().name() + ":DependencyModule");
+        if(it != module_idl->end())
+        {
+            module_idl->erase(it);
+        }
 
         return ss.str();
     }
 
     /// \brief Helper method to generate IDL from root Module of this ModuleDependencyTree object.
     /// \returns A string representing IDL definition for root Module.
-    inline std::string generate_idl() const
+    inline std::string generate_idl(
+        std::map<std::string, std::string>* module_idl = nullptr) const
     {
-        return generate_idl(dep_root_.get());
+        return generate_idl(dep_root_.get(), 0, module_idl);
     }
 
 private:
@@ -1217,9 +1289,11 @@ private:
 /// \brief Helper function to generate an IDL from a Module.
 /// \param[in] module The Module whose IDL wants to be created.
 /// \returns An string containing IDL definition for the given Module.
-inline std::string idl_from_module(const Module& module)
+inline std::string idl_from_module(
+    const Module& module,
+    std::map<std::string, std::string>* module_idl = nullptr)
 {
-    return ModuleDependencyTree(module).generate_idl();
+    return ModuleDependencyTree(module).generate_idl(module_idl);
 }
 
 } //namespace dependencytree
@@ -1228,9 +1302,11 @@ inline std::string idl_from_module(const Module& module)
 /// and abstracts the user about accessing dependencytree namespace.
 /// \param[in] module The module whose IDL wants to be created.
 /// \returns An string containing IDL definition for the given Module.
-inline std::string module(const Module& module)
+inline std::string module(
+    const Module& module,
+    std::map<std::string, std::string>* module_idl = nullptr)
 {
-    return dependencytree::idl_from_module(module);
+    return dependencytree::idl_from_module(module, module_idl);
 }
 } //namespace generator
 } //namespace idl

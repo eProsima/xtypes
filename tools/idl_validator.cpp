@@ -20,6 +20,7 @@ int main(
         context.log_level(idl::log::LogLevel::xDEBUG);
         context.print_log(true);
         context.ignore_redefinition = true;
+        context.allow_keyword_identifiers = true;
         context = idl::parse(idl_spec, context);
         std::cout << "Parse Success: " << std::boolalpha << context.success << std::endl;
 
