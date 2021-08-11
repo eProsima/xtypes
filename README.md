@@ -60,7 +60,7 @@ int32_t my_value = data["c"]["a"];
   No memory penalty is introduced by using *eProsima xtypes* in relation to compiled types.
 - **Fast**: Accessing to data members is swift and quick.
 - **Header only library**: avoids the linking problems.
-- **No external dependency**: *eProsima xtypes*'s only dependencies are from *std*.
+- **No external dependency**: *eProsima xtypes*'s only dependencies are from *std* and `cpp-peglib` (which is downloaded automatically).
 - **Easy to use**: Comprehensive API and intuitive concepts.
 
 ## Build
