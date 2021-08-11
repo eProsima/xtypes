@@ -28,6 +28,13 @@ find_package(Threads REQUIRED)
 #####################################################################################
 add_library(${PROJECT_NAME} INTERFACE)
 
+
+# Download the cpp-peglib header file needed
+file(DOWNLOAD
+        https://raw.githubusercontent.com/yhirose/cpp-peglib/master/peglib.h
+        ${PROJECT_SOURCE_DIR}/thirdparty/cpp-peglib/peglib.h
+    )
+
 target_include_directories(${PROJECT_NAME}
     INTERFACE
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
@@ -80,7 +87,7 @@ find_program(NODERED_EXECUTABLE NAMES node-red node-red@ PATH_SUFFIXES bin)
 
 if(XTYPES_BUILD_TOOLS OR NODERED_EXECUTABLE)
     compile_tool(${PROJECT_NAME}_idl_validator SOURCE tools/idl_validator.cpp)
-   
+
     if (NODERED_EXECUTABLE)
         file(WRITE $ENV{HOME}/idl_parser_path.txt "${PROJECT_BINARY_DIR}")
         message("${PROJECT_BINARY_DIR}")
