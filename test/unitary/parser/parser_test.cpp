@@ -753,7 +753,7 @@ TEST (IDLParser, include_from_string)
         )");
     std::map<std::string, DynamicType::Ptr> result = context.module().get_all_types();
     EXPECT_EQ(2, result.size());
-    const DynamicType* my_struct = result["Test00"].get();
+    const DynamicType* my_struct = result["include::Test00"].get();
     DynamicData data(*my_struct);
     ASSERT_EQ(data["incl"]["my_string"].type().name(), "std::string");
 }
@@ -1541,9 +1541,9 @@ TEST (IDLParser, same_struct_id_in_different_modules)
                 );
         std::map<std::string, DynamicType::Ptr> result = context.module().get_all_types();
         EXPECT_EQ(1, result.size());
-        const DynamicType* my_struct = result["MyStruct"].get();
+        const DynamicType* my_struct = result["a::b::c::MyStruct"].get();
         EXPECT_EQ(my_struct->name(), "a::b::c::MyStruct");
-        first_struct = result["MyStruct"];
+        first_struct = result["a::b::c::MyStruct"];
         EXPECT_EQ(first_struct.get()->name(), "a::b::c::MyStruct");
     }
 
@@ -1565,7 +1565,7 @@ TEST (IDLParser, same_struct_id_in_different_modules)
                 );
         std::map<std::string, DynamicType::Ptr> result = context.module().get_all_types();
         EXPECT_EQ(1, result.size());
-        const DynamicType* my_struct = result["MyStruct"].get();
+        const DynamicType* my_struct = result["x::y::MyStruct"].get();
         EXPECT_EQ(my_struct->name(), "x::y::MyStruct");
     }
 

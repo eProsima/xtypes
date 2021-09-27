@@ -55,7 +55,6 @@ inline Context parse_file(
         const std::string& idl_file)
 {
     Parser* parser = Parser::instance();
-    std::cout << "parse file: " << idl_file << std::endl;
     return parser->parse_file(idl_file);
 }
 
