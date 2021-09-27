@@ -513,7 +513,7 @@ private:
                 str.replace(pos, froms, escaped);
                 pos = str.find(from, pos + escaped_size);
             }
-            
+
         }
     }
 
@@ -641,6 +641,7 @@ private:
         if (scope->has_symbol(std::string(identifier.data(), identifier.size())))
         {
             std::stringstream message;
+            std::cout << "Message: ..." << std::endl;
             message << "The identifier \"" << identifier << "\" is already used.";
             if (!ignore_already_used)
             {

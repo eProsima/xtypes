@@ -1,0 +1,11 @@
+#include "sub_modules/example_aux.idl"
+
+struct MyComplexType
+{
+    MyAllPrimitiveType myPrimitiveType;
+    MyStringType myStringType;
+    MyInheritStringType myInheritStringType;
+    MyCollectionType myCollectionType;
+    MyEnumerationType myEnumerationType;
+    submodule::MySubModuleType mySubmoduleType;
+};
