@@ -109,7 +109,7 @@ public:
     virtual void destroy_instance(
             uint8_t* instance) const override
     {
-        reinterpret_cast<std::basic_string<CHAR_T>*>(instance)->std::basic_string<CHAR_T>::~basic_string<CHAR_T>();
+        reinterpret_cast<std::basic_string<CHAR_T>*>(instance)->std::template basic_string<CHAR_T>::~basic_string<CHAR_T>();
     }
 
     virtual bool compare_instance(
