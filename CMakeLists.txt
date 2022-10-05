@@ -31,7 +31,7 @@ add_library(${PROJECT_NAME} INTERFACE)
 
 # Download the cpp-peglib header file needed
 file(DOWNLOAD
-        https://raw.githubusercontent.com/yhirose/cpp-peglib/master/peglib.h
+        https://raw.githubusercontent.com/yhirose/cpp-peglib/v1.8.2/peglib.h
         ${PROJECT_SOURCE_DIR}/thirdparty/cpp-peglib/peglib.h
     )
 
