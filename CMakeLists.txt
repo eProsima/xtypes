@@ -1,7 +1,7 @@
 #####################################################################################
 #                             Top xtypes build system
 #####################################################################################
-cmake_minimum_required(VERSION 3.1.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.16.3 FATAL_ERROR)
 
 project(xtypes
     VERSION "0.1.0"
@@ -13,21 +13,18 @@ option(XTYPES_BUILD_EXAMPLES "Build examples." OFF)
 option(XTYPES_EXCEPTIONS "Enable xtypes exceptions in release (which are asserts in debug)." OFF)
 option(XTYPES_BUILD_TOOLS "Build tools." OFF)
 
-if(XTYPES_EXCEPTIONS)
-    #add_compile_definitions(XTYPES_EXCEPTIONS) #CMake 3.16
-    add_definitions(-DXTYPES_EXCEPTIONS)
-else()
-    remove_definitions(-DXTYPES_EXCEPTIONS)
-endif()
-
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 #####################################################################################
 #                                    Library
 #####################################################################################
-add_library(${PROJECT_NAME} INTERFACE)
+add_library(xtypes INTERFACE)
+add_library(eprosima::xtypes ALIAS xtypes)
 
+if(XTYPES_EXCEPTIONS)
+    target_compile_definitions(xtypes INTERFACE XTYPES_EXCEPTIONS)
+endif()
 
 # Download the cpp-peglib header file needed
 file(DOWNLOAD
@@ -35,7 +32,18 @@ file(DOWNLOAD
         ${PROJECT_SOURCE_DIR}/thirdparty/cpp-peglib/peglib.h
     )
 
-target_include_directories(${PROJECT_NAME}
+# MSVC always returns __cplusplus = 199711 unles we use the flag /Zc:__cplusplus then it follows the GNU behavior
+if(MSVC)
+    execute_process(COMMAND 
+        powershell -Command [=[
+            $header = gi thirdparty/cpp-peglib/peglib.h;
+            (cat $header | % { $_ -replace '__cplusplus', '_MSVC_LANG' } ) | Set-Content $header
+            ]=]
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+       )
+endif(MSVC)
+
+target_include_directories(xtypes
     INTERFACE
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/thirdparty/cpp-peglib>
@@ -43,10 +51,7 @@ target_include_directories(${PROJECT_NAME}
         $<INSTALL_INTERFACE:thirdparty/cpp-peglib/include>
     )
 
-target_compile_features(${PROJECT_NAME}
-    INTERFACE
-        cxx_std_17
-    )
+target_compile_features(xtypes INTERFACE cxx_std_17)
 
 #####################################################################################
 #                                    Tools
@@ -68,28 +73,22 @@ macro(compile_tool)
         PUBLIC
             Threads::Threads
         PRIVATE
-            ${PROJECT_NAME}
+            xtypes
         )
 
     target_compile_options(${TOOL_NAME}
         INTERFACE
-            $<$<CXX_COMPILER_ID:GNU>:-Wall>
-            $<$<CXX_COMPILER_ID:GNU>:-Wextra>
-        )
-
-    set_target_properties(${TOOL_NAME}
-        PROPERTIES
-            CXX_STANDARD 17
+            $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra>
         )
 endmacro()
 
 find_program(NODERED_EXECUTABLE NAMES node-red node-red@ PATH_SUFFIXES bin)
 
 if(XTYPES_BUILD_TOOLS OR NODERED_EXECUTABLE)
-    compile_tool(${PROJECT_NAME}_idl_validator SOURCE tools/idl_validator.cpp)
+    compile_tool(xtypes_idl_validator SOURCE tools/idl_validator.cpp)
 
     if (NODERED_EXECUTABLE)
-        file(WRITE $ENV{HOME}/idl_parser_path.txt "${PROJECT_BINARY_DIR}")
+        file(WRITE $ENV{TMP}/idl_parser_path.txt "${PROJECT_BINARY_DIR}")
         message("${PROJECT_BINARY_DIR}")
     endif()
     # ...
@@ -115,26 +114,20 @@ macro(compile_example)
         PUBLIC
             Threads::Threads
         PRIVATE
-            ${PROJECT_NAME}
+            xtypes
         )
 
     target_compile_options(${EXAMPLE_NAME}
         INTERFACE
-            $<$<CXX_COMPILER_ID:GNU>:-Wall>
-            $<$<CXX_COMPILER_ID:GNU>:-Wextra>
-        )
-
-    set_target_properties(${EXAMPLE_NAME}
-        PROPERTIES
-            CXX_STANDARD 17
+            $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra>
         )
 endmacro()
 
 if(XTYPES_BUILD_EXAMPLES)
-    compile_example(${PROJECT_NAME}_example_complex_type SOURCE examples/complex_type.cpp)
-    compile_example(${PROJECT_NAME}_example_module SOURCE examples/module.cpp)
-    compile_example(${PROJECT_NAME}_example_iterators SOURCE examples/iterators.cpp)
-    compile_example(${PROJECT_NAME}_example_exceptions_asserts SOURCE examples/exceptions_asserts.cpp)
+    compile_example(xtypes_example_complex_type SOURCE examples/complex_type.cpp)
+    compile_example(xtypes_example_module SOURCE examples/module.cpp)
+    compile_example(xtypes_example_iterators SOURCE examples/iterators.cpp)
+    compile_example(xtypes_example_exceptions_asserts SOURCE examples/exceptions_asserts.cpp)
     # ...
 endif()
 
@@ -158,11 +151,6 @@ macro(compile_test)
             libgtest
         )
 
-    set_target_properties(${TEST_NAME}
-        PROPERTIES
-            CXX_STANDARD 17
-        )
-
     add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
 endmacro()
 
@@ -171,7 +159,7 @@ if(XTYPES_BUILD_TESTS)
     include(test/gtest.cmake)
     enable_testing()
 
-    compile_test(${PROJECT_NAME}_test_unitary SOURCE
+    compile_test(xtypes_test_unitary SOURCE
         test/unitary/xtypes/main.cpp
         test/unitary/xtypes/primitive_types.cpp
         test/unitary/xtypes/collection_types.cpp
@@ -184,19 +172,19 @@ if(XTYPES_BUILD_TESTS)
         test/unitary/xtypes/dynamicdata_operators.cpp
         )
 
-    compile_test(${PROJECT_NAME}_test_unitary_no_memcheck SOURCE
+    compile_test(xtypes_test_unitary_no_memcheck SOURCE
         test/unitary/xtypes/main.cpp
         test/unitary/xtypes/no_memcheck_tests.cpp)
 
-    compile_test(${PROJECT_NAME}_idl_parser_test_unitary SOURCE
+    compile_test(xtypes_idl_parser_test_unitary SOURCE
         test/unitary/parser/module.cpp
         test/unitary/parser/parser_test.cpp)
-    compile_test(${PROJECT_NAME}_idl_parser_roundtrip SOURCE test/unitary/parser/roundtrip.cpp)
-    compile_test(${PROJECT_NAME}_idl_generator_dependencies SOURCE test/unitary/generator/dependencies.cpp)
+    compile_test(xtypes_idl_parser_roundtrip SOURCE test/unitary/parser/roundtrip.cpp)
+    compile_test(xtypes_idl_generator_dependencies SOURCE test/unitary/generator/dependencies.cpp)
     # ...
 
     # Set test with label NoMemoryCheck
-    set_property(TEST ${PROJECT_NAME}_test_unitary_no_memcheck PROPERTY LABELS "NoMemoryCheck")
+    set_property(TEST xtypes_test_unitary_no_memcheck PROPERTY LABELS "NoMemoryCheck")
 
     # Copy IDL files
     configure_file(
@@ -234,9 +222,9 @@ include(CMakePackageConfigHelpers)
 
 configure_package_config_file(
     ${PROJECT_SOURCE_DIR}/cmake/config.cmake.in
-    ${PROJECT_BINARY_DIR}/cmake/config/${PROJECT_NAME}-config.cmake
+    ${PROJECT_BINARY_DIR}/cmake/config/xtypes-config.cmake
     INSTALL_DESTINATION
-        ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/cmake
+        ${CMAKE_INSTALL_DATADIR}/xtypes/cmake
     PATH_VARS
         BIN_INSTALL_DIR
         INCLUDE_INSTALL_DIR
@@ -245,7 +233,7 @@ configure_package_config_file(
     )
 
 write_basic_package_version_file(
-    ${PROJECT_BINARY_DIR}/cmake/config/${PROJECT_NAME}-config-version.cmake
+    ${PROJECT_BINARY_DIR}/cmake/config/xtypes-config-version.cmake
     VERSION
         ${PROJECT_VERSION}
     COMPATIBILITY
@@ -254,9 +242,9 @@ write_basic_package_version_file(
 
 install(
     TARGETS
-        ${PROJECT_NAME}
+        xtypes
     EXPORT
-        ${PROJECT_NAME}-targets
+        xtypes-targets
     RUNTIME DESTINATION
         ${BIN_INSTALL_DIR}
     LIBRARY DESTINATION
@@ -285,15 +273,17 @@ install(
 
 install(
     EXPORT
-        ${PROJECT_NAME}-targets
+        xtypes-targets
+    NAMESPACE
+        eprosima
     DESTINATION
-        ${DATA_INSTALL_DIR}/${PROJECT_NAME}/cmake
+        ${DATA_INSTALL_DIR}/xtypes/cmake
     )
 
 install(
     FILES
-        ${PROJECT_BINARY_DIR}/cmake/config/${PROJECT_NAME}-config.cmake
-        ${PROJECT_BINARY_DIR}/cmake/config/${PROJECT_NAME}-config-version.cmake
+        ${PROJECT_BINARY_DIR}/cmake/config/xtypes-config.cmake
+        ${PROJECT_BINARY_DIR}/cmake/config/xtypes-config-version.cmake
     DESTINATION
-        ${DATA_INSTALL_DIR}/${PROJECT_NAME}/cmake
+        ${DATA_INSTALL_DIR}/xtypes/cmake
     )
