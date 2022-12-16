@@ -120,11 +120,12 @@ void generation_roundtrip_test(
     }
 
     std::string gen_idl = idl::generate(root);
-    // Debug
-    // std::cout << "===========================================" << std::endl \
+    /* Debug
+       std::cout << "===========================================" << std::endl \
               << gen_idl \
               << "===========================================" << std::endl;
-    //Parse again and check if it went as expected
+      Parse again and check if it went as expected
+    */
     idl::Context context = idl::parse(gen_idl);
     ASSERT_TRUE(context.success);
 

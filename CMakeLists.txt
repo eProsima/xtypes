@@ -51,7 +51,14 @@ target_include_directories(xtypes
         $<INSTALL_INTERFACE:thirdparty/cpp-peglib/include>
     )
 
-target_compile_features(xtypes INTERFACE cxx_std_17)
+target_compile_features(xtypes INTERFACE cxx_std_17 cxx_variadic_macros)
+
+if(MSVC)
+    # target_compile_features() only enforces standard values like cxx_std_17. All other values like
+    # cxx_variadic_macros are not enforced using flags but only will generate an error if not available.
+    # CMake docs is misguiding (see cmGeneratorTarget::ComputeCompileFeatures implementation).
+    target_compile_options(xtypes INTERFACE /Zc:preprocessor)
+endif(MSVC)
 
 #####################################################################################
 #                                    Tools

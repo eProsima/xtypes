@@ -31,15 +31,16 @@
 #include <xtypes/idl/Module.hpp>
 #include <xtypes/idl/grammar.hpp>
 
-#include <map>
-#include <vector>
-#include <fstream>
-#include <memory>
+#include <array>
 #include <exception>
-#include <locale>
-#include <regex>
+#include <fstream>
 #include <functional>
+#include <locale>
+#include <map>
+#include <memory>
+#include <regex>
 #include <string_view>
+#include <vector>
 
 namespace peg {
 
@@ -284,8 +285,14 @@ public:
         , context_(nullptr)
     {
         parser_.enable_ast();
-        parser_.log = std::bind(&Parser::parser_log_cb_, this, std::placeholders::_1,
-                        std::placeholders::_2, std::placeholders::_3);
+        parser_.set_logger(
+                std::function<void(size_t line, size_t col, const std::string &msg)>(
+                std::bind(
+                    &Parser::parser_log_cb_,
+                    this,
+                    std::placeholders::_1,
+                    std::placeholders::_2,
+                    std::placeholders::_3)));
     }
 
     Context parse(
@@ -441,7 +448,8 @@ private:
     void parser_log_cb_(
             size_t l,
             size_t c,
-            const std::string& msg) const
+            const std::string& msg
+            ) const
     {
         context_->log(log::DEBUG, "PEGLIB_PARSER", msg + " (" + std::to_string(
                     l - CPP_PEGLIB_LINE_COUNT_ERROR) + ":" + std::to_string(c) + ")");
