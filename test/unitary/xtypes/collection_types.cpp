@@ -169,7 +169,11 @@ TEST (CollectionTypes, primitive_arrays)
     check_primitive_array<uint64_t>(25000000000);
     check_primitive_array<float>(250.76653);
     check_primitive_array<double>(250.76653e40);
+#ifdef WIN32
+    check_primitive_array<long double>(1.797e308L);
+#else
     check_primitive_array<long double>(250.76653e1000l);
+#endif // WIN32
     check_primitive_array<char>('L');
     check_primitive_array<wchar_t>(L'G');
 }
@@ -433,7 +437,11 @@ TEST (CollectionTypes, primitive_sequences)
     check_primitive_seq<uint64_t>(25000000000);
     check_primitive_seq<float>(250.76653);
     check_primitive_seq<double>(250.76653e40);
+#ifdef WIN32
+    check_primitive_seq<long double>(1.79e308l);
+#else
     check_primitive_seq<long double>(250.76653e1000l);
+#endif // WIN32
     check_primitive_seq<char>('L');
     check_primitive_seq<wchar_t>(L'G');
 }

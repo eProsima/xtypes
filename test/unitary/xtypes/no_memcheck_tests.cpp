@@ -57,10 +57,18 @@ void assignCheck(A value)
 
 // Primitive long double fails when running on valgrind because valgrind uses 64bit to represent long double,
 // so the EXPECT_FALSE check fails.
+// On windows long double == double
 TEST (PrimitiveTypes, primitive_type_longdouble)
 {
+
+#ifdef WIN32
+    EXPECT_TRUE(singleCheck<long double>(1.797e308L, 1.797e308L));
+    EXPECT_FALSE(singleCheck<long double>(1.7970000000000001e308L, 1.797e308L));
+#else
     EXPECT_TRUE(singleCheck<long double>(5.55e1200l, 5.55e1200l));
-    EXPECT_FALSE(singleCheck<long double>(5.550000001e1200l, 5.55e1200l));
+    EXPECT_FALSE(singleCheck<long double>(5.550000000000000001e1200l, 5.55e1200l));
+#endif // WIN32
+
     assignCheck<long double>(LDOUBLE);
 }
 
