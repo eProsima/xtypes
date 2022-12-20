@@ -42,6 +42,15 @@
 #include <string_view>
 #include <vector>
 
+#ifdef _MSVC_LANG
+#   pragma push_macro("popen")
+#   define popen _popen
+#   pragma push_macro("pipe")
+#   define pipe _pipe
+#   pragma push_macro("pclose")
+#   define pclose _pclose
+#endif
+
 namespace peg {
 
 using Ast = AstBase<EmptyType>;
@@ -65,16 +74,16 @@ enum LogLevel
 struct LogEntry
 {
     std::string path;
-    uint32_t line;
-    uint32_t column;
+    size_t line;
+    size_t column;
     LogLevel level;
     std::string category;
     std::string message;
 
     LogEntry(
             const std::string& file,
-            uint32_t line_number,
-            uint32_t column_number,
+            size_t line_number,
+            size_t column_number,
             LogLevel log_level,
             const std::string& cat,
             const std::string& msg)
@@ -310,18 +319,15 @@ public:
         context.instance_ = this;
         context_ = &context;
         std::shared_ptr<peg::Ast> ast;
-        std::string idl_to_parse = idl_string;
-        if (context.preprocess)
-        {
-            idl_to_parse = preprocess_string(idl_to_parse);
-        }
-        if (!parser_.parse(idl_to_parse.c_str(), ast))
+
+        if (!parser_.parse(idl_string.c_str(), ast))
         {
             context.success = false;
             context_->log(log::LogLevel::DEBUG, "RESULT",
                     "The parser found errors while parsing.");
             return false;
         }
+
         ast = parser_.optimize_ast(ast);
         build_on_ast(ast);
         context.module_ = root_scope_;
@@ -339,37 +345,45 @@ public:
         return context;
     }
 
+    Context parse_string(
+            const std::string& idl_string)
+    {
+        Context context = DEFAULT_CONTEXT;
+        parse_string(idl_string, context);
+        return context;
+    }
+
     bool parse_file(
             const std::string& idl_file,
             Context& context)
     {
         context.instance_ = this;
         context_ = &context;
-        std::vector<char> source;
         std::shared_ptr<peg::Ast> ast;
         if (context.preprocess)
         {
             std::string file_content = preprocess_file(idl_file);
             return parse(file_content, context);
         }
+
+        std::ostringstream os;
+        os << std::ifstream(idl_file).rdbuf();
+        return parse(os.str(), context);
+    }
+
+    bool parse_string(
+            const std::string& idl_string,
+            Context& context)
+    {
+        context.instance_ = this;
+
+        if (context.preprocess)
+        {
+            return parse(preprocess_string(idl_string), context);
+        }
         else
         {
-            if (!(read_file(idl_file.c_str(), source)
-                    && parser_.parse_n(source.data(), source.size(), ast, idl_file.c_str())))
-            {
-                context.success = false;
-                context_->log(log::LogLevel::DEBUG, "RESULT",
-                        "The parser found errors while parsing.");
-                return false;
-            }
-
-            ast = parser_.optimize_ast(ast);
-            build_on_ast(ast);
-            context.module_ = root_scope_;
-            context.success = true;
-            context_->log(log::LogLevel::DEBUG, "RESULT",
-                    "The parser finished.");
-            return true;
+            return parse(idl_string, context);
         }
     }
 
@@ -455,30 +469,6 @@ private:
                     l - CPP_PEGLIB_LINE_COUNT_ERROR) + ":" + std::to_string(c) + ")");
     }
 
-    bool read_file(
-            const char* path,
-            std::vector<char>& buff) const
-    {
-        std::ifstream ifs(path, std::ios::in | std::ios::binary);
-
-        if (ifs.fail())
-        {
-            context_->log(log::LogLevel::DEBUG, "FILE",
-                    "Cannot open file: " + std::string(path));
-            return false;
-        }
-
-        buff.resize(static_cast<unsigned int>(ifs.seekg(0, std::ios::end).tellg()));
-
-        if (!buff.empty())
-        {
-            ifs.seekg(0, std::ios::beg).read(&buff[0], static_cast<std::streamsize>(buff.size()));
-        }
-        context_->log(log::LogLevel::DEBUG, "FILE",
-                "Loaded file: " + std::string(path));
-        return true;
-    }
-
     static std::string exec(
             const std::string& cmd,
             bool filter_stderr = true)
@@ -521,7 +511,7 @@ private:
                 str.replace(pos, froms, escaped);
                 pos = str.find(from, pos + escaped_size);
             }
-            
+
         }
     }
 
@@ -634,7 +624,7 @@ private:
             return std::string(identifier.substr(1).data(), identifier.substr(1).size()); // If the identifier starts with "_", remove the underscode and return.
         }
 
-        if (is_token(identifier))
+        if (ast->is_token)
         {
             std::stringstream message;
             message << "The identifier \"" << identifier << "\" is a reserved word.";
@@ -671,29 +661,6 @@ private:
                 {
                     return std::tolower(c);
                 });
-    }
-
-    bool is_token(
-            const std::string_view& identifier)
-    {
-        std::string aux_id(identifier.data(), identifier.size());
-
-        if (context_->ignore_case)
-        {
-            to_lower(aux_id);
-        }
-
-        for (const std::string& name : parser_.get_rule_names())
-        {
-            if (name.find("KW_") == 0) // If it starts with "KW_", is a reserved word. You are welcome.
-            {
-                if (parser_[name.c_str()].parse(aux_id.c_str()).ret)
-                {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     void module_dcl(
@@ -2075,5 +2042,12 @@ void Context::clear_context()
 } // namespace idl
 } // namespace xtypes
 } // namespace eprosima
+
+
+#ifdef _MSVC_LANG
+#   pragma pop_macro("popen")
+#   pragma pop_macro("pipe")
+#   pragma pop_macro("pclose")
+#endif
 
 #endif // EPROSIMA_XTYPES_IDL_PARSER_HPP_
