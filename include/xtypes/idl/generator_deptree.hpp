@@ -389,10 +389,10 @@ public:
             const std::shared_ptr<DependencyModule>& d_root,
             const Module& module,
             DependencyModule* outer)
-        : module_(module)
+        : iterated_(false)
+        , module_(module)
         , d_root_(d_root)
         , d_outer_(outer)
-        ,iterated_(false)
     {}
 
     /// \brief Check out if this DependencyModule has already been iterated.

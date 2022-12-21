@@ -104,7 +104,7 @@ TEST (PrimitiveTypes, primitive_type_uint32)
 {
     EXPECT_TRUE(singleCheck<uint32_t>(150000, 150000));
     EXPECT_FALSE(singleCheck<uint32_t>(150000, 150001));
-    EXPECT_TRUE(singleCheck<uint32_t>(-1, 0xFFFFFFFF));
+    EXPECT_TRUE(singleCheck<uint32_t>(std::numeric_limits<uint32_t>::max(), 0xFFFFFFFF));
     assignCheck<uint32_t>(UINT32);
 }
 

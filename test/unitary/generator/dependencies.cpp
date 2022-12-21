@@ -232,9 +232,7 @@ void generation_ambiguity_resolution_check(
 {
     const idl::Module& mod_A   = root["A"];
     const idl::Module& mod_B   = root["B"];
-    const idl::Module& mod_AB  = mod_A["B"];
     const idl::Module& mod_AC  = mod_A["C"];
-    const idl::Module& mod_ABA = mod_AB["A"];
 
     // Retrieve all "MyStruct" types
     ASSERT_TRUE(root.has_structure("MyStruct"));

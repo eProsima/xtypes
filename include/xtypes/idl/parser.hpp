@@ -41,6 +41,7 @@
 #include <memory>
 #include <regex>
 #include <string_view>
+#include <type_traits>
 #include <vector>
 
 // mimic posix pipe APIs
@@ -148,76 +149,14 @@ struct LogEntry
 
 } // namespace log
 
-class Parser;
-
-class Context
+class LogContext
 {
+    mutable std::vector<log::LogEntry> log_;
+    log::LogLevel log_level_ = log::LogLevel::WARNING;
+    bool print_log_ = false;
+
 public:
-    enum CharType
-    {
-        CHAR,
-        UINT8,
-        INT8
-    };
 
-    enum WideCharType
-    {
-        WCHAR_T,
-        CHAR16_T
-    };
-
-    // Preprocessors capability to use shared memory (pipes) or stick to file input
-    enum class preprocess_strategy
-    {
-        pipe_stdin,
-        temporary_file
-    };
-
-    // Config
-    bool ignore_case = false;
-    bool clear = true;
-    bool allow_keyword_identifiers = false;
-    bool ignore_redefinition = false;
-    CharType char_translation = CHAR;
-    WideCharType wchar_type = WCHAR_T;
-
-    bool preprocess = true;
-    std::string preprocessor_exec = EPROSIMA_PLATFORM_PREPROCESSOR;
-    std::string error_redir = EPROSIMA_PLATFORM_PREPROCESSOR_ERRORREDIR;
-    preprocess_strategy strategy = EPROSIMA_PLATFORM_PREPROCESSOR_STRATEGY;
-    std::string include_flag = EPROSIMA_PLATFORM_PREPROCESSOR_INCLUDES;
-    std::vector<std::string> include_paths;
-
-    // Results
-    bool success = false;
-
-    std::map<std::string, DynamicType::Ptr> get_all_types(
-            bool scope = false)
-    {
-        std::map<std::string, DynamicType::Ptr> result;
-        if (module_ != nullptr)
-        {
-            module_->fill_all_types(result, scope);
-        }
-        return result;
-    }
-
-    std::map<std::string, DynamicType::Ptr> get_all_scoped_types()
-    {
-        return get_all_types(true);
-    }
-
-    Module& module()
-    {
-        return *module_;
-    }
-
-    ~Context()
-    {
-        clear_context();
-    }
-
-    // Logging
     const std::vector<log::LogEntry>& log() const
     {
         return log_;
@@ -255,27 +194,6 @@ public:
         print_log_ = enable;
     }
 
-    std::string preprocess_file(
-            const std::string& idl_file) const
-    {
-        std::vector<std::string> includes;
-        std::string args;
-        for (const std::string inc_path : include_paths)
-        {
-            args += include_flag + inc_path + " ";
-        }
-
-        std::string cmd = preprocessor_exec + " " + args + idl_file + error_redir;
-
-        log(log::LogLevel::DEBUG, "PREPROCESS",
-                "Calling preprocessor with command: " + cmd);
-        std::string output = exec(cmd);
-        return output;
-    }
-
-    std::string preprocess_string(
-            const std::string& idl_string) const;
-
     // Logging
     void log(
             log::LogLevel level,
@@ -300,24 +218,109 @@ public:
             }
         }
     }
+};
 
-private:
+class PreprocessorContext
+    : public LogContext
+{
+public:
 
-    friend class Parser;
-    Parser* instance_;
-    std::shared_ptr<Module> module_ = nullptr;
-    mutable std::vector<log::LogEntry> log_;
-    log::LogLevel log_level_ = log::LogLevel::WARNING;
-    bool print_log_ = false;
+    // Preprocessors capability to use shared memory (pipes) or stick to file input
+    enum class preprocess_strategy
+    {
+        pipe_stdin,
+        temporary_file
+    };
 
-    inline void clear_context();
+    bool preprocess = true;
+    std::string preprocessor_exec = EPROSIMA_PLATFORM_PREPROCESSOR;
+    std::string error_redir = EPROSIMA_PLATFORM_PREPROCESSOR_ERRORREDIR;
+    preprocess_strategy strategy = EPROSIMA_PLATFORM_PREPROCESSOR_STRATEGY;
+    std::string include_flag = EPROSIMA_PLATFORM_PREPROCESSOR_INCLUDES;
+    std::vector<std::string> include_paths;
 
-    template<Context::preprocess_strategy s>
+    std::string preprocess_file(
+            const std::string& idl_file) const
+    {
+        std::vector<std::string> includes;
+        std::string args;
+        for (const std::string& inc_path : include_paths)
+        {
+            args += include_flag + inc_path + " ";
+        }
+
+        std::string cmd = preprocessor_exec + " " + args + idl_file + error_redir;
+
+        log(log::LogLevel::DEBUG, "PREPROCESS",
+                "Calling preprocessor with command: " + cmd);
+        std::string output = exec(cmd);
+        return output;
+    }
+
+    // preprocessing using pipes
     std::string preprocess_string(
-            const std::string& idl_string) const;
+            const std::string& idl_string,
+            std::true_type) const
+    {
+        std::string args;
+        for (const std::string& inc_path : include_paths)
+        {
+            args += include_flag + inc_path + " ";
+        }
+        // Escape double quotes inside the idl_string
+        std::string escaped_idl_string = idl_string;
+        replace_all_string(escaped_idl_string, "\"", "\\\"");
+        std::string cmd = "echo \"" + escaped_idl_string + "\" | "
+                + preprocessor_exec + " " + args + error_redir;
 
-    static std::string exec(
-            const std::string& cmd)
+        log(log::LogLevel::DEBUG, "PREPROCESS",
+                "Calling preprocessor '" + preprocessor_exec + "' for an IDL string.");
+
+        return exec(cmd);
+    }
+
+    // preprocessing using files
+    std::string preprocess_string(
+            const std::string& idl_string,
+            std::false_type) const
+    {
+        static std::hash<std::string_view> fn;
+
+        // Create temporary filename
+        auto tmp = std::filesystem::temp_directory_path();
+        tmp /= "xtypes_";
+        tmp += fn(idl_string);
+
+        { // Populate
+            std::ofstream os(tmp);
+            os << idl_string;
+        }
+
+        auto processed = preprocess_file(tmp.string());
+
+        // dispose
+        std::filesystem::remove(tmp);
+
+        return processed;
+    }
+
+    std::string preprocess_string(
+            const std::string& idl_string) const
+    {
+        switch(strategy)
+        {
+            case preprocess_strategy::pipe_stdin:
+                return preprocess_string(idl_string, std::true_type());
+            case preprocess_strategy::temporary_file:
+                return preprocess_string(idl_string, std::false_type());
+        }
+
+        xtypes_assert(true, "unknown preprocessor strategy selected.")
+        return "";
+    }
+
+    std::string exec(
+            const std::string& cmd) const
     {
         std::unique_ptr<FILE, decltype(& pclose)> pipe(popen(cmd.c_str(), "rt"), pclose);
         if (!pipe)
@@ -325,12 +328,12 @@ private:
             throw std::runtime_error("popen() failed!");
         }
 
-#ifdef _MSC_VER
+    #ifdef _MSC_VER
         std::filebuf buff(pipe.get());
         std::ostringstream os;
         os << &buff;
         return os.str();
-#else
+    #else
         std::array<char, 256> buffer;
         std::string result;
         while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr)
@@ -338,7 +341,7 @@ private:
             result += buffer.data();
         }
         return result;
-#endif // _MSC_VER
+    #endif // _MSC_VER
     }
 
     void replace_all_string(
@@ -363,70 +366,74 @@ private:
 
         }
     }
+};
+
+class Parser;
+
+class Context
+    : public PreprocessorContext
+{
+public:
+    enum CharType
+    {
+        CHAR,
+        UINT8,
+        INT8
+    };
+
+    enum WideCharType
+    {
+        WCHAR_T,
+        CHAR16_T
+    };
+
+    // Config
+    bool ignore_case = false;
+    bool clear = true;
+    bool allow_keyword_identifiers = false;
+    bool ignore_redefinition = false;
+    CharType char_translation = CHAR;
+    WideCharType wchar_type = WCHAR_T;
+
+    // Results
+    bool success = false;
+
+    std::map<std::string, DynamicType::Ptr> get_all_types(
+            bool scope = false)
+    {
+        std::map<std::string, DynamicType::Ptr> result;
+        if (module_ != nullptr)
+        {
+            module_->fill_all_types(result, scope);
+        }
+        return result;
+    }
+
+    std::map<std::string, DynamicType::Ptr> get_all_scoped_types()
+    {
+        return get_all_types(true);
+    }
+
+    Module& module()
+    {
+        return *module_;
+    }
+
+    ~Context()
+    {
+        clear_context();
+    }
+
+private:
+
+    friend class Parser;
+    Parser* instance_;
+    std::shared_ptr<Module> module_ = nullptr;
+    inline void clear_context();
 
 };
 
 static const Context DEFAULT_CONTEXT = Context();
-
-template<>
-std::string Context::preprocess_string<Context::preprocess_strategy::pipe_stdin>(
-        const std::string& idl_string) const
-{
-    std::string args;
-    for (const std::string inc_path : include_paths)
-    {
-        args += include_flag + inc_path + " ";
-    }
-    // Escape double quotes inside the idl_string
-    std::string escaped_idl_string = idl_string;
-    replace_all_string(escaped_idl_string, "\"", "\\\"");
-    std::string cmd = "echo \"" + escaped_idl_string + "\" | "
-            + preprocessor_exec + " " + args + error_redir;
-
-    log(log::LogLevel::DEBUG, "PREPROCESS",
-            "Calling preprocessor '" + preprocessor_exec + "' for an IDL string.");
-
-    return exec(cmd);
-}
-
-template<>
-std::string Context::preprocess_string<Context::preprocess_strategy::temporary_file>(
-        const std::string& idl_string) const
-{
-    static std::hash<std::string_view> fn;
-
-    // Create temporary filename
-    auto tmp = std::filesystem::temp_directory_path();
-    tmp /= "xtypes_";
-    tmp += fn(idl_string);
-
-    { // Populate
-        std::ofstream os(tmp);
-        os << idl_string;
-    }
-
-    auto processed = preprocess_file(tmp.string());
-
-    // dispose
-    std::filesystem::remove(tmp);
-
-    return processed;
-}
-
-std::string Context::preprocess_string(
-        const std::string& idl_string) const
-{
-    switch(strategy)
-    {
-        case Context::preprocess_strategy::pipe_stdin:
-            return preprocess_string<Context::preprocess_strategy::pipe_stdin>(idl_string);
-        case Context::preprocess_strategy::temporary_file:
-            return preprocess_string<Context::preprocess_strategy::temporary_file>(idl_string);
-    }
-
-    throw std::range_error("unknown preprocessor strategy selected.");
-    return "";
-}
 
 class Parser
 {
@@ -1461,7 +1468,7 @@ private:
             const std::shared_ptr<peg::Ast>& ast,
             std::shared_ptr<Module>& outer,
             std::vector<LabelsCaseMemberPair>& member_list,
-            const DynamicType::Ptr type)
+            const DynamicType::Ptr)
     {
         using namespace peg::udl;
         std::vector<std::string> labels;
@@ -1775,6 +1782,9 @@ private:
                         return primitive_type<uint8_t>();
                     case Context::INT8:
                         return primitive_type<int8_t>();
+                    default:
+                        xtypes_assert(false, "invalid char type")
+                        return primitive_type<char>();
                 }
             }
             case "WIDE_CHAR_TYPE"_:

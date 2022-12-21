@@ -57,8 +57,9 @@ namespace xtypes {
             MACRO(uint32_t, OPERATOR);\
         case TypeKind::UINT_64_TYPE:\
             MACRO(uint64_t, OPERATOR);\
+        default:\
+            DYNAMIC_DATA_NUMERIC_SIGNED_INT_SWITCH(MACRO, OPERATOR);\
     }\
-    DYNAMIC_DATA_NUMERIC_SIGNED_INT_SWITCH(MACRO, OPERATOR);\
 }
 
 #define DYNAMIC_DATA_NUMERIC_FLT_SWITCH(MACRO, OPERATOR) \
@@ -71,6 +72,8 @@ namespace xtypes {
             MACRO(double, OPERATOR);\
         case TypeKind::FLOAT_128_TYPE:\
             MACRO(long double, OPERATOR);\
+        default:\
+            return *this;\
     }\
 }
 
@@ -98,8 +101,9 @@ namespace xtypes {
             MACRO(wchar_t, OPERATOR);\
         case TypeKind::BOOLEAN_TYPE:\
             MACRO(bool, OPERATOR);\
+        default:\
+            DYNAMIC_DATA_NUMERIC_SWITCH(MACRO, OPERATOR);\
     }\
-    DYNAMIC_DATA_NUMERIC_SWITCH(MACRO, OPERATOR);\
 }
 
 #define DYNAMIC_DATA_BASICTYPE_INT_SWITCH(MACRO, OPERATOR) \
@@ -114,8 +118,9 @@ namespace xtypes {
             MACRO(wchar_t, OPERATOR);\
         case TypeKind::BOOLEAN_TYPE:\
             MACRO(bool, OPERATOR);\
+        default:\
+            DYNAMIC_DATA_NUMERIC_INT_SWITCH(MACRO, OPERATOR);\
     }\
-    DYNAMIC_DATA_NUMERIC_INT_SWITCH(MACRO, OPERATOR);\
 }
 
 inline std::string ReadableDynamicDataRef::to_string() const
@@ -264,12 +269,19 @@ inline std::string ReadableDynamicDataRef::cast<std::string>() const
                 uint32_t temp = *this;
                 return std::to_string(temp);
             }
+            else
+            {
+                xtypes_assert(false, "invalid enum size")
+                return "";
+            }
         }
         case TypeKind::STRING_TYPE:
         {
             std::string temp = *this;
             return temp;
         }
+        default:
+            DYNAMIC_DATA_BASICTYPE_SWITCH(DYNAMIC_DATA_CAST, );
         /* // TODO
         case TypeKind::WSTRING_TYPE:
         {
@@ -283,7 +295,6 @@ inline std::string ReadableDynamicDataRef::cast<std::string>() const
         }
         */
     }
-    DYNAMIC_DATA_BASICTYPE_SWITCH(DYNAMIC_DATA_CAST, );
     return std::string();
 }
 
@@ -350,8 +361,9 @@ inline bool DynamicData::operator ! () const
             return this->value<std::wstring>().empty();
         case TypeKind::STRING16_TYPE:
             return this->value<std::u16string>().empty();
+        default:
+            DYNAMIC_DATA_BASICTYPE_INT_SWITCH(DYNAMIC_DATA_NOT_OPERATOR_RESULT, !);
     }
-    DYNAMIC_DATA_BASICTYPE_INT_SWITCH(DYNAMIC_DATA_NOT_OPERATOR_RESULT, !);
 }
 
 #define DYNAMIC_DATA_LOGIC_OPERATION(TYPE, OPERATOR) \
@@ -460,6 +472,14 @@ template <typename T, typename>\
 }
 
 DYNAMIC_DATA_SELF_ASSIGN_OPERATOR_IMPLEMENTATION(*);
+
+// Specialize for bool to avoid warning -Wint-in-bool-context
+template<>
+inline DynamicData& DynamicData::operator *=<bool>(const bool& other)
+{
+    using T = bool;
+    DYNAMIC_DATA_PRIMITIVE_SELF_ASSIGN_OPERATOR_RESULT(&&);
+}
 
 DYNAMIC_DATA_SELF_ASSIGN_OPERATOR_IMPLEMENTATION(/);
 

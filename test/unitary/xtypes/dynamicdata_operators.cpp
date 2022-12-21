@@ -75,7 +75,12 @@ TEST (DynamicDataOperators, increment_decrement_operators)
     check_de_increment_operators<long double>(PI_L, true);
 }
 
-#define CHECK_ARITHMETIC_UNARY_OPERATOR(value, assert_fail, OP) \
+#define GET_MACRO4(_1, _2, _3, _4, NAME, ...) NAME
+#define CHECK_ARITHMETIC_UNARY_OPERATOR(...) \
+    GET_MACRO4(__VA_ARGS__, CHECK_ARITHMETIC_UNARY_OPERATOR_COMPARE, \
+    CHECK_ARITHMETIC_UNARY_OPERATOR_EXECUTE_OP)(__VA_ARGS__)
+
+#define CHECK_ARITHMETIC_UNARY_OPERATOR_EXECUTE_OP(value, assert_fail, OP) \
 {\
     const DynamicType& type(primitive_type<T>());\
     DynamicData data(type);\
@@ -92,6 +97,23 @@ TEST (DynamicDataOperators, increment_decrement_operators)
     }\
 }
 
+#define CHECK_ARITHMETIC_UNARY_OPERATOR_COMPARE(value, assert_fail, OP, result) \
+{\
+    const DynamicType& type(primitive_type<T>());\
+    DynamicData data(type);\
+    data = static_cast<T>(value);\
+\
+    if (assert_fail)\
+    {\
+        ASSERT_OR_EXCEPTION({ ASSERT_EQ_DYNAMICDATA(OP(data), (result)); },\
+            std::string("Operator") + #OP + "()");\
+    }\
+    else\
+    {\
+        ASSERT_EQ_DYNAMICDATA(OP(data), (result));\
+    }\
+}
+
 template <typename T>
 inline void check_bitwise_complement_operator(
         const T& value,
@@ -100,12 +122,32 @@ inline void check_bitwise_complement_operator(
     CHECK_ARITHMETIC_UNARY_OPERATOR(value, assert_fail, ~);
 }
 
+// in order to avoid warning C4804: ~value == !value
+template<>
+inline void check_bitwise_complement_operator(
+        const bool& value,
+        bool assert_fail)
+{
+    using T = bool;
+    CHECK_ARITHMETIC_UNARY_OPERATOR(value, assert_fail, ~, !value);
+}
+
 template<typename T>
 inline void check_negate_operator(
         const T& value,
         bool assert_fail=false)
 {
     CHECK_ARITHMETIC_UNARY_OPERATOR(value, assert_fail, -);
+}
+
+// in order to avoid warning C4804: -value == !value
+template<>
+inline void check_negate_operator(
+        const bool& value,
+        bool assert_fail)
+{
+    using T = bool;
+    CHECK_ARITHMETIC_UNARY_OPERATOR(value, assert_fail, -, !value);
 }
 
 TEST (DynamicDataOperators, arithmetic_unary_operators)
@@ -165,10 +207,26 @@ inline void check_arithmetic_flt_binary_operators(
     ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP(data, /, _data, A / B);
 }
 
+// in order to avoid warning C4804: handle arithmetica as boolean algebra
+template<>
+inline void check_arithmetic_flt_binary_operators(
+        const bool& A,
+        const bool& B)
+{
+    const DynamicType& type(primitive_type<bool>());
+    DynamicData data(type), _data(type), res(type);
+    data = A;
+    _data = B;
+
+    using T = bool;
+    ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP(data, +, _data, A || B);
+    ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP(data, *, _data, A && B);
+}
+
 #define ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP_EXCEPT(OPERAND1, OPERATOR, OPERAND2, RES) \
 {\
     std::stringstream errmsg;\
-    errmsg << "Operator" << (#OPERATOR == "^" ? "\\^" : #OPERATOR) << "()";\
+    errmsg << "Operator" << (#OPERATOR[0] == '^' ? "\\^" : #OPERATOR) << '()';\
     ASSERT_OR_EXCEPTION(\
         { ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP(OPERAND1, OPERATOR, OPERAND2, RES);},\
         errmsg.str());\
@@ -209,6 +267,42 @@ inline void check_arithmetic_int_binary_operators(
         ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP(data, &,  _data, A &  B);
         ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP(data, ^,  _data, A ^  B);
         ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP(data, |,  _data, A |  B);
+    }
+}
+
+// in order to avoid warning C4804: handle arithmetica as boolean algebra
+template <>
+inline void check_arithmetic_int_binary_operators(
+        const bool& A,
+        const bool& B,
+        bool assert_fail)
+{
+    const DynamicType& type(primitive_type<bool>());
+    DynamicData data(type), _data(type), res(type);
+    data = A;
+    _data = B;
+
+    using T = bool;
+    if (assert_fail)
+    {
+        ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP_EXCEPT(data, +,  _data, A || B);
+        ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP_EXCEPT(data, *,  _data, A && B);
+        ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP_EXCEPT(data, <<, _data, A);
+        ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP_EXCEPT(data, >>, _data, A && !B);
+        ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP_EXCEPT(data, &,  _data, A & B);
+        ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP_EXCEPT(data, ^,  _data, A ^ B);
+        ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP_EXCEPT(data, |,  _data, A | B);
+    }
+    else
+    {
+
+        ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP(data, +,  _data, A || B);
+        ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP(data, *,  _data, A && B);
+        ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP(data, <<, _data, A);
+        ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP(data, >>, _data, A && !B);
+        ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP(data, &,  _data, A & B);
+        ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP(data, ^,  _data, A ^ B);
+        ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP(data, |,  _data, A | B);
     }
 }
 
@@ -429,6 +523,43 @@ inline void check_assignment_operators(
         ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP(data, %=,  B, A %  B);
         ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP(data, <<=, B, A << B);
         ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP(data, >>=, B, A >> B);
+        ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP(data, &=,  B, A &  B);
+        ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP(data, ^=,  B, A ^  B);
+        ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP(data, |=,  B, A |  B);
+    }
+}
+
+// in order to avoid warning C4804: handle arithmetica as boolean algebra
+template <>
+inline void check_assignment_operators(
+        const bool& A,
+        const bool& B,
+        bool assert_fail)
+{
+    const DynamicType& type(primitive_type<bool>());
+    DynamicData data(type), _data(type), res(type);
+    data = A;
+    _data = B;
+
+    using T = bool;
+    if (assert_fail)
+    {
+        ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP_EXCEPT(data, +=,  B, A || B);
+        ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP_EXCEPT(data, *=,  B, A && B);
+        ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP_EXCEPT(data, &=,  B, A &  B);
+        ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP_EXCEPT(data, ^=,  B, A ^  B);
+        ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP_EXCEPT(data, |=,  B, A |  B);
+    }
+    else
+    {
+        ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP(data, +=,  _data, A || B);
+        ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP(data, *=,  _data, A && B);
+        ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP(data, &=,  _data, A &  B);
+        ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP(data, ^=,  _data, A ^  B);
+        ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP(data, |=,  _data, A |  B);
+
+        ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP(data, +=,  B, A || B);
+        ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP(data, *=,  B, A && B);
         ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP(data, &=,  B, A &  B);
         ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP(data, ^=,  B, A ^  B);
         ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP(data, |=,  B, A |  B);

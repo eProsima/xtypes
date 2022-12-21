@@ -780,6 +780,9 @@ class WritableDynamicDataRef : public ReadableDynamicDataRef
 {
 public:
 
+    WritableDynamicDataRef(const WritableDynamicDataRef&) = default;
+    WritableDynamicDataRef(WritableDynamicDataRef&&) = default;
+
     using ReadableDynamicDataRef::operator [];
     using ReadableDynamicDataRef::value;
     using ReadableDynamicDataRef::d;

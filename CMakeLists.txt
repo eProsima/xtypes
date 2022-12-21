@@ -29,14 +29,14 @@ endif()
 # Download the cpp-peglib header file needed
 file(DOWNLOAD
         https://raw.githubusercontent.com/yhirose/cpp-peglib/master/peglib.h
-        ${PROJECT_SOURCE_DIR}/thirdparty/cpp-peglib/peglib.h
+        ${PROJECT_BINARY_DIR}/thirdparty/cpp-peglib/peglib.h
     )
 
 # MSVC always returns __cplusplus = 199711 unles we use the flag /Zc:__cplusplus then it follows the GNU behavior
 if(MSVC)
     execute_process(COMMAND 
-        powershell -Command [=[
-            $header = gi thirdparty/cpp-peglib/peglib.h;
+        powershell -Command "$binarydir = \"${PROJECT_BINARY_DIR}\";" [=[
+            $header = gi "$binarydir/thirdparty/cpp-peglib/peglib.h";
             (cat $header | % { $_ -replace '__cplusplus', '_MSVC_LANG' } ) | Set-Content $header
             ]=]
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
@@ -46,7 +46,7 @@ endif(MSVC)
 target_include_directories(xtypes
     INTERFACE
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/thirdparty/cpp-peglib>
+        $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/thirdparty/cpp-peglib>
         $<INSTALL_INTERFACE:include>
         $<INSTALL_INTERFACE:thirdparty/cpp-peglib/include>
     )
@@ -84,7 +84,7 @@ macro(compile_tool)
         )
 
     target_compile_options(${TOOL_NAME}
-        INTERFACE
+        PRIVATE
             $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra>
         )
 endmacro()
@@ -133,8 +133,8 @@ macro(compile_example)
         )
 
     target_compile_options(${EXAMPLE_NAME}
-        INTERFACE
-            $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -Wno-multichar>
+        PRIVATE
+            $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -Wno-sign-compare -Wno-multichar>
         )
 endmacro()
 
@@ -163,7 +163,7 @@ macro(compile_test)
 
     target_link_libraries(${TEST_NAME}
         PRIVATE
-            libgtest
+            GTest::gtest
         )
 
     add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
@@ -171,8 +171,10 @@ endmacro()
 
 if(XTYPES_BUILD_TESTS)
     include(CTest)
-    include(test/gtest.cmake)
     enable_testing()
+
+    # apt install libgtest-dev
+    find_package(GTest CONFIG REQUIRED)
 
     compile_test(xtypes_test_unitary SOURCE
         test/unitary/xtypes/main.cpp
@@ -279,7 +281,7 @@ install(
 
 install(
     DIRECTORY
-        ${PROJECT_SOURCE_DIR}/thirdparty/cpp-peglib/
+        ${PROJECT_BINARY_DIR}/thirdparty/cpp-peglib/
     DESTINATION
         thirdparty/cpp-peglib/include
     FILES_MATCHING
@@ -289,8 +291,8 @@ install(
 install(
     EXPORT
         xtypes-targets
-    NAMESPACE
-        eprosima
+#   NAMESPACE
+#       eprosima::
     DESTINATION
         ${DATA_INSTALL_DIR}/xtypes/cmake
     )
