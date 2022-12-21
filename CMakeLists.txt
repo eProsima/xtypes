@@ -94,11 +94,19 @@ find_program(NODERED_EXECUTABLE NAMES node-red node-red@ PATH_SUFFIXES bin)
 if(XTYPES_BUILD_TOOLS OR NODERED_EXECUTABLE)
     compile_tool(xtypes_idl_validator SOURCE tools/idl_validator.cpp)
 
+    # WSL for example lacks TMP
+    if(NOT ENV{TMP})
+        set(TMP_ROOT "/tmp")
+    else()
+        set(TMP_ROOT "$ENV{TMP}")
+    endif()
+
     if (NODERED_EXECUTABLE)
-        file(WRITE $ENV{TMP}/idl_parser_path.txt "${PROJECT_BINARY_DIR}")
+        file(WRITE ${TMP_ROOT}/idl_parser_path.txt "${PROJECT_BINARY_DIR}")
         message("${PROJECT_BINARY_DIR}")
     endif()
-    # ...
+
+    unset(TMP_ROOT)
 endif()
 
 #####################################################################################
@@ -126,7 +134,7 @@ macro(compile_example)
 
     target_compile_options(${EXAMPLE_NAME}
         INTERFACE
-            $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra>
+            $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -Wno-multichar>
         )
 endmacro()
 

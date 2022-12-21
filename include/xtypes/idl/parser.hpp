@@ -33,6 +33,7 @@
 
 #include <array>
 #include <exception>
+#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <locale>
@@ -42,13 +43,27 @@
 #include <string_view>
 #include <vector>
 
-#ifdef _MSVC_LANG
+// mimic posix pipe APIs
+#ifdef _MSC_VER
 #   pragma push_macro("popen")
 #   define popen _popen
 #   pragma push_macro("pipe")
 #   define pipe _pipe
 #   pragma push_macro("pclose")
 #   define pclose _pclose
+#endif
+
+// define preprocessor strategy
+#ifdef _MSC_VER
+#   define EPROSIMA_PLATFORM_PREPROCESSOR "cl /EP"
+#   define EPROSIMA_PLATFORM_PREPROCESSOR_STRATEGY preprocess_strategy::temporary_file
+#   define EPROSIMA_PLATFORM_PREPROCESSOR_INCLUDES "/I"
+#   define EPROSIMA_PLATFORM_PREPROCESSOR_ERRORREDIR " 2> nul"
+#else
+#   define EPROSIMA_PLATFORM_PREPROCESSOR "cpp -H"
+#   define EPROSIMA_PLATFORM_PREPROCESSOR_STRATEGY preprocess_strategy::pipe_stdin
+#   define EPROSIMA_PLATFORM_PREPROCESSOR_INCLUDES "-I "
+#   define EPROSIMA_PLATFORM_PREPROCESSOR_ERRORREDIR " 2> /dev/null"
 #endif
 
 namespace peg {
@@ -135,8 +150,9 @@ struct LogEntry
 
 class Parser;
 
-struct Context
+class Context
 {
+public:
     enum CharType
     {
         CHAR,
@@ -150,15 +166,26 @@ struct Context
         CHAR16_T
     };
 
+    // Preprocessors capability to use shared memory (pipes) or stick to file input
+    enum class preprocess_strategy
+    {
+        pipe_stdin,
+        temporary_file
+    };
+
     // Config
     bool ignore_case = false;
     bool clear = true;
-    bool preprocess = true;
     bool allow_keyword_identifiers = false;
     bool ignore_redefinition = false;
     CharType char_translation = CHAR;
     WideCharType wchar_type = WCHAR_T;
-    std::string preprocessor_exec = "cpp";
+
+    bool preprocess = true;
+    std::string preprocessor_exec = EPROSIMA_PLATFORM_PREPROCESSOR;
+    std::string error_redir = EPROSIMA_PLATFORM_PREPROCESSOR_ERRORREDIR;
+    preprocess_strategy strategy = EPROSIMA_PLATFORM_PREPROCESSOR_STRATEGY;
+    std::string include_flag = EPROSIMA_PLATFORM_PREPROCESSOR_INCLUDES;
     std::vector<std::string> include_paths;
 
     // Results
@@ -228,23 +255,33 @@ struct Context
         print_log_ = enable;
     }
 
-private:
+    std::string preprocess_file(
+            const std::string& idl_file) const
+    {
+        std::vector<std::string> includes;
+        std::string args;
+        for (const std::string inc_path : include_paths)
+        {
+            args += include_flag + inc_path + " ";
+        }
 
-    friend class Parser;
-    Parser* instance_;
-    std::shared_ptr<Module> module_ = nullptr;
-    std::vector<log::LogEntry> log_;
-    log::LogLevel log_level_ = log::LogLevel::WARNING;
-    bool print_log_ = false;
+        std::string cmd = preprocessor_exec + " " + args + idl_file + error_redir;
 
-    inline void clear_context();
+        log(log::LogLevel::DEBUG, "PREPROCESS",
+                "Calling preprocessor with command: " + cmd);
+        std::string output = exec(cmd);
+        return output;
+    }
+
+    std::string preprocess_string(
+            const std::string& idl_string) const;
 
     // Logging
     void log(
             log::LogLevel level,
             const std::string& category,
             const std::string& message,
-            std::shared_ptr<peg::Ast> ast = nullptr)
+            std::shared_ptr<peg::Ast> ast = nullptr) const
     {
         if (log_level_ >= level)
         {
@@ -264,9 +301,132 @@ private:
         }
     }
 
+private:
+
+    friend class Parser;
+    Parser* instance_;
+    std::shared_ptr<Module> module_ = nullptr;
+    mutable std::vector<log::LogEntry> log_;
+    log::LogLevel log_level_ = log::LogLevel::WARNING;
+    bool print_log_ = false;
+
+    inline void clear_context();
+
+    template<Context::preprocess_strategy s>
+    std::string preprocess_string(
+            const std::string& idl_string) const;
+
+    static std::string exec(
+            const std::string& cmd)
+    {
+        std::unique_ptr<FILE, decltype(& pclose)> pipe(popen(cmd.c_str(), "rt"), pclose);
+        if (!pipe)
+        {
+            throw std::runtime_error("popen() failed!");
+        }
+
+#ifdef _MSC_VER
+        std::filebuf buff(pipe.get());
+        std::ostringstream os;
+        os << &buff;
+        return os.str();
+#else
+        std::array<char, 256> buffer;
+        std::string result;
+        while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr)
+        {
+            result += buffer.data();
+        }
+        return result;
+#endif // _MSC_VER
+    }
+
+    void replace_all_string(
+            std::string& str,
+            const std::string& from,
+            const std::string& to) const
+    {
+        size_t froms = from.size();
+        size_t tos = to.size();
+        size_t pos = str.find(from);
+        const std::string escaped = "\\\\\"";
+        size_t escaped_size = escaped.size();
+        while (pos != std::string::npos)
+        {
+            str.replace(pos, froms, to);
+            pos = str.find(from, pos + tos);
+            while (str[pos - 1] == '\\')
+            {
+                str.replace(pos, froms, escaped);
+                pos = str.find(from, pos + escaped_size);
+            }
+
+        }
+    }
+
 };
 
 static const Context DEFAULT_CONTEXT = Context();
+
+template<>
+std::string Context::preprocess_string<Context::preprocess_strategy::pipe_stdin>(
+        const std::string& idl_string) const
+{
+    std::string args;
+    for (const std::string inc_path : include_paths)
+    {
+        args += include_flag + inc_path + " ";
+    }
+    // Escape double quotes inside the idl_string
+    std::string escaped_idl_string = idl_string;
+    replace_all_string(escaped_idl_string, "\"", "\\\"");
+    std::string cmd = "echo \"" + escaped_idl_string + "\" | "
+            + preprocessor_exec + " " + args + error_redir;
+
+    log(log::LogLevel::DEBUG, "PREPROCESS",
+            "Calling preprocessor '" + preprocessor_exec + "' for an IDL string.");
+
+    return exec(cmd);
+}
+
+template<>
+std::string Context::preprocess_string<Context::preprocess_strategy::temporary_file>(
+        const std::string& idl_string) const
+{
+    static std::hash<std::string_view> fn;
+
+    // Create temporary filename
+    auto tmp = std::filesystem::temp_directory_path();
+    tmp /= "xtypes_";
+    tmp += fn(idl_string);
+
+    { // Populate
+        std::ofstream os(tmp);
+        os << idl_string;
+    }
+
+    auto processed = preprocess_file(tmp.string());
+
+    // dispose
+    std::filesystem::remove(tmp);
+
+    return processed;
+}
+
+std::string Context::preprocess_string(
+        const std::string& idl_string) const
+{
+    switch(strategy)
+    {
+        case Context::preprocess_strategy::pipe_stdin:
+            return preprocess_string<Context::preprocess_strategy::pipe_stdin>(idl_string);
+        case Context::preprocess_strategy::temporary_file:
+            return preprocess_string<Context::preprocess_strategy::temporary_file>(idl_string);
+    }
+
+    throw std::range_error("unknown preprocessor strategy selected.");
+    return "";
+}
 
 class Parser
 {
@@ -362,7 +522,7 @@ public:
         std::shared_ptr<peg::Ast> ast;
         if (context.preprocess)
         {
-            std::string file_content = preprocess_file(idl_file);
+            std::string file_content = context.preprocess_file(idl_file);
             return parse(file_content, context);
         }
 
@@ -379,7 +539,7 @@ public:
 
         if (context.preprocess)
         {
-            return parse(preprocess_string(idl_string), context);
+            return parse(context.preprocess_string(idl_string), context);
         }
         else
         {
@@ -430,18 +590,12 @@ public:
     };
 
     static std::string preprocess(
-            const std::string& preprocessor_path,
             const std::string& idl_file,
             const std::vector<std::string>& includes)
     {
-        std::string args = "-H ";
-        for (const std::string inc_path : includes)
-        {
-            args += "-I " + inc_path + " ";
-        }
-        std::string cmd = preprocessor_path + " " + args + idl_file;
-        std::string output = exec(cmd);
-        return output;
+        Context ctx = DEFAULT_CONTEXT;
+        ctx.include_paths = includes;
+        return ctx.preprocess_file(idl_file);
     }
 
 private:
@@ -467,85 +621,6 @@ private:
     {
         context_->log(log::DEBUG, "PEGLIB_PARSER", msg + " (" + std::to_string(
                     l - CPP_PEGLIB_LINE_COUNT_ERROR) + ":" + std::to_string(c) + ")");
-    }
-
-    static std::string exec(
-            const std::string& cmd,
-            bool filter_stderr = true)
-    {
-        std::array<char, 256> buffer;
-        std::string command = cmd;
-        if (filter_stderr)
-        {
-            command.append(" 2> /dev/null");
-        }
-        std::string result;
-        std::unique_ptr<FILE, decltype(& pclose)> pipe(popen(command.c_str(), "r"), pclose);
-        if (!pipe)
-        {
-            throw std::runtime_error("popen() failed!");
-        }
-        while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr)
-        {
-            result += buffer.data();
-        }
-        return result;
-    }
-
-    void replace_all_string(
-            std::string& str,
-            const std::string& from,
-            const std::string& to) const
-    {
-        size_t froms = from.size();
-        size_t tos = to.size();
-        size_t pos = str.find(from);
-        const std::string escaped = "\\\\\"";
-        size_t escaped_size = escaped.size();
-        while (pos != std::string::npos)
-        {
-            str.replace(pos, froms, to);
-            pos = str.find(from, pos + tos);
-            while (str[pos - 1] == '\\')
-            {
-                str.replace(pos, froms, escaped);
-                pos = str.find(from, pos + escaped_size);
-            }
-
-        }
-    }
-
-    std::string preprocess_string(
-            const std::string& idl_string) const
-    {
-        std::string args = "-H ";
-        for (const std::string inc_path : context_->include_paths)
-        {
-            args += "-I " + inc_path + " ";
-        }
-        // Escape double quotes inside the idl_string
-        std::string escaped_idl_string = idl_string;
-        replace_all_string(escaped_idl_string, "\"", "\\\"");
-        std::string cmd = "echo \"" + escaped_idl_string + "\" | " + context_->preprocessor_exec + " " + args;
-        context_->log(log::LogLevel::DEBUG, "PREPROCESS",
-                "Calling preprocessor '" + context_->preprocessor_exec + "' for an IDL string.");
-        return exec(cmd);
-    }
-
-    std::string preprocess_file(
-            const std::string& idl_file)
-    {
-        std::vector<std::string> includes;
-        std::string args = "-H ";
-        for (const std::string inc_path : context_->include_paths)
-        {
-            args += "-I " + inc_path + " ";
-        }
-        std::string cmd = context_->preprocessor_exec + " " + args + idl_file;
-        context_->log(log::LogLevel::DEBUG, "PREPROCESS",
-                "Calling preprocessor with command: " + cmd);
-        std::string output = exec(cmd);
-        return output;
     }
 
     std::shared_ptr<Module> build_on_ast(

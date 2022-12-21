@@ -74,7 +74,7 @@ inline std::string preprocess(
         const std::string& idl_file,
         const std::vector<std::string>& includes)
 {
-    return Parser::preprocess("cpp", idl_file, includes);
+    return Parser::preprocess(idl_file, includes);
 }
 
 /// \brief Generates the IDL that represents an StructType
