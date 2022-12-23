@@ -58,6 +58,20 @@ DDS_CORE_XTYPES_PRIMITIVE(char, CHAR_8_TYPE)
 DDS_CORE_XTYPES_PRIMITIVE(char16_t, CHAR_16_TYPE)
 DDS_CORE_XTYPES_PRIMITIVE(wchar_t, WIDE_CHAR_TYPE)
 
+#define DDS_CORE_XTYPES_PRIMITIVE_ALIASES(ALIAS_TYPE, TYPE) \
+    template<> \
+    struct PrimitiveTypeKindTrait<ALIAS_TYPE> \
+    { \
+        static constexpr TypeKind kind = PrimitiveTypeKindTrait<TYPE>::kind\
+        static constexpr const char* name = PrimitiveTypeKindTrait<TYPE>::name; \
+    }; \
+
+// Platform specific workarounds (stdint.h may miss some typedefs)
+#ifdef _MSVC_VER
+DDS_CORE_XTYPES_PRIMITIVE_ALIASES(long, int32_t)
+DDS_CORE_XTYPES_PRIMITIVE_ALIASES(unsigned long, uint32_t)
+#endif
+
 /// \brief DynamicType representing a primitive type.
 /// Primitive types can be the following: bool char wchar_t uint8_t int16_t
 /// uint16_t int32_t uint32_t int64_t uint64_t float double long double.

@@ -981,7 +981,6 @@ public:
                 "Expected type '" << type_.name()
                                   << "' but '" << PrimitiveTypeKindTrait<T>::name << "' received while setting value.");
 
-
         if (type_.is_enumerated_type())
         {
             xtypes_assert(type_.memory_size() == sizeof(T),
