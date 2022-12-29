@@ -72,8 +72,7 @@ namespace xtypes {
             MACRO(double, OPERATOR);\
         case TypeKind::FLOAT_128_TYPE:\
             MACRO(long double, OPERATOR);\
-        default:\
-            return *this;\
+        default:;\
     }\
 }
 

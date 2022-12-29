@@ -62,12 +62,12 @@ DDS_CORE_XTYPES_PRIMITIVE(wchar_t, WIDE_CHAR_TYPE)
     template<> \
     struct PrimitiveTypeKindTrait<ALIAS_TYPE> \
     { \
-        static constexpr TypeKind kind = PrimitiveTypeKindTrait<TYPE>::kind\
+        static constexpr TypeKind kind = PrimitiveTypeKindTrait<TYPE>::kind; \
         static constexpr const char* name = PrimitiveTypeKindTrait<TYPE>::name; \
     }; \
 
 // Platform specific workarounds (stdint.h may miss some typedefs)
-#ifdef _MSVC_VER
+#ifdef _MSC_VER
 DDS_CORE_XTYPES_PRIMITIVE_ALIASES(long, int32_t)
 DDS_CORE_XTYPES_PRIMITIVE_ALIASES(unsigned long, uint32_t)
 #endif
