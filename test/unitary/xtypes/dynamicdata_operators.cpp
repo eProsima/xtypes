@@ -39,8 +39,8 @@ inline void check_de_increment_operators(
 
     if (assert_fail)
     {
-        ASSERT_OR_EXCEPTION({ ASSERT_EQ_DYNAMICDATA(data++, value + 1); }, "Operator++()");
-        ASSERT_OR_EXCEPTION({ ASSERT_EQ_DYNAMICDATA(data--, value + 1); }, "Operator--()");
+        ASSERT_OR_EXCEPTION({ ASSERT_EQ_DYNAMICDATA(data++, value + 1); }, R"xtypes(Operator\+\+\(\))xtypes");
+        ASSERT_OR_EXCEPTION({ ASSERT_EQ_DYNAMICDATA(data--, value + 1); }, R"xtypes(Operator--\(\))xtypes");
     }
     else
     {
@@ -89,7 +89,7 @@ TEST (DynamicDataOperators, increment_decrement_operators)
     if (assert_fail)\
     {\
         ASSERT_OR_EXCEPTION({ ASSERT_EQ_DYNAMICDATA(OP(data), OP(value)); },\
-            std::string("Operator") + #OP + "()");\
+            std::string("Operator") + #OP + "\\(\\)");\
     }\
     else\
     {\
@@ -106,7 +106,7 @@ TEST (DynamicDataOperators, increment_decrement_operators)
     if (assert_fail)\
     {\
         ASSERT_OR_EXCEPTION({ ASSERT_EQ_DYNAMICDATA(OP(data), (result)); },\
-            std::string("Operator") + #OP + "()");\
+            std::string("Operator") + #OP + "\\(\\)");\
     }\
     else\
     {\
@@ -226,7 +226,7 @@ inline void check_arithmetic_flt_binary_operators(
 #define ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP_EXCEPT(OPERAND1, OPERATOR, OPERAND2, RES) \
 {\
     std::stringstream errmsg;\
-    errmsg << "Operator" << (#OPERATOR[0] == '^' ? "\\^" : #OPERATOR) << '()';\
+    errmsg << "Operator" << (#OPERATOR[0] == '^' ? "\\^" : #OPERATOR);\
     ASSERT_OR_EXCEPTION(\
         { ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP(OPERAND1, OPERATOR, OPERAND2, RES);},\
         errmsg.str());\
@@ -295,7 +295,6 @@ inline void check_arithmetic_int_binary_operators(
     }
     else
     {
-
         ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP(data, +,  _data, A || B);
         ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP(data, *,  _data, A && B);
         ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP(data, <<, _data, A);
@@ -337,7 +336,7 @@ inline void check_logical_not_operator(
     data = value;
     if (assert_fail)
     {
-        ASSERT_OR_EXCEPTION({ ASSERT_EQ(!data, !value); }, "Operator!()");
+        ASSERT_OR_EXCEPTION({ ASSERT_EQ(!data, !value); }, R"xtypes(Operator!\(\))xtypes");
     }
     else
     {
@@ -477,7 +476,7 @@ inline void check_assignment_flt_operators(
 {\
     ASSERT_OR_EXCEPTION(\
         { ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP(OPERAND1, OPERATOR, OPERAND2, RES);},\
-        "Operator.*() cannot be used with non-arithmetic types");\
+        R"xtypes(Operator.*\(\) cannot be used with non-arithmetic types)xtypes");\
 }
 
 template <typename T>

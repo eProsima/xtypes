@@ -421,13 +421,33 @@ inline DynamicData DynamicData::operator OPERATOR (const ReadableDynamicDataRef&
     DYNAMIC_DATA_NUMERIC_OPERATOR_RESULT(OPERATOR);\
 }
 
+#define DYNAMIC_DATA_NUMERIC_SAFE_OPERATOR_IMPLEMENTATION(OPERATOR)\
+inline DynamicData DynamicData::operator OPERATOR (const ReadableDynamicDataRef& other) const \
+{\
+    switch(type_.kind())\
+    {\
+        case TypeKind::CHAR_8_TYPE:\
+        case TypeKind::CHAR_16_TYPE:\
+        case TypeKind::WIDE_CHAR_TYPE:\
+        case TypeKind::BOOLEAN_TYPE:\
+        {\
+            std::ostringstream os;\
+            os << "Operator" << (#OPERATOR[0] == '^' ? "\\^" : #OPERATOR)\
+               << " is not supported for type " << type_.name();\
+            throw std::runtime_error(os.str());\
+        }\
+        default:\
+            DYNAMIC_DATA_NUMERIC_OPERATOR_RESULT(OPERATOR);\
+    }\
+}
+
 DYNAMIC_DATA_NUMERIC_OPERATOR_IMPLEMENTATION(*);
 
 DYNAMIC_DATA_NUMERIC_OPERATOR_IMPLEMENTATION(/);
 
 DYNAMIC_DATA_NUMERIC_INT_OPERATOR_IMPLEMENTATION(%);
 
-DYNAMIC_DATA_NUMERIC_OPERATOR_IMPLEMENTATION(+);
+DYNAMIC_DATA_NUMERIC_SAFE_OPERATOR_IMPLEMENTATION(+);
 
 DYNAMIC_DATA_NUMERIC_OPERATOR_IMPLEMENTATION(-);
 
