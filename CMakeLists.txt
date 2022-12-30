@@ -167,6 +167,11 @@ macro(compile_test)
         )
 
     add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
+
+    if(TEST_EXTRA_VARIABLES)
+        set_property(TEST ${TEST_NAME} PROPERTY ENVIRONMENT "${TEST_EXTRA_VARIABLES}")
+    endif()
+
 endmacro()
 
 if(XTYPES_BUILD_TESTS)
@@ -175,6 +180,30 @@ if(XTYPES_BUILD_TESTS)
 
     # apt install libgtest-dev
     find_package(GTest CONFIG REQUIRED)
+
+    if(MSVC)
+        # Populate test environment if required
+        find_path(CL_BIN cl.exe)
+
+        # if preprocessor is already available not populate
+        if(NOT CL_BIN)
+            execute_process(
+                COMMAND powershell -File "${CMAKE_CURRENT_LIST_DIR}\\test\\environment.ps1"
+                OUTPUT_VARIABLE EXTRA_ENVIRONMENT_OUTPUT)
+        endif()
+
+        if(EXTRA_ENVIRONMENT_OUTPUT)
+            string(REGEX MATCH "^(.*)>><<(.*)$" EXTRA_ENVIRONMENT_OUTPUT "${EXTRA_ENVIRONMENT_OUTPUT}")
+        endif()
+
+        set(TEST_EXTRA_VARIABLES "${CMAKE_MATCH_1}")
+        set(TEST_EXTRA_PATHS "Path=$ENV{Path};${CMAKE_MATCH_2}")
+        string(REPLACE ";" "\\;" TEST_EXTRA_PATHS "${TEST_EXTRA_PATHS}")
+        set(TEST_EXTRA_VARIABLES "${TEST_EXTRA_VARIABLES};${TEST_EXTRA_PATHS}")
+        unset(TEST_EXTRA_PATHS)
+        unset(EXTRA_ENVIRONMENT_OUTPUT)
+
+    endif(MSVC)
 
     compile_test(xtypes_test_unitary SOURCE
         test/unitary/xtypes/main.cpp
