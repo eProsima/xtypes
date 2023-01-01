@@ -32,6 +32,7 @@
 #include <xtypes/idl/grammar.hpp>
 
 #include <array>
+#include <atomic>
 #include <exception>
 #include <filesystem>
 #include <fstream>
@@ -257,66 +258,34 @@ public:
         return output;
     }
 
-    // preprocessing using pipes
-    std::string preprocess_string(
-            const std::string& idl_string,
-            std::true_type) const
+    std::string preprocess_string(const std::string& idl_string) const;
+
+private:
+
+    template<preprocess_strategy e>
+    std::string preprocess_string(const std::string& idl_string) const;
+
+    void replace_all_string(
+            std::string& str,
+            const std::string& from,
+            const std::string& to) const
     {
-        std::string args;
-        for (const std::string& inc_path : include_paths)
+        size_t froms = from.size();
+        size_t tos = to.size();
+        size_t pos = str.find(from);
+        const std::string escaped = "\\\\\"";
+        size_t escaped_size = escaped.size();
+        while (pos != std::string::npos)
         {
-            args += include_flag + inc_path + " ";
+            str.replace(pos, froms, to);
+            pos = str.find(from, pos + tos);
+            while (str[pos - 1] == '\\')
+            {
+                str.replace(pos, froms, escaped);
+                pos = str.find(from, pos + escaped_size);
+            }
+
         }
-        // Escape double quotes inside the idl_string
-        std::string escaped_idl_string = idl_string;
-        replace_all_string(escaped_idl_string, "\"", "\\\"");
-        std::string cmd = "echo \"" + escaped_idl_string + "\" | "
-                + preprocessor_exec + " " + args + error_redir;
-
-        log(log::LogLevel::DEBUG, "PREPROCESS",
-                "Calling preprocessor '" + preprocessor_exec + "' for an IDL string.");
-
-        return exec(cmd);
-    }
-
-    // preprocessing using files
-    std::string preprocess_string(
-            const std::string& idl_string,
-            std::false_type) const
-    {
-        static std::hash<std::string_view> fn;
-
-        // Create temporary filename
-        auto tmp = std::filesystem::temp_directory_path();
-        tmp /= "xtypes_";
-        tmp += fn(idl_string);
-
-        { // Populate
-            std::ofstream os(tmp);
-            os << idl_string;
-        }
-
-        auto processed = preprocess_file(tmp.string());
-
-        // dispose
-        std::filesystem::remove(tmp);
-
-        return processed;
-    }
-
-    std::string preprocess_string(
-            const std::string& idl_string) const
-    {
-        switch(strategy)
-        {
-            case preprocess_strategy::pipe_stdin:
-                return preprocess_string(idl_string, std::true_type());
-            case preprocess_strategy::temporary_file:
-                return preprocess_string(idl_string, std::false_type());
-        }
-
-        xtypes_assert(true, "unknown preprocessor strategy selected.")
-        return "";
     }
 
     std::string exec(
@@ -343,30 +312,68 @@ public:
         return result;
     #endif // _MSC_VER
     }
-
-    void replace_all_string(
-            std::string& str,
-            const std::string& from,
-            const std::string& to) const
-    {
-        size_t froms = from.size();
-        size_t tos = to.size();
-        size_t pos = str.find(from);
-        const std::string escaped = "\\\\\"";
-        size_t escaped_size = escaped.size();
-        while (pos != std::string::npos)
-        {
-            str.replace(pos, froms, to);
-            pos = str.find(from, pos + tos);
-            while (str[pos - 1] == '\\')
-            {
-                str.replace(pos, froms, escaped);
-                pos = str.find(from, pos + escaped_size);
-            }
-
-        }
-    }
 };
+
+// preprocessing using pipes
+template<>
+inline std::string PreprocessorContext::preprocess_string<PreprocessorContext::preprocess_strategy::pipe_stdin>(
+            const std::string& idl_string) const
+{
+    std::string args;
+    for (const std::string& inc_path : include_paths)
+    {
+        args += include_flag + inc_path + " ";
+    }
+    // Escape double quotes inside the idl_string
+    std::string escaped_idl_string = idl_string;
+    replace_all_string(escaped_idl_string, "\"", "\\\"");
+    std::string cmd = "echo \"" + escaped_idl_string + "\" | "
+            + preprocessor_exec + " " + args + error_redir;
+
+    log(log::LogLevel::DEBUG, "PREPROCESS",
+            "Calling preprocessor '" + preprocessor_exec + "' for an IDL string.");
+
+    return exec(cmd);
+}
+
+// preprocessing using files
+template<>
+inline std::string PreprocessorContext::preprocess_string<PreprocessorContext::preprocess_strategy::temporary_file>(
+            const std::string& idl_string) const
+{
+    static std::hash<std::string_view> fn;
+
+    // Create temporary filename
+    auto tmp = std::filesystem::temp_directory_path();
+    tmp /= "xtypes_";
+    tmp += fn(idl_string);
+
+    { // Populate
+        std::ofstream os(tmp);
+        os << idl_string;
+    }
+
+    auto processed = preprocess_file(tmp.string());
+
+    // dispose
+    std::filesystem::remove(tmp);
+
+    return processed;
+}
+
+inline std::string PreprocessorContext::preprocess_string(
+        const std::string& idl_string) const
+{
+    switch(strategy)
+    {
+        case preprocess_strategy::pipe_stdin:
+            return PreprocessorContext::preprocess_string<preprocess_strategy::pipe_stdin>(idl_string);
+        case preprocess_strategy::temporary_file:
+            return PreprocessorContext::preprocess_string<preprocess_strategy::temporary_file>(idl_string);
+    }
+
+    xtypes_assert(true, "unknown preprocessor strategy selected.")
+}
 
 class Parser;
 
@@ -439,21 +446,39 @@ class Parser
 {
 public:
 
-    static Parser* instance()
+    static Parser* instance(bool create = true)
     {
-        Parser* instance = get_instance();
-        if (instance == nullptr)
+        Parser* former_instance = instance_.load();
+
+        if (nullptr == former_instance && create)
         {
-            instance = new Parser();
+            Parser * new_instance = new Parser();
+
+            while(!instance_.compare_exchange_weak(former_instance, new_instance))
+            {
+                if (former_instance != nullptr)
+                {
+                    // other thread created a new instance
+                    delete new_instance;
+                    return former_instance;
+                }
+            }
+
+            return new_instance;
         }
-        return instance;
+        else
+        {
+            return former_instance;
+        }
     }
 
     static void destroy()
     {
-        Parser* instance = get_instance();
-        delete instance;
-        instance = nullptr;
+        Parser* former_instance = instance_.exchange(nullptr);
+        if ( former_instance != nullptr )
+        {
+            delete former_instance;
+        }
     }
 
     Parser()
@@ -613,12 +638,7 @@ private:
     peg::parser parser_;
     Context* context_;
     std::shared_ptr<Module> root_scope_;
-
-    static Parser* get_instance()
-    {
-        static Parser* instance_ = nullptr;
-        return instance_;
-    }
+    static std::atomic<Parser*> instance_;
 
     void parser_log_cb_(
             size_t l,
@@ -2108,11 +2128,13 @@ private:
 
 };
 
+inline std::atomic<Parser*> Parser::instance_{nullptr};
+
 void Context::clear_context()
 {
     if (clear)
     {
-        if (Parser::get_instance() == instance_)
+        if (Parser::instance(false) == instance_)
         {
             Parser::destroy();
         }
