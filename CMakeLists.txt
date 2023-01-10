@@ -37,7 +37,9 @@ if(MSVC)
     execute_process(COMMAND 
         powershell -Command "$binarydir = \"${PROJECT_BINARY_DIR}\";" [=[
             $header = gi "$binarydir/thirdparty/cpp-peglib/peglib.h";
-            (cat $header | % { $_ -replace '__cplusplus', '_MSVC_LANG' } ) | Set-Content $header
+            (Get-Content -Encoding UTF8 -Path $header |
+            % { $_ -replace '__cplusplus', '_MSVC_LANG' } ) |
+            Set-Content -Encoding UTF8 -Path $header
             ]=]
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
        )
@@ -54,10 +56,13 @@ target_include_directories(xtypes
 target_compile_features(xtypes INTERFACE cxx_std_17 cxx_variadic_macros)
 
 if(MSVC)
-    # target_compile_features() only enforces standard values like cxx_std_17. All other values like
-    # cxx_variadic_macros are not enforced using flags but only will generate an error if not available.
-    # CMake docs is misguiding (see cmGeneratorTarget::ComputeCompileFeatures implementation).
-    target_compile_options(xtypes INTERFACE /Zc:preprocessor)
+    # Preprocessor:
+    #  target_compile_features() only enforces standard values like cxx_std_17. All other values like
+    #  cxx_variadic_macros are not enforced using flags but only will generate an error if not available.
+    #  CMake docs is misguiding (see cmGeneratorTarget::ComputeCompileFeatures implementation).
+    # Encoding:
+    #  The header uses non-basic character set characters in narrow strings. Execution charset is hinted to allow UTF-8
+    target_compile_options(xtypes INTERFACE /Zc:preprocessor /execution-charset:UTF-8)
 endif(MSVC)
 
 #####################################################################################

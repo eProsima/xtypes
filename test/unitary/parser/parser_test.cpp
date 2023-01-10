@@ -22,6 +22,17 @@
 using namespace eprosima::xtypes;
 using namespace eprosima::xtypes::idl;
 
+TEST (IDLParser, check_grammar)
+{
+    peg::parser parser;
+
+    parser.set_logger([](size_t line, size_t col, const std::string& msg, const std::string &) {
+            std::cerr << line << ":" << col << ": " << msg << std::endl;
+            });
+
+    ASSERT_TRUE(parser.load_grammar(eprosima::xtypes::idl::idl_grammar())) << "grammar cannot be parsed";
+}
+
 TEST (IDLParser, simple_struct_test)
 {
     Context context = parse(
