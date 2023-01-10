@@ -739,6 +739,7 @@ TEST (IDLParser, const_value_parser)
 TEST (IDLParser, parse_file)
 {
     Context context = parse_file("idl/test01.idl");
+    ASSERT_TRUE(context.success);
     std::map<std::string, DynamicType::Ptr> result = context.module().get_all_types();
     EXPECT_EQ(1, result.size());
     const DynamicType* my_struct = result["Test01"].get();

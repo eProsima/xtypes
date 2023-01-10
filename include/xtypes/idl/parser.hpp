@@ -510,6 +510,7 @@ public:
     {
         context.instance_ = this;
         context_ = &context;
+        context.module_ = &root_scope_;
         std::shared_ptr<peg::Ast> ast;
 
         if (!parser_.parse(idl_string.c_str(), ast))
@@ -522,7 +523,6 @@ public:
 
         ast = parser_.optimize_ast(ast);
         build_on_ast(ast);
-        context.module_ = root_scope_;
         context.success = true;
         context_->log(log::LogLevel::DEBUG, "RESULT",
                 "The parser finished.");

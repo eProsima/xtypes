@@ -1,10 +1,15 @@
 #####################################################################################
 #                             Top xtypes build system
 #####################################################################################
-cmake_minimum_required(VERSION 3.16.3 FATAL_ERROR)
+
+if(MSVC)
+    cmake_minimum_required(VERSION 3.22)
+else()
+    cmake_minimum_required(VERSION 3.16.3..3.22)
+endif()
 
 project(xtypes
-    VERSION "0.1.0"
+    VERSION "0.2.0"
     LANGUAGES CXX
     )
 
@@ -108,7 +113,6 @@ if(XTYPES_BUILD_TOOLS OR NODERED_EXECUTABLE)
 
     if (NODERED_EXECUTABLE)
         file(WRITE ${TMP_ROOT}/idl_parser_path.txt "${PROJECT_BINARY_DIR}")
-        message("${PROJECT_BINARY_DIR}")
     endif()
 
     unset(TMP_ROOT)
@@ -161,7 +165,7 @@ macro(compile_test)
     else()
         set(TEST_NAME "${ARGV0}")
     endif()
-    set(multiValueArgs SOURCE)
+    set(multiValueArgs SOURCE PROPERTIES)
     cmake_parse_arguments(TEST "" "${uniValueArgs}" "${multiValueArgs}" ${ARGN})
 
     compile_example(${TEST_NAME} SOURCE ${TEST_SOURCE})
@@ -171,11 +175,7 @@ macro(compile_test)
             GTest::gtest
         )
 
-    add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
-
-    if(TEST_EXTRA_VARIABLES)
-        set_property(TEST ${TEST_NAME} PROPERTY ENVIRONMENT "${TEST_EXTRA_VARIABLES}")
-    endif()
+    gtest_discover_tests(${TEST_NAME} PROPERTIES ${TEST_PROPERTIES} ${MSVC_TEST_PROPERTIES})
 
 endmacro()
 
@@ -185,8 +185,10 @@ if(XTYPES_BUILD_TESTS)
 
     # apt install libgtest-dev
     find_package(GTest CONFIG REQUIRED)
+    include(GoogleTest)
 
     if(MSVC)
+
         # Populate test environment if required
         find_path(CL_BIN cl.exe)
 
@@ -194,19 +196,11 @@ if(XTYPES_BUILD_TESTS)
         if(NOT CL_BIN)
             execute_process(
                 COMMAND powershell -File "${CMAKE_CURRENT_LIST_DIR}\\test\\environment.ps1"
-                OUTPUT_VARIABLE EXTRA_ENVIRONMENT_OUTPUT)
+                OUTPUT_VARIABLE MSVC_TEST_PROPERTIES)
         endif()
 
-        if(EXTRA_ENVIRONMENT_OUTPUT)
-            string(REGEX MATCH "^(.*)>><<(.*)$" EXTRA_ENVIRONMENT_OUTPUT "${EXTRA_ENVIRONMENT_OUTPUT}")
-        endif()
-
-        set(TEST_EXTRA_VARIABLES "${CMAKE_MATCH_1}")
-        set(TEST_EXTRA_PATHS "Path=$ENV{Path};${CMAKE_MATCH_2}")
-        string(REPLACE ";" "\\;" TEST_EXTRA_PATHS "${TEST_EXTRA_PATHS}")
-        set(TEST_EXTRA_VARIABLES "${TEST_EXTRA_VARIABLES};${TEST_EXTRA_PATHS}")
-        unset(TEST_EXTRA_PATHS)
-        unset(EXTRA_ENVIRONMENT_OUTPUT)
+        # Remove any console line feeds
+        string(STRIP "${MSVC_TEST_PROPERTIES}" MSVC_TEST_PROPERTIES)
 
     endif(MSVC)
 
@@ -225,17 +219,14 @@ if(XTYPES_BUILD_TESTS)
 
     compile_test(xtypes_test_unitary_no_memcheck SOURCE
         test/unitary/xtypes/main.cpp
-        test/unitary/xtypes/no_memcheck_tests.cpp)
+        test/unitary/xtypes/no_memcheck_tests.cpp
+        PROPERTIES LABELS "NoMemoryCheck")
 
     compile_test(xtypes_idl_parser_test_unitary SOURCE
         test/unitary/parser/module.cpp
         test/unitary/parser/parser_test.cpp)
     compile_test(xtypes_idl_parser_roundtrip SOURCE test/unitary/parser/roundtrip.cpp)
     compile_test(xtypes_idl_generator_dependencies SOURCE test/unitary/generator/dependencies.cpp)
-    # ...
-
-    # Set test with label NoMemoryCheck
-    set_property(TEST xtypes_test_unitary_no_memcheck PROPERTY LABELS "NoMemoryCheck")
 
     # Copy IDL files
     configure_file(
