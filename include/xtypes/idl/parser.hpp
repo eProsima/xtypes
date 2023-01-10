@@ -726,7 +726,7 @@ private:
             return std::string(identifier.substr(1).data(), identifier.substr(1).size()); // If the identifier starts with "_", remove the underscode and return.
         }
 
-        if (ast->is_token)
+        if (is_token(identifier))
         {
             std::stringstream message;
             message << "The identifier \"" << identifier << "\" is a reserved word.";
@@ -763,6 +763,29 @@ private:
                 {
                     return std::tolower(c);
                 });
+    }
+
+    bool is_token(
+            const std::string_view& identifier)
+    {
+        std::string aux_id(identifier.data(), identifier.size());
+
+        if (context_->ignore_case)
+        {
+            to_lower(aux_id);
+        }
+
+        for (const auto& rule : parser_.get_grammar())
+        {
+            if (rule.first.find("KW_") == 0) // If it starts with "KW_", is a reserved word. You are welcome.
+            {
+                if (rule.second.parse(aux_id.c_str()).ret)
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     void module_dcl(
