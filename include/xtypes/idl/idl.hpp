@@ -34,7 +34,7 @@ namespace idl {
 inline Context parse(
         const std::string& idl)
 {
-    Parser* parser = Parser::instance();
+    std::shared_ptr<Parser> parser = Parser::instance();
     return parser->parse(idl);
 }
 
@@ -44,7 +44,7 @@ inline Context& parse(
         const std::string& idl,
         Context& context)
 {
-    Parser* parser = Parser::instance();
+    std::shared_ptr<Parser> parser = Parser::instance();
     parser->parse(idl.c_str(), context);
     return context;
 }
@@ -54,7 +54,7 @@ inline Context& parse(
 inline Context parse_file(
         const std::string& idl_file)
 {
-    Parser* parser = Parser::instance();
+    std::shared_ptr<Parser> parser = Parser::instance();
     return parser->parse_file(idl_file);
 }
 
@@ -64,7 +64,7 @@ inline Context& parse_file(
         const std::string& idl_file,
         Context& context)
 {
-    Parser* parser = Parser::instance();
+    std::shared_ptr<Parser> parser = Parser::instance();
     parser->parse_file(idl_file.c_str(), context);
     return context;
 }

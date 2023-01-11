@@ -32,7 +32,6 @@
 #include <xtypes/idl/grammar.hpp>
 
 #include <array>
-#include <atomic>
 #include <exception>
 #include <filesystem>
 #include <fstream>
@@ -42,6 +41,7 @@
 #include <memory>
 #include <regex>
 #include <string_view>
+#include <thread>
 #include <type_traits>
 #include <vector>
 
@@ -434,8 +434,8 @@ public:
 private:
 
     friend class Parser;
-    Parser* instance_;
-    std::shared_ptr<Module> module_ = nullptr;
+    std::shared_ptr<Parser> instance_;
+    Module* module_ = nullptr;
     inline void clear_context();
 
 };
@@ -443,42 +443,25 @@ private:
 static const Context DEFAULT_CONTEXT = Context();
 
 class Parser
+    : public std::enable_shared_from_this<Parser>
 {
 public:
 
-    static Parser* instance(bool create = true)
+    static std::shared_ptr<Parser> instance(bool create = true)
     {
-        Parser* former_instance = instance_.load();
-
-        if (nullptr == former_instance && create)
+        if (!instance_ && create)
         {
-            Parser * new_instance = new Parser();
-
-            while(!instance_.compare_exchange_weak(former_instance, new_instance))
-            {
-                if (former_instance != nullptr)
-                {
-                    // other thread created a new instance
-                    delete new_instance;
-                    return former_instance;
-                }
-            }
-
-            return new_instance;
+            std::lock_guard<std::mutex> _(mtx_);
+            instance_ = std::make_shared<Parser>();
         }
-        else
-        {
-            return former_instance;
-        }
+
+        return instance_;
     }
 
     static void destroy()
     {
-        Parser* former_instance = instance_.exchange(nullptr);
-        if ( former_instance != nullptr )
-        {
-            delete former_instance;
-        }
+        std::lock_guard<std::mutex> _(mtx_);
+        instance_.reset();
     }
 
     Parser()
@@ -508,7 +491,7 @@ public:
             const std::string& idl_string,
             Context& context)
     {
-        context.instance_ = this;
+        context.instance_ = shared_from_this();
         context_ = &context;
         context.module_ = &root_scope_;
         std::shared_ptr<peg::Ast> ast;
@@ -549,7 +532,7 @@ public:
             const std::string& idl_file,
             Context& context)
     {
-        context.instance_ = this;
+        context.instance_ = shared_from_this();
         context_ = &context;
         std::shared_ptr<peg::Ast> ast;
         if (context.preprocess)
@@ -567,7 +550,7 @@ public:
             const std::string& idl_string,
             Context& context)
     {
-        context.instance_ = this;
+        context.instance_ = shared_from_this();
 
         if (context.preprocess)
         {
@@ -582,10 +565,7 @@ public:
     void get_all_types(
             std::map<std::string, DynamicType::Ptr>& types_map)
     {
-        if (root_scope_)
-        {
-            root_scope_->fill_all_types(types_map);
-        }
+        root_scope_.fill_all_types(types_map);
     }
 
     class exception : public std::runtime_error
@@ -637,8 +617,9 @@ private:
 
     peg::parser parser_;
     Context* context_;
-    std::shared_ptr<Module> root_scope_;
-    static std::atomic<Parser*> instance_;
+    Module root_scope_;
+    static std::shared_ptr<Parser> instance_;
+    static std::mutex mtx_;
 
     void parser_log_cb_(
             size_t l,
@@ -657,11 +638,7 @@ private:
         using namespace peg::udl;
         if (scope == nullptr)
         {
-            if (context_->clear || root_scope_ == nullptr)
-            {
-                root_scope_ = std::make_shared<Module>();
-            }
-            scope = root_scope_;
+            scope = std::shared_ptr<Module>(&root_scope_,[](Module*){});
         }
         switch (ast->tag){
             case "ANNOTATION_APPL"_:
@@ -2151,7 +2128,8 @@ private:
 
 };
 
-inline std::atomic<Parser*> Parser::instance_{nullptr};
+inline std::shared_ptr<Parser> Parser::instance_;
+inline std::mutex Parser::mtx_;
 
 void Context::clear_context()
 {
@@ -2163,8 +2141,7 @@ void Context::clear_context()
         }
         else
         {
-            delete instance_;
-            instance_ = nullptr;
+            instance_.reset();
         }
     }
 }
