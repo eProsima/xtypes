@@ -60,12 +60,14 @@
 #   define EPROSIMA_PLATFORM_PREPROCESSOR "cl /EP"
 #   define EPROSIMA_PLATFORM_PREPROCESSOR_STRATEGY preprocess_strategy::temporary_file
 #   define EPROSIMA_PLATFORM_PREPROCESSOR_INCLUDES "/I"
-#   define EPROSIMA_PLATFORM_PREPROCESSOR_ERRORREDIR " 2> nul"
+#   define EPROSIMA_PLATFORM_PREPROCESSOR_ERRORREDIR " 2>nul"
+#   define EPROSIMA_PLATFORM_PIPE_OPEN_FLAGS "rt"
 #else
 #   define EPROSIMA_PLATFORM_PREPROCESSOR "cpp -H"
 #   define EPROSIMA_PLATFORM_PREPROCESSOR_STRATEGY preprocess_strategy::pipe_stdin
 #   define EPROSIMA_PLATFORM_PREPROCESSOR_INCLUDES "-I "
-#   define EPROSIMA_PLATFORM_PREPROCESSOR_ERRORREDIR " 2> /dev/null"
+#   define EPROSIMA_PLATFORM_PREPROCESSOR_ERRORREDIR " 2>/dev/null"
+#   define EPROSIMA_PLATFORM_PIPE_OPEN_FLAGS "r"
 #endif
 
 namespace peg {
@@ -291,7 +293,9 @@ private:
     std::string exec(
             const std::string& cmd) const
     {
-        std::unique_ptr<FILE, decltype(& pclose)> pipe(popen(cmd.c_str(), "rt"), pclose);
+        std::cerr << cmd.c_str() << std::endl;
+        std::unique_ptr<FILE, decltype(& pclose)> pipe(
+                popen(cmd.c_str(), EPROSIMA_PLATFORM_PIPE_OPEN_FLAGS), pclose);
         if (!pipe)
         {
             throw std::runtime_error("popen() failed!");
