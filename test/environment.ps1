@@ -1,3 +1,28 @@
+# Copyright 2023 Proyectos y Sistemas de Mantenimiento SL (eProsima).
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# @file environment.ps1
+#
+
+Param(
+[Parameter(Mandatory=$true, HelpMessage = 'CMAKE_GENERATOR_PLATFORM')]
+[String]$Platform,
+[Parameter(Mandatory=$true, HelpMessage = 'CMAKE_GENERATOR_TOOLSET')]
+[ValidateScript({ $_ -match 'host=(?<arch>[^,]*)'})]
+[String]$Toolset
+)
+
 # keep all variables
 $old = ls env: 
 # load development environment
@@ -6,7 +31,12 @@ $old = ls env:
 $pwshmodule = Join-Path $info.instances.instance.installationPath `
               "Common7\Tools\Microsoft.VisualStudio.DevShell.dll" | gi
 Import-Module $pwshmodule
-Enter-VsDevShell -VsInstanceId $info.instances.instance.instanceId | Out-Null
+
+$Toolset -match 'host=(?<arch>[^,]*)' | Out-Null
+$toolsetplatform = $Matches.arch
+
+Enter-VsDevShell -VsInstanceId $info.instances.instance.instanceId `
+                 -DevCmdArguments "/arch=$Platform /host_arch=$toolsetplatform" | Out-Null
 # keep new variables
 $new = ls env: 
 # compare old and new environment

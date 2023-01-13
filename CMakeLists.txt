@@ -196,8 +196,22 @@ if(XTYPES_BUILD_TESTS)
 
         # if preprocessor is already available not populate
         if(NOT CL_BIN)
+
+            set(PREPROCESS_GENERATOR_PLATFORM ${CMAKE_GENERATOR_PLATFORM})
+            set(PREPROCESS_GENERATOR_TOOLSET ${CMAKE_GENERATOR_TOOLSET})
+
+            if(NOT CMAKE_GENERATOR_PLATFORM)
+                set(PREPROCESS_GENERATOR_PLATFORM x64)
+            endif()
+
+            if(NOT CMAKE_GENERATOR_TOOLSET)
+                set(PREPROCESS_GENERATOR_TOOLSET x64,host=x64)
+            endif()
+
             execute_process(
                 COMMAND powershell -File "${CMAKE_CURRENT_LIST_DIR}\\test\\environment.ps1"
+                                   -Platform ${PREPROCESS_GENERATOR_PLATFORM}
+                                   -Toolset ${PREPROCESS_GENERATOR_TOOLSET}
                 OUTPUT_VARIABLE MSVC_TEST_PROPERTIES)
         endif()
 
