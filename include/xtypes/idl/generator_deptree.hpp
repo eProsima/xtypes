@@ -77,13 +77,13 @@ using ModuleRefSet = std::vector<std::weak_ptr<DependencyModule>>;
 /// This enumeration reflects all possible kinds for a Module's content element.
 enum class ModuleElementKind
 {
-    ALIAS,
-    CONST,
-    ENUM,
-    STRUCT,
-    UNION/*,
-    STRUCT_FW,
-    UNION_FW*/
+    xALIAS,
+    xCONST,
+    xENUM,
+    xSTRUCT,
+    xUNION/*,
+    xSTRUCT_FW,
+    xUNION_FW*/
 };
 
 /// \brief A class to set a hierarchy between Module's contents.
@@ -293,12 +293,12 @@ public:
 
         switch(kind_)
         {
-            case ModuleElementKind::ALIAS:
+            case ModuleElementKind::xALIAS:
             {
                 ss << std::string(4 * tabs, ' ') << aliase(name(), static_cast<const AliasType&>(type()).get(), this);
                 break;
             }
-            case ModuleElementKind::CONST:
+            case ModuleElementKind::xCONST:
             {
                 for (const auto& pair : module_.constants_)
                 {
@@ -312,17 +312,17 @@ public:
                 }
                 break;
             }
-            case ModuleElementKind::ENUM:
+            case ModuleElementKind::xENUM:
             {
                 ss << enumeration32(name(), static_cast<const EnumerationType<uint32_t>&>(type()), tabs);
                 break;
             }
-            case ModuleElementKind::STRUCT:
+            case ModuleElementKind::xSTRUCT:
             {
                 ss << structure(name(), static_cast<const StructType&>(type()), this, tabs);
                 break;
             }
-            case ModuleElementKind::UNION:
+            case ModuleElementKind::xUNION:
             {
                 ss << generate_union(name(), static_cast<const UnionType&>(type()), this, tabs);
                 break;
@@ -646,11 +646,11 @@ public:
     /// \brief Create a DependencyNode set for this DependencyModule.
     inline void create_dependency_set()
     {
-        ADD_INTO_DEPENDENCY_SET(module_.aliases_, ALIAS);
-        ADD_INTO_DEPENDENCY_SET(module_.constants_types_, CONST);
-        ADD_INTO_DEPENDENCY_SET(module_.enumerations_32_, ENUM);
-        ADD_INTO_DEPENDENCY_SET(module_.structs_, STRUCT);
-        ADD_INTO_DEPENDENCY_SET(module_.unions_, UNION);
+        ADD_INTO_DEPENDENCY_SET(module_.aliases_, xALIAS);
+        ADD_INTO_DEPENDENCY_SET(module_.constants_types_, xCONST);
+        ADD_INTO_DEPENDENCY_SET(module_.enumerations_32_, xENUM);
+        ADD_INTO_DEPENDENCY_SET(module_.structs_, xSTRUCT);
+        ADD_INTO_DEPENDENCY_SET(module_.unions_, xUNION);
     }
 
     /// \brief Looks for an specific module in the shared_ptr tree, given its pointer.
@@ -884,28 +884,28 @@ public:
     {
         switch (node.kind())
         {
-            case ModuleElementKind::ALIAS:
+            case ModuleElementKind::xALIAS:
             {
                 const AliasType& alias = static_cast<const AliasType&>(node.type());
                 set_dynamic_type_dependency(node, *alias, alias->name());
                 break;
             }
 
-            case ModuleElementKind::CONST:
+            case ModuleElementKind::xCONST:
             {
                 const DynamicType& const_type = node.type();
                 set_dynamic_type_dependency(node, const_type, const_type.name());
                 break;
             }
 
-            case ModuleElementKind::ENUM:
+            case ModuleElementKind::xENUM:
             {
                 const EnumerationType<uint32_t>& enum_type = static_cast<const EnumerationType<uint32_t>&>(node.type());
                 set_dynamic_type_dependency(node, enum_type, enum_type.name());
                 break;
 
             }
-            case ModuleElementKind::STRUCT:
+            case ModuleElementKind::xSTRUCT:
             {
                 // TODO: detect if we are setting cyclical struct dependencies, and generate a forward declaration.
                 const StructType& structure = static_cast<const StructType&>(node.type());
@@ -925,7 +925,7 @@ public:
                 });
                 break;
             }
-            case ModuleElementKind::UNION:
+            case ModuleElementKind::xUNION:
             {
                 // TODO: detect if we are setting cyclical union dependencies, and generate a forward declaration.
                 const UnionType& union_type = static_cast<const UnionType&>(node.type());
@@ -940,8 +940,8 @@ public:
                 break;
             }
             /*
-            case ModuleElementKind::STRUCT_FW:
-            case ModuleElementKind::UNION_FW:
+            case ModuleElementKind::xSTRUCT_FW:
+            case ModuleElementKind::xUNION_FW:
             */
             default:
             {

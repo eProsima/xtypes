@@ -35,7 +35,7 @@ inline Context parse(
         const std::string& idl)
 {
     std::shared_ptr<Parser> parser = Parser::instance();
-    return parser->parse(idl);
+    return parser->parse_string(idl);
 }
 
 /// \brief Same as parse() but it receives an existant context.
@@ -45,7 +45,7 @@ inline Context& parse(
         Context& context)
 {
     std::shared_ptr<Parser> parser = Parser::instance();
-    parser->parse(idl.c_str(), context);
+    parser->parse_string(idl.c_str(), context);
     return context;
 }
 

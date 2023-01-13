@@ -34,14 +34,16 @@
 #   include <windows.h>
 #endif
 
-#include <vector.h>
+#include <dbghelp.h>
+
+#include <vector>
 #include <iomanip>
 
 namespace {
     // auxiliary structure
     struct symbol_desc : SYMBOL_INFO
     {
-        CHAR [1023]; // name buffer
+        CHAR _[1023]; // name buffer
 
         symbol_desc()
         {
@@ -76,7 +78,7 @@ namespace {
                                                                                                                     \
                     for( int i = 0; i < frames; ++i)                                                                \
                     {                                                                                               \
-                        SymFromAddr( hProcess, static_cast<DWORD64>(callstack[i]), 0, &symbol);                     \
+                        SymFromAddr( hProcess, reinterpret_cast<DWORD64>(callstack[i]), 0, &symbol);                \
                         tstring name = symbol.Name;                                                                 \
                         if (name.empty())                                                                           \
                         {                                                                                           \
@@ -165,5 +167,22 @@ namespace {
 #define GET_MACRO(_1, _2, _3, NAME, ...) NAME
 #define xtypes_assert(...) GET_MACRO(__VA_ARGS__, xtypes_assert3_, xtypes_assert2_)(__VA_ARGS__)
 
+namespace {
+#if __has_include(<version>)
+#   include<version>
+#   ifdef __cpp_lib_unreachable
+using std::unreachable;
+#   else
+[[noreturn]] inline void unreachable()
+{
+#    ifdef __GNUC__ // GCC, Clang, ICC
+    __builtin_unreachable();
+#    elif defined(_MSC_VER) // MSVC
+    __assume(false);
+#     endif
+}
+#   endif
+#endif // version
+} // namespace
 
 #endif // EPROSIMA_XTYPES_ASSERT_HPP_

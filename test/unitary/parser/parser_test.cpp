@@ -1000,7 +1000,7 @@ TEST (IDLParser, enumerations_test)
 TEST (IDLParser, bad_idl_logging)
 {
     Context context;
-    context.log_level(log::LogLevel::DEBUG);
+    context.log_level(log::LogLevel::xDEBUG);
     // context.print_log(true); // Useful for debbuging
     context.preprocess = false;
     parse(R"~~(
@@ -1055,7 +1055,7 @@ TEST (IDLParser, bad_idl_logging)
 TEST (IDLParser, logging)
 {
     Context context;
-    context.log_level(log::LogLevel::INFO);
+    context.log_level(log::LogLevel::xINFO);
     // context.print_log(true); // Useful for debbuging
     context.preprocess = false;
     context.allow_keyword_identifiers = true;
@@ -1163,7 +1163,7 @@ TEST (IDLParser, logging)
 #define EXPECTED_LOG_RESULTS_FILTERED(LOG_LEVEL, N_ENTRIES, ASSERT, PRINT)                                          \
     {                                                                                                                   \
         Context context;                                                                                                \
-        context.log_level(log::LogLevel::DEBUG);                                                                        \
+        context.log_level(log::LogLevel::xDEBUG);                                                                        \
         if (PRINT)                                                                                                       \
         {                                                                                                               \
             context.print_log(true);                                                                                    \
@@ -1190,14 +1190,14 @@ TEST (IDLParser, severity_logging)
         const boolean BAD_LITERAL = 55; // DEBUG + WARNING + WARNING + DEBUG (result)
         )~~";
 
-    EXPECTED_LOG_RESULTS(ERROR, 1, ASSERT_EQ, false);
-    EXPECTED_LOG_RESULTS(WARNING, 3, ASSERT_EQ, false);
-    EXPECTED_LOG_RESULTS(INFO, 4, ASSERT_EQ, false);
-    EXPECTED_LOG_RESULTS(DEBUG, 11, ASSERT_EQ, false);
-    EXPECTED_LOG_RESULTS_FILTERED(ERROR, 1, ASSERT_EQ, false);
-    EXPECTED_LOG_RESULTS_FILTERED(WARNING, 2, ASSERT_EQ, false);
-    EXPECTED_LOG_RESULTS_FILTERED(INFO, 1, ASSERT_EQ, false);
-    EXPECTED_LOG_RESULTS_FILTERED(DEBUG, 7, ASSERT_EQ, false);
+    EXPECTED_LOG_RESULTS(xERROR, 1, ASSERT_EQ, false);
+    EXPECTED_LOG_RESULTS(xWARNING, 3, ASSERT_EQ, false);
+    EXPECTED_LOG_RESULTS(xINFO, 4, ASSERT_EQ, false);
+    EXPECTED_LOG_RESULTS(xDEBUG, 11, ASSERT_EQ, false);
+    EXPECTED_LOG_RESULTS_FILTERED(xERROR, 1, ASSERT_EQ, false);
+    EXPECTED_LOG_RESULTS_FILTERED(xWARNING, 2, ASSERT_EQ, false);
+    EXPECTED_LOG_RESULTS_FILTERED(xINFO, 1, ASSERT_EQ, false);
+    EXPECTED_LOG_RESULTS_FILTERED(xDEBUG, 7, ASSERT_EQ, false);
 }
 
 TEST(IDLParser, alias_test)

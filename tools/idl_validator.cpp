@@ -17,7 +17,7 @@ int main(
         std::string idl_spec = argv[1];
         std::cout << "IDL: " << idl_spec << std::endl;
         idl::Context context;
-        context.log_level(idl::log::LogLevel::DEBUG);
+        context.log_level(idl::log::LogLevel::xDEBUG);
         context.print_log(true);
         context.ignore_redefinition = true;
         context = idl::parse(idl_spec, context);

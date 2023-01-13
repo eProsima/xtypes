@@ -291,7 +291,7 @@ inline std::string structure(
 {
     if (struct_node != nullptr)
     {
-        dependencynode_assert(struct_node, STRUCT);
+        dependencynode_assert(struct_node, xSTRUCT);
     }
 
     std::stringstream ss;
@@ -326,7 +326,7 @@ inline std::string generate_union(
         dependencytree::DependencyNode* union_node,
         size_t tabs)
 {
-    dependencynode_assert(union_node, UNION);
+    dependencynode_assert(union_node, xUNION);
 
     std::stringstream ss;
     ss << std::string(tabs * 4, ' ') << "union " << name
@@ -369,7 +369,7 @@ inline std::string aliase(
         const DynamicType& type,
         dependencytree::DependencyNode* alias_node)
 {
-    dependencynode_assert(alias_node, ALIAS);
+    dependencynode_assert(alias_node, xALIAS);
 
     std::stringstream ss;
     ss << "typedef " << generator::type_name(alias_node, type) << " " << name;

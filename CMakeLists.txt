@@ -29,6 +29,8 @@ add_library(eprosima::xtypes ALIAS xtypes)
 
 if(XTYPES_EXCEPTIONS)
     target_compile_definitions(xtypes INTERFACE XTYPES_EXCEPTIONS)
+elseif(MSVC)
+    target_link_libraries(xtypes INTERFACE Dbghelp.lib)
 endif()
 
 # Download the cpp-peglib header file needed
