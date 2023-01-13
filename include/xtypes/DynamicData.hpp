@@ -979,7 +979,8 @@ public:
                 || (type_.kind() == PrimitiveTypeKindTrait<T>::kind)
                 || (type_.is_enumerated_type()),
                 "Expected type '" << type_.name()
-                                  << "' but '" << PrimitiveTypeKindTrait<T>::name << "' received while setting value.");
+                                  << "' but '" << PrimitiveTypeKindTrait<T>::name << "' received while setting value.",
+                                  true);
 
         if (type_.is_enumerated_type())
         {
