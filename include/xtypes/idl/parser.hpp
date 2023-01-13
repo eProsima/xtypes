@@ -58,7 +58,7 @@
 
 // define preprocessor strategy
 #ifdef _MSC_VER
-#   define EPROSIMA_PLATFORM_PREPROCESSOR "cl /EP"
+#   define EPROSIMA_PLATFORM_PREPROCESSOR "cl /EP /I."
 #   define EPROSIMA_PLATFORM_PREPROCESSOR_STRATEGY preprocess_strategy::temporary_file
 #   define EPROSIMA_PLATFORM_PREPROCESSOR_INCLUDES "/I"
 #   define EPROSIMA_PLATFORM_PREPROCESSOR_ERRORREDIR " 2>nul"

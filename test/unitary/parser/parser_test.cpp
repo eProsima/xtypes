@@ -764,7 +764,7 @@ TEST (IDLParser, include_from_string)
         };
         )");
     std::map<std::string, DynamicType::Ptr> result = context.module().get_all_types();
-    EXPECT_EQ(2, result.size());
+    ASSERT_EQ(2, result.size());
     const DynamicType* my_struct = result["Test00"].get();
     DynamicData data(*my_struct);
     ASSERT_EQ(data["incl"]["my_string"].type().name(), "std::string");
