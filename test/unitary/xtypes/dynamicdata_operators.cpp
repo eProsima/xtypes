@@ -316,11 +316,15 @@ TEST (DynamicDataOperators, arithmetic_binary_operators)
     check_arithmetic_int_binary_operators<uint32_t>(20u, 2u);
     check_arithmetic_int_binary_operators<int64_t>(-6, -2);
     check_arithmetic_int_binary_operators<uint64_t>(60u, 2u);
+
+#ifdef XTYPES_EXCEPTIONS
     // Operators not available
     check_arithmetic_int_binary_operators<bool>(true, false, true);
     check_arithmetic_int_binary_operators<char>('a', 'b', true);
     check_arithmetic_int_binary_operators<wchar_t>('\n', 'b', true);
     check_arithmetic_int_binary_operators<char16_t>('\u00f1', 'b', true);
+#endif
+
     // Operators available (only floating-point)
     check_arithmetic_flt_binary_operators<float>(PI, 1.5f);
     check_arithmetic_flt_binary_operators<double>(PI_D, 1.5);
