@@ -364,11 +364,12 @@ TEST (IDLParser, name_collision)
     {
         // Test that the parser accepts a keyword prefixed by an underscore even ignoring case, and
         // the resulting identifier doesn't have the prefixed underscore.
-        Context context = parse(R"(
+        Context context;
+        parse(R"(
             struct MyStruct
             {
                 string _struct;
-            };)");
+            };)", context);
 
         std::map<std::string, DynamicType::Ptr> result = context.module().get_all_types();
         EXPECT_EQ(1, result.size());

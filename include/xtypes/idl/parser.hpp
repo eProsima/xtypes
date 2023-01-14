@@ -442,6 +442,8 @@ public:
     CharType char_translation = CHAR;
     WideCharType wchar_type = WCHAR_T;
 
+    static const Context DEFAULT_CONTEXT;
+
     // Results
     bool success = false;
 
@@ -449,10 +451,12 @@ public:
             bool scope = false)
     {
         std::map<std::string, DynamicType::Ptr> result;
-        if (module_ != nullptr)
+
+        if(module_)
         {
             module_->fill_all_types(result, scope);
         }
+
         return result;
     }
 
@@ -461,10 +465,16 @@ public:
         return get_all_types(true);
     }
 
-    Module& module()
+    idl::Module& module()
     {
+        if(!module_)
+        {
+            module_ = std::make_shared<idl::Module>();
+        }
         return *module_;
     }
+
+    inline void clear_context();
 
     ~Context()
     {
@@ -475,12 +485,10 @@ private:
 
     friend class Parser;
     std::shared_ptr<Parser> instance_;
-    Module* module_ = nullptr;
-    inline void clear_context();
-
+    std::shared_ptr<idl::Module> module_;
 };
 
-static const Context DEFAULT_CONTEXT = Context();
+inline const Context Context::DEFAULT_CONTEXT;
 
 class Parser
     : public std::enable_shared_from_this<Parser>
@@ -522,7 +530,7 @@ public:
     Context parse(
             const std::string& idl_string)
     {
-        Context context = DEFAULT_CONTEXT;
+        Context context = Context::DEFAULT_CONTEXT;
         parse(idl_string, context);
         return context;
     }
@@ -533,12 +541,11 @@ public:
     {
         context.instance_ = shared_from_this();
         context_ = &context;
-        context.module_ = &root_scope_;
         std::shared_ptr<peg::Ast> ast;
 
         if (!parser_.parse(idl_string.c_str(), ast))
         {
-            context.success = false;
+            context_->success = false;
             context_->log(log::LogLevel::xDEBUG, "RESULT",
                     "The parser found errors while parsing.");
             return false;
@@ -546,7 +553,7 @@ public:
 
         ast = parser_.optimize_ast(ast);
         build_on_ast(ast);
-        context.success = true;
+        context_->success = true;
         context_->log(log::LogLevel::xDEBUG, "RESULT",
                 "The parser finished.");
         return true;
@@ -555,7 +562,7 @@ public:
     Context parse_file(
             const std::string& idl_file)
     {
-        Context context = DEFAULT_CONTEXT;
+        Context context = Context::DEFAULT_CONTEXT;
         parse_file(idl_file, context);
         return context;
     }
@@ -563,7 +570,7 @@ public:
     Context parse_string(
             const std::string& idl_string)
     {
-        Context context = DEFAULT_CONTEXT;
+        Context context = Context::DEFAULT_CONTEXT;
         parse_string(idl_string, context);
         return context;
     }
@@ -575,9 +582,9 @@ public:
         context.instance_ = shared_from_this();
         context_ = &context;
         std::shared_ptr<peg::Ast> ast;
-        if (context.preprocess)
+        if (context_->preprocess)
         {
-            std::string file_content = context.preprocess_file(idl_file);
+            std::string file_content = context_->preprocess_file(idl_file);
             return parse(file_content, context);
         }
 
@@ -605,7 +612,10 @@ public:
     void get_all_types(
             std::map<std::string, DynamicType::Ptr>& types_map)
     {
-        root_scope_.fill_all_types(types_map);
+        if(context_)
+        {
+            context_->module().fill_all_types(types_map);
+        }
     }
 
     class exception : public std::runtime_error
@@ -645,7 +655,7 @@ public:
             const std::string& idl_file,
             const std::vector<std::string>& includes)
     {
-        Context ctx = DEFAULT_CONTEXT;
+        Context ctx = Context::DEFAULT_CONTEXT;
         ctx.include_paths = includes;
         return ctx.preprocess_file(idl_file);
     }
@@ -657,7 +667,6 @@ private:
 
     peg::parser parser_;
     Context* context_;
-    Module root_scope_;
     static std::shared_ptr<Parser> instance_;
     static std::mutex mtx_;
 
@@ -676,10 +685,12 @@ private:
             std::shared_ptr<Module> scope = nullptr)
     {
         using namespace peg::udl;
+
         if (scope == nullptr)
         {
-            scope = std::shared_ptr<Module>(&root_scope_,[](Module*){});
+            scope = context_->module().shared_from_this();
         }
+
         switch (ast->tag){
             case "ANNOTATION_APPL"_:
                 // Not supported yet
@@ -2175,14 +2186,8 @@ void Context::clear_context()
 {
     if (clear)
     {
-        if (Parser::instance(false) == instance_)
-        {
-            Parser::destroy();
-        }
-        else
-        {
-            instance_.reset();
-        }
+        instance_.reset();
+        module_.reset();
     }
 }
 

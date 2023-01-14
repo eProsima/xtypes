@@ -40,6 +40,7 @@ class DependencyModule;
 }
 
 class Module
+    : public std::enable_shared_from_this<Module>
 {
 protected:
 

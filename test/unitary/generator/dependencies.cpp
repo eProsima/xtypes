@@ -126,7 +126,8 @@ void generation_roundtrip_test(
               << "===========================================" << std::endl;
       Parse again and check if it went as expected
     */
-    idl::Context context = idl::parse(gen_idl);
+    idl::Context context;
+    idl::parse(gen_idl, context);
     ASSERT_TRUE(context.success);
 
     idl::Module& root_gen = context.module();
@@ -390,9 +391,8 @@ TEST (IDLGenerator, ambiguity)
         generation_ambiguity_resolution_check(root);
 
         std::string gen_idl = idl::generate(root);
-        // Debug
-        // std::cout << gen_idl << std::endl;
 
+        // parse anew
         idl::Context gen_context = idl::parse(gen_idl);
         ASSERT_TRUE(gen_context.success);
         generation_ambiguity_resolution_check(gen_context.module());
