@@ -31,6 +31,14 @@
 #include <xtypes/idl/Module.hpp>
 #include <xtypes/idl/grammar.hpp>
 
+
+#ifdef _MSC_VER
+#   include <cstdio>
+#else
+#   include <stdlib.h>
+#   include <unistd.h>
+#endif //_MSC_VER
+
 #include <array>
 #include <exception>
 #include <filesystem>
@@ -39,7 +47,6 @@
 #include <locale>
 #include <map>
 #include <memory>
-#include <random>
 #include <regex>
 #include <string_view>
 #include <thread>
@@ -229,29 +236,6 @@ class PreprocessorContext
 {
 public:
 
-    PreprocessorContext() = default;
-
-    PreprocessorContext(const PreprocessorContext& pc)
-        : preprocess(pc.preprocess)
-        , preprocessor_exec(pc.preprocessor_exec)
-        , error_redir(pc.error_redir)
-        , strategy(pc.strategy)
-        , include_flag(pc.include_flag)
-        , include_paths(pc.include_paths)
-    {}
-
-    PreprocessorContext& operator=(const PreprocessorContext& pc)
-    {
-        preprocess = pc.preprocess;
-        preprocessor_exec = pc.preprocessor_exec;
-        error_redir = pc.error_redir;
-        strategy = pc.strategy;
-        include_flag = pc.include_flag;
-        include_paths = pc.include_paths;
-
-        return *this;
-    }
-
     // Preprocessors capability to use shared memory (pipes) or stick to file input
     enum class preprocess_strategy
     {
@@ -265,7 +249,6 @@ public:
     preprocess_strategy strategy = EPROSIMA_PLATFORM_PREPROCESSOR_STRATEGY;
     std::string include_flag = EPROSIMA_PLATFORM_PREPROCESSOR_INCLUDES;
     std::vector<std::string> include_paths;
-    mutable std::random_device rd;
 
     std::string preprocess_file(
             const std::string& idl_file) const
@@ -291,6 +274,37 @@ private:
 
     template<preprocess_strategy e>
     std::string preprocess_string(const std::string& idl_string) const;
+
+#ifdef _MSC_VER
+    std::pair<std::ofstream, std::filesystem::path> get_temporary_file() const
+    {
+        // Create temporary filename
+        char filename_buffer[L_tmpnam];
+        auto res = std::tmpnam(filename_buffer);
+        xtypes_assert(res, "Unable to create a temporary file", true);
+
+        std::filesystem::path tmp(filename_buffer);
+        std::ofstream tmp_file(tmp);
+        xtypes_assert(tmp_file, "Unable to create a temporary file", true);
+
+        return std::make_pair(std::move(tmp_file), std::move(tmp));
+    }
+#else
+    std::pair<std::ofstream, std::filesystem::path> get_temporary_file() const
+    {
+        // Create temporary filename
+        static const std::filesystem::path tmpdir = std::filesystem::temp_directory_path();
+        std::string tmp = (tmpdir / "xtypes_XXXXXX").string();
+        int fd = mkstemp(tmp.data());
+        xtypes_assert(fd != -1, "Unable to create a temporary file", true);
+
+        std::ofstream tmp_file(tmp, std::ios_base::trunc | std::ios_base::out);
+        close(fd);
+        xtypes_assert(tmp_file, "Unable to create a temporary file", true);
+
+        return std::make_pair(std::move(tmp_file), std::move(tmp));
+    }
+#endif // _MSC_VER
 
     void replace_all_string(
             std::string& str,
@@ -369,27 +383,11 @@ template<>
 inline std::string PreprocessorContext::preprocess_string<PreprocessorContext::preprocess_strategy::temporary_file>(
             const std::string& idl_string) const
 {
-    // Create temporary filename
-    auto tmp = std::filesystem::temp_directory_path();
-    tmp /= "xtypes_";
+    auto [os, tmp] = get_temporary_file();
 
-    { // random name generator
-        std::ostringstream os;
-        std::uniform_int_distribution<> dist(65,90);
-        std::mt19937 gen(rd());
-
-        for (int n = 0; n < 16; ++n)
-        {
-            os << char(dist(gen));
-        }
-
-        tmp += os.str();
-    }
-
-    { // Populate
-        std::ofstream os(tmp);
-        os << idl_string;
-    }
+    // Populate
+    os << idl_string;
+    os.close();
 
     auto processed = preprocess_file(tmp.string());
 
