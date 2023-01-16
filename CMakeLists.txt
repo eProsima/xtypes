@@ -39,19 +39,6 @@ file(DOWNLOAD
         ${PROJECT_BINARY_DIR}/thirdparty/cpp-peglib/peglib.h
     )
 
-# MSVC always returns __cplusplus = 199711 unles we use the flag /Zc:__cplusplus then it follows the GNU behavior
-if(MSVC)
-    execute_process(COMMAND 
-        powershell -Command "$binarydir = \"${PROJECT_BINARY_DIR}\";" [=[
-            $header = gi "$binarydir/thirdparty/cpp-peglib/peglib.h";
-            (Get-Content -Encoding UTF8 -Path $header |
-            % { $_ -replace '__cplusplus', '_MSVC_LANG' } ) |
-            Set-Content -Encoding UTF8 -Path $header
-            ]=]
-        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-       )
-endif(MSVC)
-
 target_include_directories(xtypes
     INTERFACE
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
@@ -63,6 +50,18 @@ target_include_directories(xtypes
 target_compile_features(xtypes INTERFACE cxx_std_17 cxx_variadic_macros)
 
 if(MSVC)
+
+    # MSVC always returns __cplusplus = 199711 unles we use the flag /Zc:__cplusplus then it follows the GNU behavior
+    execute_process(COMMAND
+        powershell -Command "$binarydir = \"${PROJECT_BINARY_DIR}\";" [=[
+            $header = gi "$binarydir/thirdparty/cpp-peglib/peglib.h";
+            (Get-Content -Encoding UTF8 -Path $header |
+            % { $_ -replace '__cplusplus', '_MSVC_LANG' } ) |
+            Set-Content -Encoding UTF8 -Path $header
+            ]=]
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+       )
+
     # Preprocessor:
     #  target_compile_features() only enforces standard values like cxx_std_17. All other values like
     #  cxx_variadic_macros are not enforced using flags but only will generate an error if not available.
@@ -70,6 +69,12 @@ if(MSVC)
     # Encoding:
     #  The header uses non-basic character set characters in narrow strings. Execution charset is hinted to allow UTF-8
     target_compile_options(xtypes INTERFACE /Zc:preprocessor /execution-charset:UTF-8)
+
+    # Check if source indexing tools are available
+    find_program(PDBSTR_PATH pdbstr
+        PATHS "[HKLM/SOFTWARE/Microsoft/Windows Kits/Installed Roots;KitsRoot10]" ENV WindowsSdkDir
+        PATH_SUFFIXES srcsrv "Debuggers/x64/srcsrv")
+
 endif(MSVC)
 
 #####################################################################################
@@ -147,6 +152,23 @@ macro(compile_example)
         PRIVATE
             $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -Wno-sign-compare -Wno-multichar>
         )
+
+    if(PDBSTR_PATH)
+        # get the tools path
+        get_filename_component(PDB_TOOLS_PATH "${PDBSTR_PATH}" DIRECTORY ABSOLUTE)
+        # add post build event
+        add_custom_command(
+            TARGET ${EXAMPLE_NAME} POST_BUILD
+            COMMENT "Adding source indexing to pdb symbols"
+            COMMAND "$<IF:$<CONFIG:Debug,RelWithDebInfo>,powershell,exit>"
+                       -ExecutionPolicy Bypass
+                       -File "${CMAKE_SOURCE_DIR}/test/add_source_listing.ps1"
+                       -pdbfiles "$<TARGET_PDB_FILE:${EXAMPLE_NAME}>"
+                       -toolsPath "${PDB_TOOLS_PATH}"
+            VERBATIM
+            )
+    endif()
+
 endmacro()
 
 if(XTYPES_BUILD_EXAMPLES)
