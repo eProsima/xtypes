@@ -18,6 +18,22 @@ option(XTYPES_BUILD_EXAMPLES "Build examples." OFF)
 option(XTYPES_EXCEPTIONS "Enable xtypes exceptions in release (which are asserts in debug)." OFF)
 option(XTYPES_BUILD_TOOLS "Build tools." OFF)
 
+include(CMakeDependentOption)
+
+cmake_dependent_option(ENABLE_WER
+    [=[Allow windows crash dump generation on crashes and timeouts.
+    WER can only be used if the binaries are launched for each individual
+    test otherwise some of the tests may not be executed. ]=]
+    OFF "WIN32" OFF)
+
+#[=[
+    Timeout in seconds to raise a WER exception.
+    If combined with CTest timeout make sure CTest value is larger.
+]=]
+if(ENABLE_WER)
+    set(WER_TIMEOUT_TIME 10)
+endif()
+
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
@@ -197,10 +213,16 @@ macro(compile_test)
     target_link_libraries(${TEST_NAME}
         PRIVATE
             GTest::gtest
+            $<TARGET_NAME_IF_EXISTS:eprosima::wer>
         )
 
-    gtest_discover_tests(${TEST_NAME} PROPERTIES ${TEST_PROPERTIES} ${MSVC_TEST_PROPERTIES})
+    if(ENABLE_WER)
+        set(XTYPES_GTEST_FLAGS EXTRA_ARGS --gtest_catch_exceptions=0)
+    endif()
 
+    gtest_discover_tests(${TEST_NAME}
+            ${XTYPES_GTEST_FLAGS}
+            PROPERTIES ${TEST_PROPERTIES} ${MSVC_TEST_PROPERTIES})
 endmacro()
 
 if(XTYPES_BUILD_TESTS)
@@ -210,6 +232,10 @@ if(XTYPES_BUILD_TESTS)
     # apt install libgtest-dev
     find_package(GTest CONFIG REQUIRED)
     include(GoogleTest)
+
+    if(ENABLE_WER)
+        add_subdirectory(test/WER) # first because the others may depend on it
+    endif()
 
     if(MSVC)
 
