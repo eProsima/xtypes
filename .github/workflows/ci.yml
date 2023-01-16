@@ -10,15 +10,15 @@ on:
 
 jobs:
   xtypes_CI:
-    runs-on: ubuntu-20.04
-    container: ubuntu:focal
+    runs-on: ubuntu-latest
+    container: ubuntu:jammy
 
     steps:
 
       - name: Download required dependencies
         run: |
           apt update
-          DEBIAN_FRONTEND=noninteractive apt install -y cmake gcc g++ git valgrind
+          DEBIAN_FRONTEND=noninteractive apt install -y cmake gcc g++ git valgrind libgtest-dev
 
       - uses: actions/checkout@v2
         with:
