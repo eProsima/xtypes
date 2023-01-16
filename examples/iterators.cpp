@@ -134,8 +134,8 @@ int main()
         my_data["my_double"] = -23.44;
 
         //ReadableDynamicDataRef::MemberIterator it = my_data.citems().begin();
-        auto it = my_data.citems().begin();
-        auto wit = my_data.items().begin();
+        [[maybe_unused]] auto it = my_data.citems().begin();
+        [[maybe_unused]] auto wit = my_data.items().begin();
 
         for (auto&& elem : my_data.items()) // Loop through each `ReadableDynamicDataRef`.
         {

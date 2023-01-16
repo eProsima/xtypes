@@ -1324,11 +1324,7 @@ TEST (IDLParser, union_tests)
     EXPECT_EQ(data["union_c"].d().value<size_t>(), 2);
     data["union_c"].d(3);
     EXPECT_EQ(data["union_c"].d().value<size_t>(), 3);
-#ifdef _MSC_VER
-    data["union_c"]["my_uint64"] = 314ull;
-#else
-    data["union_c"]["my_uint64"] = 314ul;
-#endif // _MSC_VER
+    data["union_c"]["my_uint64"] = UINT64_C(314);
     EXPECT_EQ(data["union_c"].d().value<size_t>(), 1);
     data["union_c"]["my_int32"] = 314;
     EXPECT_EQ(data["union_c"].d().value<size_t>(), 0);
