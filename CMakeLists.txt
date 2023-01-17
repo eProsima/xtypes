@@ -20,6 +20,12 @@ option(XTYPES_BUILD_TOOLS "Build tools." OFF)
 
 include(CMakeDependentOption)
 
+cmake_dependent_option(ENABLE_PDB_INDEXING
+    [=[Uses the PDBStr tool to modify the pdb (symbol files).
+    The new files will download the sources from github simplifying
+    post mortem debugging of failing tests dumps (WER). ]=]
+    OFF "MSVC" OFF)
+
 cmake_dependent_option(ENABLE_WER
     [=[Allow windows crash dump generation on crashes and timeouts.
     WER can only be used if the binaries are launched for each individual
@@ -169,7 +175,7 @@ macro(compile_example)
             $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -Wno-sign-compare -Wno-multichar>
         )
 
-    if(PDBSTR_PATH)
+    if(ENABLE_PDB_INDEXING AND PDBSTR_PATH)
         # get the tools path
         get_filename_component(PDB_TOOLS_PATH "${PDBSTR_PATH}" DIRECTORY ABSOLUTE)
         # add post build event
@@ -181,6 +187,7 @@ macro(compile_example)
                        -File "${CMAKE_SOURCE_DIR}/test/add_source_listing.ps1"
                        -pdbfiles "$<TARGET_PDB_FILE:${EXAMPLE_NAME}>"
                        -toolsPath "${PDB_TOOLS_PATH}"
+                       # -Verbose
             VERBATIM
             )
     endif()

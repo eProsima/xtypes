@@ -1,0 +1,379 @@
+name: reusable Fast-DDS continuous integration
+
+on:
+  workflow_call:
+    inputs:
+      label:
+        description: 'id associated to the workflow. Must univocally identify artifacts.'
+        required: true
+        type: string
+      os:
+        description: 'A json array listing github hosts'
+        required: true
+        type: string
+      config:
+        description: 'A json array listing build configs'
+        required: true
+        type: string
+      vs_toolset:
+        description: 'A json array listing visual studio toolsets'
+        required: false
+        type: string
+      cmake_args:
+        description: 'A json array listing extra arguments for cmake cli'
+        required: false
+        type: string
+      ctest_args:
+        description: 'Extra arguments for ctest cli'
+        required: false
+        type: string
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+
+  build-matrix:
+    runs-on: windows-latest
+    outputs:
+        configs-matrix: ${{ steps.set-matrix.outputs.configs-matrix }}
+    steps:
+        - id: set-matrix
+          run: |
+               # Use a vector of dictionaries instead of a fixed size matrix
+               $configs = @()
+
+               foreach($cmake_args in (ConvertFrom-Json '${{ inputs.cmake_args }}'))
+               {
+                   $map = @{}
+                   $map.cmake_args = $cmake_args
+
+                   foreach($os in (ConvertFrom-Json '${{ inputs.os }}'))
+                   {
+                       $map.os = $os
+
+                       foreach($config in (ConvertFrom-Json '${{ inputs.config }}'))
+                       {
+                           $map.config = $config
+
+                           if( $os -match "windows" )
+                           {
+                               foreach($ts in (ConvertFrom-Json '${{ inputs.vs_toolset }}'))
+                               {
+                                   $map.toolset = $ts
+                                   $configs += $map.Clone()
+                               }
+                           }
+                           else
+                           {
+                               $configs += $map.Clone()
+                           }
+                       }
+                   }
+               }
+
+               'configs-matrix=' + (ConvertTo-Json $configs -Compress) |
+                    Out-File $Env:GITHUB_OUTPUT -Append
+
+  build-and-test-ci:
+    needs: build-matrix
+    strategy:
+      matrix:
+        configs: ${{ fromJSON(needs.build-matrix.outputs.configs-matrix) }}
+      fail-fast: false
+    name: >
+          ${{ matrix.configs.os }} ${{ matrix.configs.config }}
+          ${{ contains(matrix.configs.os, 'windows') && matrix.configs.toolset || '' }} ${{ matrix.configs.cmake_args }}
+    runs-on: ${{ matrix.configs.os }}
+    steps:
+
+      - name: Setup environment
+        run: |
+             # Introduce EchoArgs to check cmake calls
+             $mdir = New-Item -Type Directory -Path (Join-Path ($Env:TMP ?? "/tmp") (New-GUID))
+             if($IsWindows)
+             {
+                 Save-Module -Name Pscx -Path $mdir -Repository PSGallery
+                 $echo = gci -Path $mdir -R -Filter EchoArgs*
+             }
+             else # on unix redirect to echo
+             {
+                 $mdir = New-Item -Type Directory -Path (Join-Path /tmp (New-GUID))
+                 $echo = New-Item -Type SymbolicLink -Target (which echo) -Path (Join-Path $mdir EchoArgs)
+             }
+             "PATH=$Env:PATH" + [IO.Path]::PathSeparator + ($echo | Split-Path | gi)
+             | Out-File $Env:GITHUB_ENV -Append -Encoding OEM
+
+             # Handle single target/multi target
+             $env_variables = @()
+             $env_variables += 'EXTRA_CMAKE_ARGS=${{ matrix.configs.cmake_args }}'
+
+             if($IsWindows)
+             {
+               $env_variables +=
+                 'CXXFLAGS=/MP',
+                 'CONFIG_TYPE=--config ${{ matrix.configs.config }}',
+                 'BUILD_TYPE=-A x64 -T ${{ matrix.configs.toolset }},host=x64',
+                 'TEST_CONFIG=--build-config ${{ matrix.configs.config }}'
+             }
+             elseif($IsMacOS)
+             {
+               [int]$cpus = sysctl -n hw.ncpu
+               $env_variables +=
+                 'BUILD_TYPE=-DCMAKE_BUILD_TYPE=${{ matrix.configs.config }}',
+                 "NUMBER_OF_PROCESSORS=$cpus"
+             }
+             else
+             {
+               [int]$cpus = ((gc /proc/cpuinfo |
+                    sls "cpu cores\s+:\s+(?<thread>\d+)").Matches.Groups |
+                    ? name -eq thread | Measure-Object -Property value -Sum).sum
+
+               $env_variables +=
+                 'BUILD_TYPE=-DCMAKE_BUILD_TYPE=${{ matrix.configs.config }}',
+                 "NUMBER_OF_PROCESSORS=$cpus"
+             }
+
+             Write-Output $env_variables
+             $env_variables | Out-File $Env:GITHUB_ENV -Append -Encoding OEM
+
+      - name: Enable WER on windows
+        id: WERSetup
+        if: ${{ contains(matrix.configs.os, 'windows') }}
+        run: |
+             $wer = "HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting"
+             $ld = Join-Path $wer LocalDumps
+             $key = Get-Item $wer
+
+             if("Disabled" -in $key.Property) {
+                 Set-ItemProperty -Path $wer -Name "Disabled" -Value 0
+             } else {
+                 New-ItemProperty -Path $wer -Name "Disabled" -Value 0 -PropertyType DWord
+             }
+
+             if(Test-Path $ld) { $key = Get-Item $ld } else { $key = New-Item -Path $wer -Name "LocalDumps" }
+
+             #destination folder
+             $crashdir = New-Item -Path "CrashDumps" -Type Directory
+             if("DumpFolder" -in $key.Property) {
+                 Set-ItemProperty -Path $ld -Name "DumpFolder" -Value $crashdir
+             } else {
+                 New-ItemProperty -Path $ld -Name "DumpFolder" -Value $crashdir -PropertyType ExpandString
+             }
+             "DumpFolder=$crashdir" | Out-File $Env:GITHUB_OUTPUT -Append
+
+             # up to DumpCount files in the folder
+             if("DumpCount" -in $key.Property) {
+                 Set-ItemProperty -Path $ld -Name "DumpCount" -Value 100
+             } else {
+                 New-ItemProperty -Path $ld -Name "DumpCount" -Value 100 -PropertyType DWord
+             }
+
+             # 2 -> full dump
+             if("DumpType" -in $key.Property) {
+                 Set-ItemProperty -Path $ld -Name "DumpType" -Value 2
+             } else {
+                 New-ItemProperty -Path $ld -Name "DumpType" -Value 2 -PropertyType DWord
+             }
+
+             # WER service is manual by default
+             Start-Service WerSvc
+
+      - name: Install googletest system wide
+        run: |
+             if($IsLinux)
+             {
+                 sudo apt install -y libgtest-dev
+                 exit
+             }
+             elseif($IsMacOS)
+             {
+                 brew install googletest
+                 exit
+             }
+
+             # Windows requires installation
+             git clone --branch release-1.11.0 https://github.com/google/googletest.git
+
+             # Show the args
+             EchoArgs -DBUILD_GMOCK=ON "$Env:BUILD_TYPE".split(" ") -Dgtest_force_shared_crt=ON -DCMAKE_VERBOSE_MAKEFILE=ON `
+                   -B ./build/googletest "$Env:BIN_ARCH".split(" ") "$Env:HOST_ARCH".split(" ") ./googletest
+
+             # Generate
+             cmake -DBUILD_GMOCK=ON "$Env:BUILD_TYPE".split(" ") -Dgtest_force_shared_crt=ON -DCMAKE_VERBOSE_MAKEFILE=ON `
+                   -B ./build/googletest "$Env:BIN_ARCH".split(" ") "$Env:HOST_ARCH".split(" ") ./googletest
+
+             # Build and install elevated if required
+             cmake --build ./build/googletest --target install "$Env:CONFIG_TYPE".split(" ") -j $Env:NUMBER_OF_PROCESSORS |
+                Tee-Object -FilePath gtest.log
+
+             # Hint install dir
+             $pattern = "-- Installing:\s+(?<cmake_path>.*)/GTestConfig.cmake"
+             $matches = sls -Path gtest.log -Pattern $pattern
+             $Env:GTest_DIR = ($matches.Matches.Groups | ? name -eq cmake_path).Value
+             ("GTest_DIR=" + $Env:GTest_DIR) | Out-File $Env:GITHUB_ENV -Append -Encoding OEM
+
+             # clean up
+             'build', 'googletest', 'gtest.log' | del -Recurse -Force
+
+      - uses: actions/checkout@v3
+        with:
+            submodules: 'recursive'
+
+      - name: Build
+        id: build
+        run: |
+           # track pull requests to fix source indexing
+           if($IsWindows)
+           {
+               git config --local remote.origin.fetch '+refs/pull/*:refs/remotes/origin/pull/*'
+               git fetch origin 2>$null
+           }
+
+           # Build
+           $cmakeargs = @()
+           $cmakeargs += "-DENABLE_PDB_INDEXING=ON"
+           $cmakeargs += "-DENABLE_WER=ON"
+           $cmakeargs += "-DXTYPES_BUILD_TESTS=ON"
+           $cmakeargs += "-DXTYPES_BUILD_EXAMPLES=ON"
+           $cmakeargs += $Env:EXTRA_CMAKE_ARGS
+           $cmakeargs += "$Env:BUILD_TYPE".split(" ")
+
+           # Show the args
+           EchoArgs "-DCMAKE_INSTALL_PREFIX=$(Join-Path (pwd) install)" $cmakeargs -B build .
+
+           "::group::cmake generation step"
+           cmake "-DCMAKE_INSTALL_PREFIX=$(Join-Path (pwd) install)" $cmakeargs -B build .
+           "::endgroup::"
+
+           gci # TODO: remove this
+
+           # Show the args
+           EchoArgs --build build "$Env:CONFIG_TYPE".split(" ") --target install -j $Env:NUMBER_OF_PROCESSORS
+
+           "::group::cmake build step"
+           cmake --build build "$Env:CONFIG_TYPE".split(" ") --target install -j $Env:NUMBER_OF_PROCESSORS
+           "::endgroup::"
+
+      - name: Test
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'no-test') }} 
+        id: test
+        run: |
+           $ErrorActionPreference = 'Continue'
+           # Create a junit file for test results
+           $junit = New-Item -Path ./junit.xml -ItemType File
+           'JUNIT_LOG=' + $junit.FullName | Out-File $Env:GITHUB_ENV -Append -Encoding OEM
+
+           # Show the arguments
+           EchoArgs --test-dir build "$Env:TEST_CONFIG".split(" ") --output-junit $junit -j $Env:NUMBER_OF_PROCESSORS
+
+           # Run the testing
+           "::group::ctest summary"
+           ctest --test-dir build "$Env:TEST_CONFIG".split(" ") --output-junit $junit -j $Env:NUMBER_OF_PROCESSORS
+           "::endgroup::"
+
+           # Avoid disturbing exit code 1 message
+           $LASTEXITCODE=0
+
+      - name: Test Summary
+        id: summary
+        if: ${{ steps.test.outcome == 'success' }}
+        run: |
+           $ErrorActionPreference = 'Continue'
+           $failed = 0
+
+           # If the CMake version (3.21 et seq.) supports junit use it
+           if((Test-Path $Env:JUNIT_LOG) -and (gi $Env:JUNIT_LOG).Length )
+           {
+             # ancillary for markdown summary
+             $modules = Get-Module -ListAvailable | Select ModuleType, Version, Name
+             if(!($modules | ? Name -eq "MarkdownPS"))
+             {
+               Install-Module -Name MarkdownPS -Force
+             }
+
+             [xml]$res = gc $Env:JUNIT_LOG
+             [long]$failed = $res.testsuite.failures
+
+             # Summary
+             $res.testsuite | select name, tests, failures, disabled, hostname, time, timestamp |
+                New-MDTable | Tee-Object -FilePath $Env:GITHUB_STEP_SUMMARY -Append
+
+             if($failed)
+             {
+               # list the failures if any
+               "::group::Failures Summary"
+               $failures = $res.testsuite.testcase | ? status -eq fail
+               $failures | select name, time | format-list
+               "::endgroup::"
+
+               # list faulty tests output
+               "::group::Failed tests output"
+               $failures
+               "::endgroup::"
+
+               # populate a log folder with the failures
+               $logFolder = New-Item -Type Directory -Path test_logs
+               pushd $logFolder
+               $failures | % { $_.'system-out' | Set-Content -Path ($_.name + ".txt") }
+               popd
+
+               "TestLogFolder=" + $logFolder.FullName | Out-File $Env:GITHUB_OUTPUT -Append
+             }
+
+           }
+
+           if($IsWindows -and $failed)
+           {
+             # list crash dumps files ordered by date to hint how pid maps to test number
+             $dumpfolder = gi (gi "HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps").GetValue('DumpFolder')
+
+             # upload binaries of faulty tests:
+             $test_bin = ((ls -Path $dumpfolder -Filter *.dmp).name |
+                            sls  "(?<file>[^\(^\)^\.]+).*\.\d+\.dmp").Matches |
+                            % { $_.Groups['file'].Value } | Get-Unique
+             $exes = gci -Path ./build/* -R -Include "*.pdb", "*.exe"
+             $exes | ? basename -in $test_bin | Move-Item -Destination $dumpfolder
+
+             "::group::Crash dump files"
+             gci $dumpfolder | Sort-Object LastWriteTime
+             "::endgroup::"
+           }
+
+           if($failed)
+           {
+             $msg = "$failed test(s) failed"
+             "TestErrors=" + $msg | Out-File $Env:GITHUB_OUTPUT -Append
+             Write-Error $msg;
+           }
+
+           # Avoid disturbing exit code 1 message
+           $LASTEXITCODE=0
+
+      - name: Upload test errors
+        if: ${{ steps.summary.outputs.TestLogFolder != 0 }}
+        uses: actions/upload-artifact@v3
+        with:
+            name: test-errors-${{ inputs.label }}-${{ matrix.configs.os }}${{ matrix.configs.toolset != 0 && '-' || ''}}${{ matrix.configs.toolset }}-${{ matrix.configs.config }}
+            path: ${{ steps.summary.outputs.TestLogFolder }}
+
+      - name: Upload crash dumps
+        if: ${{ contains(matrix.configs.os, 'windows') && steps.summary.outputs.TestErrors != 0 }}
+        uses: actions/upload-artifact@v3
+        with:
+            name: crash-dumps-${{ inputs.label }}-${{ matrix.configs.os }}-${{ matrix.configs.toolset }}-${{ matrix.configs.config }}
+            path: ${{ steps.WERSetup.outputs.DumpFolder }}
+
+      - name: Check test failures
+        if: ${{ steps.summary.outputs.TestErrors != 0  }}
+        uses: actions/github-script@v6
+        with:
+          script: |
+                  const test_info = '${{ steps.summary.outputs.TestErrors }}';
+
+                  // test errors
+                  if (!!test_info)
+                  {
+                    core.setFailed(test_info);
+                  }

@@ -1,43 +1,31 @@
 name: CI for eProsima xTypes
 
 on:
+  workflow_dispatch:
   push:
     branches:
-      - master
+      - 'master'
+      - 'main'
+    paths-ignore:
+      - '**.md'
+      - '**.txt'
+      - '!**/CMakeLists.txt'
   pull_request:
     branches:
-      - '**'
+      - 'master'
+      - 'main'
+    paths-ignore:
+      - '**.md'
+      - '**.txt'
+      - '!**/CMakeLists.txt'
 
 jobs:
   xtypes_CI:
-    runs-on: ubuntu-latest
-    container: ubuntu:jammy
-
-    steps:
-
-      - name: Download required dependencies
-        run: |
-          apt update
-          DEBIAN_FRONTEND=noninteractive apt install -y cmake gcc g++ git valgrind libgtest-dev
-
-      - uses: actions/checkout@v2
-        with:
-          path: src/xtypes
-
-      - name: Build
-        working-directory: src/xtypes
-        run: |
-          ls -la
-          cmake . -DXTYPES_BUILD_TESTS=ON -DXTYPES_BUILD_EXAMPLES=ON -DXTYPES_EXCEPTIONS=ON -DCTEST_MEMORYCHECK_COMMAND=valgrind -DCTEST_MEMORYCHECK_COMMAND_OPTIONS='-q --tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=50'
-          make -j${nproc}
-
-      - name: Test
-        working-directory: src/xtypes
-        run: |
-          ctest -VV -D ExperimentalTest --no-compress-output
-
-      - name: Valgrind
-        working-directory: src/xtypes
-        if: startsWith(github.head_ref, 'valgrind')
-        run: |
-          ctest -VV -D ExperimentalMemCheck --no-compress-output -LE NoMemoryCheck
+    uses: ./.github/workflows/reusable-github-ci.yml
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip-ci') }}
+    with:
+      label: "Running-CI"
+      os: "[\"ubuntu-latest\",\"windows-latest\",\"macos-latest\"]"
+      config: "[\"RelWithDebInfo\"]"
+      vs_toolset: "[\"v143\",\"v142\"]"
+      cmake_args: "[\"-DXTYPES_EXCEPTIONS=ON\",\"-DXTYPES_EXCEPTIONS=OFF\"]"
