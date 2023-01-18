@@ -21,14 +21,13 @@
 #include <xtypes/AggregationType.hpp>
 #include <xtypes/AliasType.hpp>
 #include <xtypes/EnumerationType.hpp>
+#include <xtypes/StringConversion.hpp>
 
 #include <string>
 #include <map>
 #include <vector>
 #include <regex>
-#include <codecvt>
 #include <cwchar>
-#include <cuchar>
 #include <limits>
 
 namespace eprosima {
@@ -1067,18 +1066,7 @@ protected:
                     break;
                     case TypeKind::CHAR_16_TYPE:
                     {
-                        std::u16string wstr = u"";
-                        char16_t c16str[3] = u"\0";
-                        mbstate_t mbs;
-
-                        for (const auto& it : label)
-                        {
-                            std::memset(&mbs, 0, sizeof(mbs));
-                            std::memmove(c16str, u"\0\0\0", 3);
-                            std::mbrtoc16(c16str, &it, 3, &mbs);
-                            wstr.append(std::u16string(c16str));
-                        }
-
+                        std::u16string wstr = code_conversion_tool<char16_t>(label);
                         char16_t value;
                         // Check if comes with "'"
                         if (label.size() == 1)
@@ -1094,10 +1082,8 @@ protected:
                     break;
                     case TypeKind::WIDE_CHAR_TYPE:
                     {
-                        using convert_type = std::codecvt_utf8<wchar_t>;
-                        std::wstring_convert<convert_type, wchar_t> converter;
-                        std::wstring temp = converter.from_bytes(label);
                         wchar_t value;
+                        std::wstring temp = code_conversion_tool<wchar_t>(label);
                         // Check if comes with "'"
                         if (label.size() == 1)
                         {

@@ -23,10 +23,11 @@
 #include <peglib.h>
 
 #include <xtypes/ArrayType.hpp>
+#include <xtypes/DynamicData.hpp>
+#include <xtypes/SequenceType.hpp>
+#include <xtypes/StringConversion.hpp>
 #include <xtypes/StringType.hpp>
 #include <xtypes/StructType.hpp>
-#include <xtypes/SequenceType.hpp>
-#include <xtypes/DynamicData.hpp>
 
 #include <xtypes/idl/Module.hpp>
 #include <xtypes/idl/grammar.hpp>
@@ -44,7 +45,6 @@
 #include <filesystem>
 #include <fstream>
 #include <functional>
-#include <locale>
 #include <map>
 #include <memory>
 #include <regex>
@@ -1029,16 +1029,8 @@ private:
                 {
                     context_->log(log::LogLevel::xWARNING, "UNEXPECTED_LITERAL", message("WIDE_CHAR"), ast);
                 }
-                std::u16string temp = u"";
-                char16_t c16str[3] = u"\0";
-                mbstate_t mbs;
-                for (const auto& it : literal)
-                {
-                    std::memset(&mbs, 0, sizeof(mbs));
-                    std::memmove(c16str, u"\0\0\0", 3);
-                    std::mbrtoc16(c16str, &it, 3, &mbs);
-                    temp.append(std::u16string(c16str));
-                }
+
+                std::u16string temp = code_conversion_tool<char16_t>(literal);
                 data = temp[0];
                 break;
             }
@@ -1048,11 +1040,9 @@ private:
                 {
                     context_->log(log::LogLevel::xWARNING, "UNEXPECTED_LITERAL", message("WIDE_CHAR"), ast);
                 }
-                using convert_type = std::codecvt_utf8<wchar_t>;
-                std::wstring_convert<convert_type, wchar_t> converter;
-                std::wstring temp = converter.from_bytes(std::string(literal.data(), literal.size()));
-                wchar_t value = temp[0];
-                data = value;
+
+                std::wstring temp = code_conversion_tool<wchar_t>(literal);
+                data = temp[0];
                 break;
             }
             case TypeKind::STRING_TYPE:
@@ -1085,24 +1075,14 @@ private:
                 {
                     context_->log(log::LogLevel::xWARNING, "UNEXPECTED_LITERAL", message("WIDE_STRING"), ast);
                 }
-                using convert_type = std::codecvt_utf8<wchar_t>;
-                std::wstring_convert<convert_type, wchar_t> converter;
-                std::wstring value = converter.from_bytes(aux);
+
+                std::wstring value = code_conversion_tool<wchar_t>(aux);
                 data = value;
                 break;
             }
             case TypeKind::STRING16_TYPE:
             {
-                std::u16string temp = u"";
-                char16_t c16str[3] = u"\0";
-                mbstate_t mbs;
-                for (const auto& it : literal)
-                {
-                    std::memset(&mbs, 0, sizeof(mbs));
-                    std::memmove(c16str, u"\0\0\0", 3);
-                    std::mbrtoc16(c16str, &it, 3, &mbs);
-                    temp.append(std::u16string(c16str));
-                }
+                std::u16string temp = code_conversion_tool<char16_t>(literal);
                 data = temp;
                 break;
             }

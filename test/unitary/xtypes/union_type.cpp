@@ -14,6 +14,7 @@
 
 #include <gtest/gtest.h>
 #include <xtypes/xtypes.hpp>
+#include <xtypes/StringConversion.hpp>
 #include <iostream>
 
 #include <cmath>

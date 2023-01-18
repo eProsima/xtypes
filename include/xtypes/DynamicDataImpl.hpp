@@ -18,10 +18,9 @@
 #define EPROSIMA_XTYPES_DYNAMIC_DATA_IMPL_HPP_
 
 #include <xtypes/DynamicData.hpp>
+#include <xtypes/StringConversion.hpp>
 
 #include <sstream>
-#include <locale>
-#include <codecvt>
 
 namespace eprosima {
 namespace xtypes {
@@ -188,26 +187,13 @@ inline std::string ReadableDynamicDataRef::to_string() const
                 ss << "<" << type_name << ">  " << node.data().value<std::string>();
                 break;
             case TypeKind::WSTRING_TYPE:
-            {
-                std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
-                ss << "<" << type_name << ">  " << converter.to_bytes(node.data().value<std::wstring>());
+                ss << "<" << type_name << ">  ";
+                ss << code_conversion_tool<char>(node.data().value<std::wstring>());
                 break;
-            }
             case TypeKind::STRING16_TYPE:
-            {
-                std::string str = "";
-                char cstr[3] = "\0";
-                mbstate_t mbs;
-                for (const auto& it : node.data().value<std::u16string>())
-                {
-                    std::memset(&mbs, 0, sizeof(mbs));
-                    std::memmove(cstr, "\0\0\0", 3);
-                    std::c16rtomb(cstr, it, &mbs);
-                    str.append(std::string(cstr));
-                }
-                ss << "<" << type_name << ">  " << str;
+                ss << "<" << type_name << ">  ";
+                ss << code_conversion_tool<char>(node.data().value<std::u16string>());
                 break;
-            }
             case TypeKind::ARRAY_TYPE:
                 ss << "<" << type_name << ">";
                 break;
