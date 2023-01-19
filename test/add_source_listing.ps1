@@ -173,7 +173,7 @@ class Repositories {
 
         # filter out repo list
         $repositories = (git -C $dir remote -v |
-            sls "^(?<remote>\w+)\s+https://github.com/(?<repo>\S+)(?:.git)?").Matches | select -Unique |
+            sls "^(?<remote>\w+)\s+https://github.com/((?<repo>\S+)\.git|(?<repo>\S+))").Matches | select -Unique |
             % { [PSCustomObject]@{ repo = [String]$_.Groups['repo']; remote = [String]$_.Groups['remote']}}
 
         Write-Verbose "Repos available: $($repositories.remote)"

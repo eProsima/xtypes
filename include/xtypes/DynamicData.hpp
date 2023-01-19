@@ -767,8 +767,9 @@ protected:
                     return static_cast<T>(temp);
                 }
             }
+            default:
+                return T();
         }
-        return T();
     }
 
 };
@@ -961,7 +962,7 @@ public:
             "has_key method is only available for MapType.");
 
         const MapType& map = static_cast<const MapType&>(type_);
-        const PairType& pair = static_cast<const PairType&>(map.content_type());
+        [[maybe_unused]] const PairType& pair = static_cast<const PairType&>(map.content_type());
         xtypes_assert(pair.first().is_compatible(key.type()) == TypeConsistency::EQUALS, "Key types doesn't match.");
         return map.has_key(instance_, p_instance(key));
     }
@@ -987,7 +988,7 @@ public:
             xtypes_assert(type_.memory_size() == sizeof(T),
                     "Incompatible types: '" << type_.name() << "' and '"
                                             << PrimitiveTypeKindTrait<T>::name << "'.");
-            const EnumeratedType<T>& enum_type = static_cast<const EnumeratedType<T>&>(type_);
+            [[maybe_unused]] const EnumeratedType<T>& enum_type = static_cast<const EnumeratedType<T>&>(type_);
             xtypes_assert(enum_type.is_allowed_value(t),
                     "Trying to set an invalid value for enumerated type '" << type_.name() << "'.");
         }
@@ -1049,7 +1050,7 @@ public:
     {
         xtypes_assert(type_.kind() == TypeKind::SEQUENCE_TYPE,
                 "resize() is only available for sequence types but called for '" << type_.name() << "'.");
-        size_t bound = bounds();
+        [[maybe_unused]] size_t bound = bounds();
         xtypes_assert(!bound || bound >= size,
                 "The desired size (" << size << ") is bigger than maximum allowed size for the type '"
                                      << type_.name() << "' (" << bounds() << ").");

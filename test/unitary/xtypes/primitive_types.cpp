@@ -29,7 +29,7 @@ static const uint64_t xUINT64        = 18446744073709551610ULL;
 static const float xFLOAT            = 3.1415927410125732421875f;
 static const double xDOUBLE          = 3.1415926535897931159979631875;
 static const char xCHAR              = 'f';
-static const char16_t xCHAR16        = '\u00f1';
+static const char16_t xCHAR16        = u'\u00f1';
 static const wchar_t xWCHAR          = 34590;
 
 /*********************************************

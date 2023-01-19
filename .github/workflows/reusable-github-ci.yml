@@ -247,8 +247,6 @@ jobs:
            cmake "-DCMAKE_INSTALL_PREFIX=$(Join-Path (pwd) install)" $cmakeargs -B build .
            "::endgroup::"
 
-           gci # TODO: remove this
-
            # Show the args
            EchoArgs --build build "$Env:CONFIG_TYPE".split(" ") --target install -j $Env:NUMBER_OF_PROCESSORS
 

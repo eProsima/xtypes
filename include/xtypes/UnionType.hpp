@@ -287,7 +287,7 @@ public:
     {
         if (other.kind() == TypeKind::ALIAS_TYPE)
         {
-            const AliasType& alias = static_cast<const AliasType&>(other);
+            [[maybe_unused]] const AliasType& alias = static_cast<const AliasType&>(other);
 
             xtypes_assert(alias.rget().kind() == TypeKind::UNION_TYPE,
                     "Cannot copy data from different types: From '" << alias.rget().name() << "' to '" << name() <<
@@ -502,7 +502,7 @@ protected:
 
     /// \brief This method verifies the validity of a given label.
     void check_label_value(
-            int64_t label)
+         [[maybe_unused]] int64_t label)
     {
         xtypes_assert(label != default_value_, "Label '" << label << "' is reserved.");
         DynamicType* type = &const_cast<DynamicType&>(disc()->type());
@@ -515,7 +515,7 @@ protected:
 
         if (type->kind() == TypeKind::ENUMERATION_TYPE)
         {
-            EnumerationType<uint32_t>* enum_type = static_cast<EnumerationType<uint32_t>*>(type);
+            [[maybe_unused]] EnumerationType<uint32_t>* enum_type = static_cast<EnumerationType<uint32_t>*>(type);
             xtypes_assert(
                 enum_type->is_allowed_value(label),
                 "Value '" << label << "' isn't allowed by the discriminator enumeration '" << type->name() << "'");
