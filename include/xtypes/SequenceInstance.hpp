@@ -189,10 +189,10 @@ private:
     friend class SequenceType;
 
     const DynamicType& content_;
-    uint32_t block_size_;
-    uint32_t capacity_;
-    uint8_t* memory_;
-    uint32_t size_;
+    uint32_t block_size_ = 0;
+    uint32_t capacity_ = 0;
+    uint8_t* memory_ = nullptr;
+    uint32_t size_ = 0;
 
     void realloc(
             size_t desired_capacity,

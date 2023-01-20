@@ -66,6 +66,16 @@ class ReadableDynamicDataRef
 {
 public:
 
+    ReadableDynamicDataRef(const ReadableDynamicDataRef& other) = default;
+
+    ReadableDynamicDataRef(ReadableDynamicDataRef&& other)
+        : type_(other.type_)
+        , instance_(other.instance_)
+        , initialize_(other.initialize_)
+    {
+        other.initialize_ = false;
+    }
+
     virtual ~ReadableDynamicDataRef() = default;
 
     /// \brief Deep equality operator. All DynamicData tree will be evaluated for equality.
@@ -619,6 +629,7 @@ protected:
             uint8_t* source)
         : type_(type.kind() == TypeKind::ALIAS_TYPE ? static_cast<const AliasType&>(type).rget() : type)
         , instance_(source)
+        , initialize_(true)
     {
     }
 
@@ -1349,8 +1360,8 @@ public:
         : WritableDynamicDataRef(other.type_, new uint8_t[other.type_.memory_size()])
     {
         memset(instance_, 0, other.type().memory_size());
-        type_.move_instance(instance_, p_instance(other), initialize_);
-        initialize_ = true;
+        type_.move_instance(instance_, p_instance(other), false);
+        other.initialize_ = false;
     }
 
     /// \brief Assignment operator
@@ -1562,7 +1573,10 @@ public:
 
     virtual ~DynamicData() override
     {
-        type_.destroy_instance(instance_);
+        if(initialize_)
+        {
+            type_.destroy_instance(instance_);
+        }
         delete[] instance_;
     }
 
