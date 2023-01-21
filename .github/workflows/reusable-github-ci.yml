@@ -233,6 +233,7 @@ jobs:
 
            # Build
            $cmakeargs = @()
+           $cmakeargs += "-DCMAKE_COMPILE_WARNING_AS_ERROR=ON"
            $cmakeargs += "-DENABLE_PDB_INDEXING=ON"
            $cmakeargs += "-DENABLE_WER=ON"
            $cmakeargs += "-DXTYPES_BUILD_TESTS=ON"
