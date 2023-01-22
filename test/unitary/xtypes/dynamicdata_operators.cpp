@@ -226,7 +226,13 @@ inline void check_arithmetic_flt_binary_operators(
 #define ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP_EXCEPT(OPERAND1, OPERATOR, OPERAND2, RES) \
 {\
     std::stringstream errmsg;\
-    errmsg << "Operator" << (#OPERATOR[0] == '^' ? "\\^" : #OPERATOR);\
+    char op = #OPERATOR[0];\
+    errmsg << "Operator";\
+    if(op == '^' || op == '|')\
+    {\
+        errmsg << "\\";\
+    }\
+    errmsg << op;\
     ASSERT_OR_EXCEPTION(\
         { ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP(OPERAND1, OPERATOR, OPERAND2, RES);},\
         errmsg.str());\
