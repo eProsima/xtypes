@@ -1,0 +1,15 @@
+name: Nightly CI for eProsima xTypes
+
+on:
+  schedule:
+    - cron: '42 23 * * *'
+
+jobs:
+  xtypes_CI:
+    uses: ./.github/workflows/reusable-github-ci.yml
+    with:
+      label: "Nightly-CI"
+      os: "[\"ubuntu-latest\",\"windows-latest\",\"macos-latest\"]"
+      config: "[\"RelWithDebInfo\"]"
+      vs_toolset: "[\"v143\",\"v142\"]"
+      cmake_args: "[\"-DXTYPES_EXCEPTIONS=ON\",\"-DXTYPES_EXCEPTIONS=OFF\"]"
