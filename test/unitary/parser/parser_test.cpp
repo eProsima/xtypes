@@ -1318,16 +1318,20 @@ TEST (IDLParser, union_tests)
     data["wstr_b"] = L"Testing Wstring";
     EXPECT_EQ(data.d().value<uint32_t>(), 1);
 
-    EXPECT_EQ(data["union_c"].d().value<size_t>(), static_cast<size_t>(default_union_label(sizeof(uint64_t))));
+    EXPECT_EQ(data["union_c"].d().value<uint64_t>(), static_cast<uint64_t>(default_union_label(sizeof(uint64_t))));
     data["union_c"]["my_string"] = "Correct";
+
     data["union_c"]["my_float"] = 3.14f;
-    EXPECT_EQ(data["union_c"].d().value<size_t>(), 2);
+    EXPECT_EQ(data["union_c"].d().value<uint64_t>(), 2);
+
     data["union_c"].d(3);
-    EXPECT_EQ(data["union_c"].d().value<size_t>(), 3);
+    EXPECT_EQ(data["union_c"].d().value<uint64_t>(), 3);
+
     data["union_c"]["my_uint64"] = UINT64_C(314);
-    EXPECT_EQ(data["union_c"].d().value<size_t>(), 1);
-    data["union_c"]["my_int32"] = 314;
-    EXPECT_EQ(data["union_c"].d().value<size_t>(), 0);
+    EXPECT_EQ(data["union_c"].d().value<uint64_t>(), 1);
+
+    data["union_c"]["my_int32"] = INT32_C(314);
+    EXPECT_EQ(data["union_c"].d().value<uint64_t>(), 0);
 
     const UnionType& test_union = context.module().union_switch("TestUnion");
     DynamicData data_2(test_union);
