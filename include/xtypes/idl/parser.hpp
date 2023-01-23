@@ -1030,7 +1030,8 @@ private:
                     context_->log(log::LogLevel::xWARNING, "UNEXPECTED_LITERAL", message("WIDE_CHAR"), ast);
                 }
 
-                std::u16string temp = code_conversion_tool<char16_t>(literal);
+                std::basic_string<XTYPES_CHAR> aux(literal.begin(), literal.end());
+                auto temp = code_conversion_tool<char16_t>(aux);
                 data = temp[0];
                 break;
             }
@@ -1041,7 +1042,9 @@ private:
                     context_->log(log::LogLevel::xWARNING, "UNEXPECTED_LITERAL", message("WIDE_CHAR"), ast);
                 }
 
-                std::wstring temp = code_conversion_tool<wchar_t>(literal);
+                std::basic_string<XTYPES_CHAR> aux(literal.begin(), literal.end());
+                auto aux2 = code_conversion_tool<char16_t>(aux);
+                std::wstring temp(aux2.begin(), aux2.end());
                 data = temp[0];
                 break;
             }
@@ -1076,14 +1079,15 @@ private:
                     context_->log(log::LogLevel::xWARNING, "UNEXPECTED_LITERAL", message("WIDE_STRING"), ast);
                 }
 
-                std::wstring value = code_conversion_tool<wchar_t>(aux);
-                data = value;
+                std::basic_string<XTYPES_CHAR> aux2(literal.begin(), literal.end());
+                auto temp = code_conversion_tool<char16_t>(aux2);
+                data = std::wstring(temp.begin(), temp.end());
                 break;
             }
             case TypeKind::STRING16_TYPE:
             {
-                std::u16string temp = code_conversion_tool<char16_t>(literal);
-                data = temp;
+                std::basic_string<XTYPES_CHAR> aux(literal.begin(), literal.end());
+                data = code_conversion_tool<char16_t>(aux);
                 break;
             }
             case TypeKind::BOOLEAN_TYPE:

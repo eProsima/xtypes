@@ -18,90 +18,48 @@
 using namespace std;
 using namespace eprosima;
 
-TEST (StringConversion, from_char_to_wchar_short)
+#define MBSTRING(name, text) std::basic_string<XTYPES_CHAR> name{XTYPES_CHAR_LITERAL(text)};
+
+TEST (StringConversion, from_utf8_to_utf16_short)
 {
-    string short_str{"test"};
-    wstring expected{L"test"};
-    ASSERT_EQ(code_conversion_tool<wchar_t>(short_str), expected);
-}
-
-TEST (StringConversion, from_char_to_wchar_long)
-{
-    string long_str{"test"};
-    wstring expected{L"test"};
-
-    for(int i = 0; i < 1000; ++i)
-    {
-        int car = i % 74 + 48;
-        long_str.append({static_cast<char>(car)});
-        expected.append({static_cast<wchar_t>(car)});
-    }
-
-    ASSERT_EQ(code_conversion_tool<wchar_t>(long_str), expected);
-}
-
-TEST (StringConversion, from_wchar_to_char_short)
-{
-    wstring short_str{L"test"};
-    string expected{"test"};
-    ASSERT_EQ(code_conversion_tool<char>(short_str), expected);
-}
-
-TEST (StringConversion, from_wchar_to_char_long)
-{
-    wstring long_str{L"test"};
-    string expected{"test"};
-
-    for(int i = 0; i < 1000; ++i)
-    {
-        int car = i % 74 + 48;
-        long_str.append({static_cast<wchar_t>(car)});
-        expected.append({static_cast<char>(car)});
-    }
-
-    ASSERT_EQ(code_conversion_tool<char>(long_str), expected);
-}
-
-TEST (StringConversion, from_char_to_char16_short)
-{
-    string short_str{"test"};
+    MBSTRING(short_str, "test")
     u16string expected{u"test"};
     ASSERT_EQ(code_conversion_tool<char16_t>(short_str), expected);
 }
 
-TEST (StringConversion, from_char_to_char16_long)
+TEST (StringConversion, from_utf8_to_utf16_long)
 {
-    string long_str{"test"};
+    MBSTRING(long_str, "test")
     u16string expected{u"test"};
 
     for(int i = 0; i < 1000; ++i)
     {
         int car = i % 74 + 48;
-        long_str.append({static_cast<char>(car)});
+        long_str.append({static_cast<XTYPES_CHAR>(car)});
         expected.append({static_cast<char16_t>(car)});
     }
 
     ASSERT_EQ(code_conversion_tool<char16_t>(long_str), expected);
 }
 
-TEST (StringConversion, from_char16_to_char_short)
+TEST (StringConversion, from_utf16_to_utf8_short)
 {
     u16string short_str{u"test"};
-    string expected{"test"};
-    ASSERT_EQ(code_conversion_tool<char>(short_str), expected);
+    MBSTRING(expected, "test")
+    ASSERT_EQ(code_conversion_tool<XTYPES_CHAR>(short_str), expected);
 }
 
-TEST (StringConversion, from_char16_to_char_long)
+TEST (StringConversion, from_utf16_to_utf8_long)
 {
     u16string long_str{u"test"};
-    string expected{"test"};
+    MBSTRING(expected, "test")
 
     for(int i = 0; i < 1000; ++i)
     {
         int car = i % 74 + 48;
         long_str.append({static_cast<char16_t>(car)});
-        expected.append({static_cast<char>(car)});
+        expected.append({static_cast<XTYPES_CHAR>(car)});
     }
 
-    ASSERT_EQ(code_conversion_tool<char>(long_str), expected);
+    ASSERT_EQ(code_conversion_tool<XTYPES_CHAR>(long_str), expected);
 }

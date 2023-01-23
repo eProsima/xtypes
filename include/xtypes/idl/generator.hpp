@@ -24,8 +24,8 @@
 #include <xtypes/SequenceType.hpp>
 #include <xtypes/EnumerationType.hpp>
 #include <xtypes/AliasType.hpp>
-#include <xtypes/idl/generator_deptree.hpp>
 
+#include <xtypes/idl/generator_deptree.hpp>
 #include <xtypes/idl/Module.hpp>
 
 #include <sstream>
@@ -239,17 +239,12 @@ inline std::string label_value(
             return ss.str();
         }
         case TypeKind::CHAR_16_TYPE:
+        case TypeKind::WIDE_CHAR_TYPE:
         {
             char16_t temp = static_cast<char16_t>(value);
             std::stringstream ss;
-            ss << "L'" << temp << "'";
-            return ss.str();
-        }
-        case TypeKind::WIDE_CHAR_TYPE:
-        {
-            wchar_t temp = static_cast<wchar_t>(value);
-            std::stringstream ss;
-            ss << "L'" << temp << "'";
+            auto aux = code_conversion_tool<XTYPES_CHAR>(std::u16string(1, temp));
+            ss << "L'" << std::string(aux.begin(), aux.end()) << "'";
             return ss.str();
         }
         case TypeKind::INT_8_TYPE:

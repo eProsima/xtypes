@@ -145,11 +145,13 @@ inline std::string ReadableDynamicDataRef::to_string() const
                 ss << "<" << type_name << ">  " << node.data().value<char>();
                 break;
             case TypeKind::CHAR_16_TYPE:
-                ss << "<" << type_name << ">  " << node.data().value<char16_t>();
-                break;
             case TypeKind::WIDE_CHAR_TYPE:
-                ss << "<" << type_name << ">  " << node.data().value<wchar_t>();
-                break;
+                {
+                    ss << "<" << type_name << ">  ";
+                    auto aux = code_conversion_tool<XTYPES_CHAR>(std::u16string(1, node.data().value<char16_t>()));
+                    ss << std::string(aux.begin(), aux.end());
+                    break;
+                }
             case TypeKind::INT_8_TYPE:
                 ss << "<" << type_name << ">  " << node.data().value<int8_t>();
                 break;
@@ -187,13 +189,20 @@ inline std::string ReadableDynamicDataRef::to_string() const
                 ss << "<" << type_name << ">  " << node.data().value<std::string>();
                 break;
             case TypeKind::WSTRING_TYPE:
-                ss << "<" << type_name << ">  ";
-                ss << code_conversion_tool<char>(node.data().value<std::wstring>());
-                break;
+                {
+                    ss << "<" << type_name << ">  ";
+                    auto aux = node.data().value<std::wstring>();
+                    auto aux2 = code_conversion_tool<XTYPES_CHAR>(std::u16string(aux.begin(), aux.end()));
+                    ss << std::string(aux2.begin(), aux2.end());
+                    break;
+                }
             case TypeKind::STRING16_TYPE:
-                ss << "<" << type_name << ">  ";
-                ss << code_conversion_tool<char>(node.data().value<std::u16string>());
-                break;
+                {
+                    ss << "<" << type_name << ">  ";
+                    auto aux = code_conversion_tool<XTYPES_CHAR>(node.data().value<std::u16string>());
+                    ss << std::string(aux.begin(), aux.end());
+                    break;
+                }
             case TypeKind::ARRAY_TYPE:
                 ss << "<" << type_name << ">";
                 break;

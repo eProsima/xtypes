@@ -1066,7 +1066,8 @@ protected:
                     break;
                     case TypeKind::CHAR_16_TYPE:
                     {
-                        std::u16string wstr = code_conversion_tool<char16_t>(label);
+                        std::basic_string<XTYPES_CHAR> aux(label.begin(), label.end());
+                        auto wstr = code_conversion_tool<char16_t>(aux);
                         char16_t value;
                         // Check if comes with "'"
                         if (label.size() == 1)
@@ -1082,8 +1083,10 @@ protected:
                     break;
                     case TypeKind::WIDE_CHAR_TYPE:
                     {
+                        std::basic_string<XTYPES_CHAR> aux(label.begin(), label.end());
+                        auto aux2 = code_conversion_tool<char16_t>(aux);
+                        std::wstring temp(aux2.begin(), aux2.end());
                         wchar_t value;
-                        std::wstring temp = code_conversion_tool<wchar_t>(label);
                         // Check if comes with "'"
                         if (label.size() == 1)
                         {

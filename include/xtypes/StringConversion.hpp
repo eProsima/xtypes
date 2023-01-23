@@ -19,6 +19,15 @@
 #define EPROSIMA_STRING_CONVERSION_HPP_
 
 #include <locale>
+#include <version>
+
+#ifdef __cpp_char8_t
+#   define XTYPES_CHAR char8_t
+#   define XTYPES_CHAR_LITERAL(text) u8 ## text
+#else
+#   define XTYPES_CHAR char
+#   define XTYPES_CHAR_LITERAL(text) text
+#endif
 
 namespace eprosima {
 
@@ -31,19 +40,19 @@ struct choose_codecvt;
 template<typename wchar>
 struct choose_codecvt_base
 {
-    using cvt = std::codecvt<wchar, char, std::mbstate_t>;
+    using cvt = std::codecvt<wchar, XTYPES_CHAR, std::mbstate_t>;
 };
 
 template<typename wchar>
-struct choose_codecvt<char, wchar>
+struct choose_codecvt<XTYPES_CHAR, wchar>
     : choose_codecvt_base<wchar>
 {
     template<typename facet>
     static std::codecvt_base::result translate(const facet& f,
             std::mbstate_t& state,
-            const char* from,
-            const char* from_end,
-            const char*& from_next,
+            const XTYPES_CHAR* from,
+            const XTYPES_CHAR* from_end,
+            const XTYPES_CHAR*& from_next,
             wchar* to,
             wchar* to_end,
             wchar*& to_next)
@@ -53,7 +62,7 @@ struct choose_codecvt<char, wchar>
 };
 
 template<typename wchar>
-struct choose_codecvt<wchar, char>
+struct choose_codecvt<wchar, XTYPES_CHAR>
     : choose_codecvt_base<wchar>
 {
     template<typename facet>
@@ -62,9 +71,9 @@ struct choose_codecvt<wchar, char>
             const wchar* from,
             const wchar* from_end,
             const wchar*& from_next,
-            char* to,
-            char* to_end,
-            char*& to_next)
+            XTYPES_CHAR* to,
+            XTYPES_CHAR* to_end,
+            XTYPES_CHAR*& to_next)
     {
         return f.out(state, from, from_end, from_next, to, to_end, to_next);
     }
@@ -80,7 +89,7 @@ std::basic_string<out> code_conversion_tool(const std::basic_string_view<in>& in
     using choose = choose_codecvt<in, out>;
 
     locale loc;
-    // on mac STL ALL codecvt partial specializations use char as external type
+    // on mac STL ALL codecvt partial specializations use XTYPES_CHAR as external type
     auto& conv_facet = use_facet<typename choose::cvt>(loc);
 
     const unsigned int buffer_size = 64;
