@@ -12,4 +12,4 @@ jobs:
       os: "[\"ubuntu-latest\",\"windows-latest\",\"macos-latest\"]"
       config: "[\"RelWithDebInfo\"]"
       vs_toolset: "[\"v143\",\"v142\"]"
-      cmake_args: "[\"-DXTYPES_EXCEPTIONS=ON\",\"-DXTYPES_EXCEPTIONS=OFF\"]"
+      cmake_args: "[\"-DXTYPES_EXCEPTIONS=ON\",\"-DXTYPES_EXCEPTIONS=OFF\",\"-DCMAKE_CXX_STANDARD=20\"]"
