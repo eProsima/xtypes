@@ -217,6 +217,10 @@ macro(compile_test)
 
     compile_example(${TEST_NAME} SOURCE ${TEST_SOURCE})
 
+if(MSVC)
+    target_compile_options(${TEST_NAME} PRIVATE /bigobj)
+endif(MSVC)
+
     target_link_libraries(${TEST_NAME}
         PRIVATE
             GTest::gtest

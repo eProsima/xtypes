@@ -465,9 +465,9 @@ protected:
     friend ReadableDynamicDataRef;
     friend WritableDynamicDataRef;
 
-    virtual DynamicType* clone() const override
+    std::shared_ptr<DynamicType> clone() const override
     {
-        return new UnionType(*this);
+        return std::make_shared<UnionType>(*this);
     }
 
     /// \brief This method adds the discriminator has the first member of the aggregation.

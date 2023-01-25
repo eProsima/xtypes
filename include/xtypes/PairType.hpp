@@ -25,6 +25,8 @@
 namespace eprosima {
 namespace xtypes {
 
+class MapInstance;
+
 class PairType : public DynamicType
 {
 public:
@@ -80,19 +82,19 @@ public:
         second_ = DynamicType::Ptr(std::move(second));
     }
 
-    virtual size_t memory_size() const override
+    size_t memory_size() const override
     {
         return first_->memory_size() + second_->memory_size();
     }
 
-    virtual void construct_instance(
+    void construct_instance(
             uint8_t* instance) const override
     {
         first_->construct_instance(instance);
         second_->construct_instance(instance + first_->memory_size());
     }
 
-    virtual void copy_instance(
+    void copy_instance(
             uint8_t* target,
             const uint8_t* source) const override
     {
@@ -100,7 +102,7 @@ public:
         second_->copy_instance(target + first_->memory_size(), source + first_->memory_size());
     }
 
-    virtual void copy_instance_from_type(
+    void copy_instance_from_type(
             uint8_t* target,
             const uint8_t* source,
             const DynamicType& arg_other) const override
@@ -127,7 +129,7 @@ public:
         second_->copy_instance_from_type(target + first_->memory_size(), source + first_->memory_size(), pair.second());
     }
 
-    virtual void move_instance(
+    void move_instance(
             uint8_t* target,
             uint8_t* source,
             bool initialized) const override
@@ -136,14 +138,14 @@ public:
         second_->move_instance(target + first_->memory_size(), source + first_->memory_size(), initialized);
     }
 
-    virtual void destroy_instance(
+    void destroy_instance(
             uint8_t* instance) const override
     {
         first_->destroy_instance(instance);
         second_->destroy_instance(instance + first_->memory_size());
     }
 
-    virtual bool compare_instance(
+    bool compare_instance(
             const uint8_t* instance,
             const uint8_t* other_instance) const override
     {
@@ -152,7 +154,7 @@ public:
             second_->compare_instance(instance + first_->memory_size(), other_instance + first_->memory_size());
     }
 
-    virtual TypeConsistency is_compatible(
+    TypeConsistency is_compatible(
             const DynamicType& other) const override
     {
         if (other.kind() == TypeKind::ALIAS_TYPE)
@@ -171,7 +173,7 @@ public:
         return TypeConsistency::NONE;
     }
 
-    virtual void for_each_type(
+    void for_each_type(
             const TypeNode& node,
             TypeVisitor visitor) const override
     {
@@ -191,7 +193,7 @@ public:
         second_->for_each_type(s, visitor);
     }
 
-    virtual void for_each_instance(
+    void for_each_instance(
             const InstanceNode& node,
             InstanceVisitor visitor) const override
     {
@@ -211,7 +213,7 @@ public:
         second_->for_each_instance(s, visitor);
     }
 
-    virtual uint64_t hash(
+    uint64_t hash(
             const uint8_t* instance) const override
     {
         uint64_t h = first_->hash(instance);
@@ -224,11 +226,12 @@ protected:
     DynamicType::Ptr first_;
     DynamicType::Ptr second_;
 
-    virtual DynamicType* clone() const override
+    std::shared_ptr<DynamicType> clone() const override
     {
-        return new PairType(*this);
+        return std::make_shared<PairType>(*this);
     }
 
+    friend class MapInstance;
 };
 
 } // namespace xtypes

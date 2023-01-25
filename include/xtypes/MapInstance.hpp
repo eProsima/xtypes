@@ -37,11 +37,22 @@ public:
     MapInstance(
             const PairType& content,
             uint32_t capacity = 0)
-        : content_(content)
-        , block_size_(content.memory_size())
+        : block_size_(content.memory_size())
         , capacity_(capacity)
         , size_(0)
     {
+        std::shared_ptr<const DynamicType> tmp;
+        try
+        {
+            tmp = (content.shared_from_this());
+        }
+        catch(const std::bad_weak_ptr&)
+        {
+            tmp = content.clone();
+        }
+
+        content_ = std::static_pointer_cast<const PairType>(std::move(tmp));
+
         init_memory(memory_, capacity_);
     }
 
@@ -68,7 +79,7 @@ public:
             const MapInstance& other,
             uint32_t bounds)
         : content_(other.content_)
-        , block_size_(content_.memory_size())
+        , block_size_(content_->memory_size())
         , capacity_(bounds == 0 ? other.capacity_ : std::min(other.capacity_, bounds))
         , size_(bounds == 0 ? other.size_ : std::min(other.size_, bounds))
     {
@@ -100,12 +111,12 @@ public:
             return false;
         }
 
-        if (content_.first().is_constructed_type() || content_.second().is_constructed_type())
+        if (content_->first().is_constructed_type() || content_->second().is_constructed_type())
         {
             bool comp = true;
             for (uint32_t i = 0; i < size_; i++)
             {
-                comp &= content_.compare_instance(memory_ + i * block_size_, other.memory_ + i * block_size_);
+                comp &= content_->compare_instance(memory_ + i * block_size_, other.memory_ + i * block_size_);
             }
             return comp;
         }
@@ -135,7 +146,8 @@ public:
         }
 
         uint8_t* place = create_place(instance);
-        content_.first().copy_instance(place, instance); // Only copies the key
+        content_->first().copy_instance(place, instance);
+        content_->second().construct_instance(place + content_->first().memory_size());
 
         size_++;
 
@@ -184,10 +196,10 @@ public:
     {
         if (size_ > 0)
         {
-            uint64_t h = content_.hash(memory_);
+            uint64_t h = content_->hash(memory_);
             for (uint32_t i = 1; i < size_; ++i)
             {
-                Instanceable::hash_combine(h, content_.hash(get_element(i)));
+                Instanceable::hash_combine(h, content_->hash(get_element(i)));
             }
             return h;
         }
@@ -198,7 +210,7 @@ private:
 
     friend class MapType;
 
-    const PairType& content_;
+    std::shared_ptr<const PairType> content_;
     uint32_t block_size_ = 0;
     uint32_t capacity_ = 0;
     uint8_t* memory_ = nullptr;
@@ -235,7 +247,7 @@ private:
                 memset(memory, 0, size * block_size_);
                 for (uint32_t idx = 0; idx < size; ++idx)
                 {
-                    content_.construct_instance(memory + idx * block_size_);
+                    content_->construct_instance(memory + idx * block_size_);
                 }
             }
         }
@@ -245,8 +257,8 @@ private:
             const MapInstance& other,
             uint32_t bounds)
     {
-        size_t other_first_size = other.content_.first().memory_size();
-        size_t other_second_size = other.content_.second().memory_size();
+        size_t other_first_size = other.content_->first().memory_size();
+        size_t other_second_size = other.content_->second().memory_size();
 
         // Check bytes to copy
         uint32_t min_capacity = std::min(capacity_, other.capacity_);
@@ -268,17 +280,17 @@ private:
             realloc(min_size, bounds);
         }
 
-        if (content_.first().is_constructed_type()
-                || content_.second().is_constructed_type()
-                || content_.first().memory_size() != other_first_size
-                || content_.second().memory_size() != other_second_size)
+        if (content_->first().is_constructed_type()
+                || content_->second().is_constructed_type()
+                || content_->first().memory_size() != other_first_size
+                || content_->second().memory_size() != other_second_size)
         {
             for (uint32_t i = 0; i < min_size; i++)
             {
-                content_.copy_instance_from_type(
+                content_->copy_instance_from_type(
                     memory_ + i * block_size_,
-                    other.memory_ + i * other.content_.memory_size(),
-                    other.content_);
+                    other.memory_ + i * other.content_->memory_size(),
+                    *other.content_);
             }
         }
         else //optimization when the pair are both primitive with same size
@@ -295,7 +307,7 @@ private:
     {
         if (source != nullptr)
         {
-            if (content_.first().is_constructed_type() || content_.second().is_constructed_type())
+            if (content_->first().is_constructed_type() || content_->second().is_constructed_type())
             {
                 if (overlap && check_overlap(target, source))
                 {
@@ -303,7 +315,7 @@ private:
                     uint32_t to_move = size_ - get_key_index(source);
                     for (uint32_t i = to_move; i > 0; --i)
                     {
-                        content_.move_instance(target + (i - 1) * block_size_, source + (i - 1) * block_size_, true);
+                        content_->move_instance(target + (i - 1) * block_size_, source + (i - 1) * block_size_, true);
                     }
                 }
                 else
@@ -311,7 +323,7 @@ private:
                     // Moving full memory
                     for (uint32_t i = 0; i < size_; ++i)
                     {
-                        content_.move_instance(target + i * block_size_, source + i * block_size_, true);
+                        content_->move_instance(target + i * block_size_, source + i * block_size_, true);
                     }
                 }
             }
@@ -438,18 +450,18 @@ private:
     uint64_t hash(
             const uint8_t* instance) const
     {
-        return content_.first().hash(instance);
+        return content_->first().hash(instance);
     }
 
     void free_memory()
     {
         if (memory_ != nullptr)
         {
-            if (content_.is_constructed_type())
+            if (content_->is_constructed_type())
             {
                 for (int32_t i = capacity_ - 1; i >= 0; i--)
                 {
-                    content_.destroy_instance(memory_ + i * block_size_);
+                    content_->destroy_instance(memory_ + i * block_size_);
                 }
             }
 

@@ -27,7 +27,7 @@ namespace xtypes {
 
 #define DYNAMIC_DATA_NUMERIC_SIGNED_INT_SWITCH(MACRO, OPERATOR) \
 {\
-    switch(type_.kind())\
+    switch(type_->kind())\
     {\
         case TypeKind::INT_8_TYPE:\
             MACRO(int8_t, OPERATOR);\
@@ -39,14 +39,14 @@ namespace xtypes {
             MACRO(int64_t, OPERATOR);\
         default:\
             xtypes_assert(false,\
-                "Operator" << #OPERATOR << "() isn't available for type '" << type_.name() << "'.");\
+                "Operator" << #OPERATOR << "() isn't available for type '" << type_->name() << "'.");\
             return *this;\
     }\
 }
 
 #define DYNAMIC_DATA_NUMERIC_INT_SWITCH(MACRO, OPERATOR) \
 {\
-    switch(type_.kind())\
+    switch(type_->kind())\
     {\
         case TypeKind::UINT_8_TYPE:\
             MACRO(uint8_t, OPERATOR);\
@@ -63,7 +63,7 @@ namespace xtypes {
 
 #define DYNAMIC_DATA_NUMERIC_FLT_SWITCH(MACRO, OPERATOR) \
 {\
-    switch(type_.kind())\
+    switch(type_->kind())\
     {\
         case TypeKind::FLOAT_32_TYPE:\
             MACRO(float, OPERATOR);\
@@ -89,7 +89,7 @@ namespace xtypes {
 
 #define DYNAMIC_DATA_BASICTYPE_SWITCH(MACRO, OPERATOR) \
 {\
-    switch(type_.kind())\
+    switch(type_->kind())\
     {\
         case TypeKind::CHAR_8_TYPE:\
             MACRO(char, OPERATOR);\
@@ -106,7 +106,7 @@ namespace xtypes {
 
 #define DYNAMIC_DATA_BASICTYPE_INT_SWITCH(MACRO, OPERATOR) \
 {\
-    switch(type_.kind())\
+    switch(type_->kind())\
     {\
         case TypeKind::CHAR_8_TYPE:\
             MACRO(char, OPERATOR);\
@@ -236,29 +236,29 @@ inline std::string ReadableDynamicDataRef::to_string() const
 template<>
 inline std::string ReadableDynamicDataRef::cast<std::string>() const
 {
-    xtypes_assert(type_.is_primitive_type() ||
-           type_.kind() == TypeKind::STRING_TYPE ||
-           type_.kind() == TypeKind::WSTRING_TYPE ||
-           type_.kind() == TypeKind::STRING16_TYPE ||
-           type_.is_enumerated_type(),
-        "Expected a primitive or string type but '" << type_.name() << "' received while casting data to 'std::string'.");
+    xtypes_assert(type_->is_primitive_type() ||
+           type_->kind() == TypeKind::STRING_TYPE ||
+           type_->kind() == TypeKind::WSTRING_TYPE ||
+           type_->kind() == TypeKind::STRING16_TYPE ||
+           type_->is_enumerated_type(),
+        "Expected a primitive or string type but '" << type_->name() << "' received while casting data to 'std::string'.");
     // Custom switch-case statement for types not contained in the macros
-    switch (type_.kind())
+    switch (type_->kind())
     {
         case TypeKind::ENUMERATION_TYPE:
         {
             // For checking the associated_type, check for its memory_size
-            if (type_.memory_size() == sizeof(uint8_t))
+            if (type_->memory_size() == sizeof(uint8_t))
             {
                 uint8_t temp = *this;
                 return std::to_string(temp);
             }
-            else if (type_.memory_size() == sizeof(uint16_t))
+            else if (type_->memory_size() == sizeof(uint16_t))
             {
                 uint16_t temp = *this;
                 return std::to_string(temp);
             }
-            else if (type_.memory_size() == sizeof(uint32_t))
+            else if (type_->memory_size() == sizeof(uint32_t))
             {
                 uint32_t temp = *this;
                 return std::to_string(temp);
@@ -347,7 +347,7 @@ inline DynamicData& DynamicData::operator -- ()
 
 inline bool DynamicData::operator ! () const
 {
-    switch(type_.kind())
+    switch(type_->kind())
     {
         case TypeKind::STRING_TYPE:
             return this->value<std::string>().empty();
@@ -419,7 +419,7 @@ inline DynamicData DynamicData::operator OPERATOR (const ReadableDynamicDataRef&
 #define DYNAMIC_DATA_NUMERIC_SAFE_OPERATOR_IMPLEMENTATION(OPERATOR)\
 inline DynamicData DynamicData::operator OPERATOR (const ReadableDynamicDataRef& other) const \
 {\
-    switch(type_.kind())\
+    switch(type_->kind())\
     {\
         case TypeKind::CHAR_8_TYPE:\
         case TypeKind::CHAR_16_TYPE:\
@@ -428,7 +428,7 @@ inline DynamicData DynamicData::operator OPERATOR (const ReadableDynamicDataRef&
         {\
             std::ostringstream os;\
             os << "Operator" << (#OPERATOR[0] == '^' ? "\\^" : #OPERATOR)\
-               << " is not supported for type " << type_.name();\
+               << " is not supported for type " << type_->name();\
             throw std::runtime_error(os.str());\
         }\
         default:\

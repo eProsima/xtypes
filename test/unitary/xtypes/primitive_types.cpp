@@ -193,6 +193,29 @@ TEST (PrimitiveTypes, primitive_type_int32_uint16)
     EXPECT_TRUE((singleCheck<int32_t, uint16_t>(55, 55)));
 }
 
+// Comes from issue #105
+TEST(EnumerationType, stack_datatype_deleted)
+{
+    auto getTestEnum = []
+    {
+        EnumerationType<uint32_t> testEnum("TestEnum");
+        testEnum.add_enumerator("item0");
+        testEnum.add_enumerator("item1");
+        testEnum.add_enumerator("item2");
+
+        DynamicData test(testEnum);
+        EXPECT_NO_THROW({test.to_string();});
+
+        DynamicData test2(test);
+        EXPECT_NO_THROW({test2.to_string();});
+
+        return test;
+    };
+
+    DynamicData testData(getTestEnum());
+    EXPECT_NO_THROW({testData.to_string();});
+}
+
 TEST(EnumerationType, enumeration_tests)
 {
     // Creation and expected operation

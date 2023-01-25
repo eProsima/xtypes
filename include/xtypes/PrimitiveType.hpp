@@ -80,21 +80,29 @@ template<typename T>
 class PrimitiveType : public DynamicType
 {
 protected:
+    // Avoid direct use of the class (there is a factory)
+    // Allow the use in subclasses
+    struct use_function_primitive_type {};
 
-    template<typename R>
-    friend const DynamicType& primitive_type();
+public:
 
-    PrimitiveType()
+    PrimitiveType(use_function_primitive_type)
         : DynamicType(PrimitiveTypeKindTrait<T>::kind, PrimitiveTypeKindTrait<T>::name)
     {
     }
 
     PrimitiveType(
+            use_function_primitive_type,
             TypeKind kind,
             const std::string& name)
         : DynamicType(kind, name)
     {
     }
+
+protected:
+
+    template<typename R>
+    friend const DynamicType& primitive_type();
 
     PrimitiveType(
             const PrimitiveType& other) = delete;
@@ -114,8 +122,8 @@ protected:
 
     virtual void destroy_instance(
             uint8_t* /*instance*/) const override
-    {
-    }                                                                       //Default does nothing
+    { //Default does nothing
+    }
 
     virtual void copy_instance(
             uint8_t* target,
@@ -267,11 +275,11 @@ protected:
         visitor(node);
     }
 
-    virtual DynamicType* clone() const override
+    std::shared_ptr<DynamicType> clone() const override
     {
-        return new PrimitiveType<T>();
-    }
+        return std::make_shared<PrimitiveType<T>>(use_function_primitive_type{}, this->kind(), this->name());
 
+    }
 };
 
 /// \brief Helper function to create a PrimitiveType.
@@ -284,7 +292,7 @@ const DynamicType& primitive_type()
     // The creation of PrimitiveType must be always done
     // by this function in order to not broken the DynamicType::Ptr
     // optimizations for PrimitiveType
-    static PrimitiveType<T> p;
+    static PrimitiveType<T> p(typename PrimitiveType<T>::use_function_primitive_type{});
     return p;
 }
 
