@@ -40,6 +40,8 @@ if(ENABLE_WER)
     set(WER_TIMEOUT_TIME 10)
 endif()
 
+set(XTYPES_PEGLIB_VERSION "master" CACHE STRING "yhirose/cpp-peglib version to use.")
+
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
@@ -57,7 +59,7 @@ endif()
 
 # Download the cpp-peglib header file needed
 file(DOWNLOAD
-        https://raw.githubusercontent.com/yhirose/cpp-peglib/master/peglib.h
+        https://raw.githubusercontent.com/yhirose/cpp-peglib/${XTYPES_PEGLIB_VERSION}/peglib.h
         ${PROJECT_BINARY_DIR}/thirdparty/cpp-peglib/peglib.h
     )
 
