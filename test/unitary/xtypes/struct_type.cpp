@@ -534,3 +534,26 @@ TEST (StructType, copying_a_single_value_structure)
     EXPECT_EQ(str.value<std::string>().compare("Hey!"), 0);
 
 }
+
+// References: https://github.com/eProsima/xtypes/pull/113#issuecomment-1430864724
+
+StructType PGN_64750()
+{
+    StructType msg("Msg");
+    msg.add_member("blade_elevation_deviation_left", primitive_type<uint16_t>());
+    msg.add_member("blade_elevation_deviation_right", primitive_type<uint16_t>());
+    msg.add_member("bld_reference_elevation_offset_left", primitive_type<uint16_t>());
+    msg.add_member("bld_rference_elevation_offset_right", primitive_type<uint16_t>());
+
+    return msg;
+}
+
+TEST (StructType, russkel_issue)
+{
+    DynamicData data(PGN_64750());
+
+    data["blade_elevation_deviation_left"] = uint16_t(42);
+    data["blade_elevation_deviation_right"] = data["blade_elevation_deviation_left"];
+    data["bld_reference_elevation_offset_left"] = data["blade_elevation_deviation_right"];
+    data["bld_rference_elevation_offset_right"] = data["bld_reference_elevation_offset_left"];
+}
