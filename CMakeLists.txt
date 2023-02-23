@@ -31,7 +31,7 @@ add_library(${PROJECT_NAME} INTERFACE)
 
 # Download the cpp-peglib header file needed
 file(DOWNLOAD
-        https://raw.githubusercontent.com/yhirose/cpp-peglib/master/peglib.h
+        https://raw.githubusercontent.com/yhirose/cpp-peglib/v1.8.2/peglib.h
         ${PROJECT_SOURCE_DIR}/thirdparty/cpp-peglib/peglib.h
     )
 
@@ -40,7 +40,7 @@ target_include_directories(${PROJECT_NAME}
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/thirdparty/cpp-peglib>
         $<INSTALL_INTERFACE:include>
-        $<INSTALL_INTERFACE:thirdparty/cpp-peglib/include>
+        # $<INSTALL_INTERFACE:thirdparty/cpp-peglib/include>
     )
 
 target_compile_features(${PROJECT_NAME}
@@ -231,12 +231,13 @@ set(LIB_INSTALL_DIR     ${CMAKE_INSTALL_LIBDIR}     CACHE PATH "Installation dir
 set(DATA_INSTALL_DIR    ${CMAKE_INSTALL_DATADIR}    CACHE PATH "Installation directory for data")
 
 include(CMakePackageConfigHelpers)
+string(REPLACE "/${CMAKE_LIBRARY_ARCHITECTURE}" "" CMAKE_INSTALL_LIBDIR_ARCHIND "${CMAKE_INSTALL_LIBDIR}")
 
 configure_package_config_file(
     ${PROJECT_SOURCE_DIR}/cmake/config.cmake.in
     ${PROJECT_BINARY_DIR}/cmake/config/${PROJECT_NAME}-config.cmake
     INSTALL_DESTINATION
-        ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/cmake
+        ${CMAKE_INSTALL_LIBDIR_ARCHIND}/cmake/${PROJECT_NAME}
     PATH_VARS
         BIN_INSTALL_DIR
         INCLUDE_INSTALL_DIR
@@ -278,7 +279,7 @@ install(
     DIRECTORY
         ${PROJECT_SOURCE_DIR}/thirdparty/cpp-peglib/
     DESTINATION
-        thirdparty/cpp-peglib/include
+        ${INCLUDE_INSTALL_DIR} # this is a hack, but it's still more appropriate than thirdparty
     FILES_MATCHING
         PATTERN "*.h"
     )
@@ -295,5 +296,5 @@ install(
         ${PROJECT_BINARY_DIR}/cmake/config/${PROJECT_NAME}-config.cmake
         ${PROJECT_BINARY_DIR}/cmake/config/${PROJECT_NAME}-config-version.cmake
     DESTINATION
-        ${DATA_INSTALL_DIR}/${PROJECT_NAME}/cmake
+        ${CMAKE_INSTALL_LIBDIR_ARCHIND}/cmake/${PROJECT_NAME}
     )

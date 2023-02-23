@@ -142,16 +142,16 @@ inline std::string ReadableDynamicDataRef::to_string() const
                 ss << "<" << type_name << ">  " << node.data().value<char>();
                 break;
             case TypeKind::CHAR_16_TYPE:
-                ss << "<" << type_name << ">  " << node.data().value<char16_t>();
+                ss << "<" << type_name << ">  " << static_cast<int16_t>(node.data().value<char16_t>());
                 break;
             case TypeKind::WIDE_CHAR_TYPE:
-                ss << "<" << type_name << ">  " << node.data().value<wchar_t>();
+                ss << "<" << type_name << ">  " << static_cast<int32_t>(node.data().value<wchar_t>());
                 break;
             case TypeKind::INT_8_TYPE:
-                ss << "<" << type_name << ">  " << node.data().value<int8_t>();
+                ss << "<" << type_name << ">  " << static_cast<int>(node.data().value<int8_t>());
                 break;
             case TypeKind::UINT_8_TYPE:
-                ss << "<" << type_name << ">  " << node.data().value<uint8_t>();
+                ss << "<" << type_name << ">  " << static_cast<int>(node.data().value<uint8_t>());
                 break;
             case TypeKind::INT_16_TYPE:
                 ss << "<" << type_name << ">  " << node.data().value<int16_t>();

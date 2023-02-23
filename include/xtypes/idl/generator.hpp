@@ -242,14 +242,14 @@ inline std::string label_value(
         {
             char16_t temp = static_cast<char16_t>(value);
             std::stringstream ss;
-            ss << "L'" << temp << "'";
+            ss << "L'" << static_cast<int16_t>(temp) << "'";
             return ss.str();
         }
         case TypeKind::WIDE_CHAR_TYPE:
         {
             wchar_t temp = static_cast<wchar_t>(value);
             std::stringstream ss;
-            ss << "L'" << temp << "'";
+            ss << "L'" << static_cast<int32_t>(temp) << "'";
             return ss.str();
         }
         case TypeKind::INT_8_TYPE:

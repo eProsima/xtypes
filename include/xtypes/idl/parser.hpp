@@ -284,8 +284,9 @@ public:
         , context_(nullptr)
     {
         parser_.enable_ast();
-        parser_.log = std::bind(&Parser::parser_log_cb_, this, std::placeholders::_1,
+        peg::Log log = std::bind(&Parser::parser_log_cb_, this, std::placeholders::_1,
                         std::placeholders::_2, std::placeholders::_3);
+        parser_.set_logger(log);
     }
 
     Context parse(
@@ -675,8 +676,9 @@ private:
             to_lower(aux_id);
         }
 
-        for (const std::string& name : parser_.get_rule_names())
+        for (const auto &item : parser_.get_grammar())
         {
+            const auto &name = item.first;
             if (name.find("KW_") == 0) // If it starts with "KW_", is a reserved word. You are welcome.
             {
                 if (parser_[name.c_str()].parse(aux_id.c_str()).ret)
