@@ -29,6 +29,7 @@
 #include <codecvt>
 #include <cwchar>
 #include <cuchar>
+#include <limits>
 
 namespace eprosima {
 namespace xtypes {
