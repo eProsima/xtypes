@@ -1,0 +1,54 @@
+
+// All Primitive types
+struct MyAllPrimitiveType
+{
+    boolean my_boolean;
+    char my_char;
+    octet my_octet;
+    short my_short;
+    unsigned short my_unsigned_short;
+    long my_long;
+    unsigned long my_unsigned_long;
+    long long my_long_long;
+    unsigned long long my_unsigned_long_long;
+    float my_float;
+    double my_double;
+    long double my_long_double;
+};
+
+// Struct with a string (non primitive struct)
+struct MyStringType
+{
+    string my_string;
+};
+
+// Struct wthat inherits from other struct
+struct MyInheritStringType : MyStringType
+{
+    string my_child_string;
+};
+
+// Struct of collection of primitive and non primitive types
+struct MyCollectionType
+{
+    long my_array_long[5];
+    sequence<string> my_sequence_long[5];
+    map<string, MyStringType> my_map;
+};
+
+// Enumeration
+enum MyEnumerationType
+{
+    RED,
+    GREEN,
+    BLUE
+};
+
+// Struct under a module (namespace)
+module submodule
+{
+    struct MySubModuleType
+    {
+        MyEnumerationType my_enum;
+    };
+};

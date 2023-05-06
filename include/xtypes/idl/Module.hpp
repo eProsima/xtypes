@@ -379,7 +379,7 @@ public:
 
         for (const auto& pair : inner_)
         {
-            pair.second->fill_all_types(map, add_scope);
+            pair.second->fill_all_types(map, true);
         }
     }
 

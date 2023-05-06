@@ -513,7 +513,7 @@ private:
                 str.replace(pos, froms, escaped);
                 pos = str.find(from, pos + escaped_size);
             }
-            
+
         }
     }
 

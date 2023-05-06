@@ -135,8 +135,13 @@ if(XTYPES_BUILD_EXAMPLES)
     compile_example(${PROJECT_NAME}_example_module SOURCE examples/module.cpp)
     compile_example(${PROJECT_NAME}_example_iterators SOURCE examples/iterators.cpp)
     compile_example(${PROJECT_NAME}_example_exceptions_asserts SOURCE examples/exceptions_asserts.cpp)
+    compile_example(${PROJECT_NAME}_example_load_idl SOURCE examples/load_idl.cpp)
     # ...
+
+    # Export resources for examples
+    file(COPY examples/resources DESTINATION ${PROJECT_BINARY_DIR})
 endif()
+
 
 #####################################################################################
 #                                      Tests
