@@ -1264,10 +1264,13 @@ public:
 
         dep_mod->set_iterated(true);
 
-        auto it = module_idl->find(dep_mod->module().name() + ":DependencyModule");
-        if(it != module_idl->end())
+        if (module_idl != nullptr)
         {
-            module_idl->erase(it);
+            auto it = module_idl->find(dep_mod->module().name() + ":DependencyModule");
+            if(it != module_idl->end())
+            {
+                module_idl->erase(it);
+            }
         }
 
         return ss.str();

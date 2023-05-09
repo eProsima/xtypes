@@ -686,7 +686,7 @@ private:
 
         if (ifs.fail())
         {
-            context_->log(log::LogLevel::DEBUG, "FILE",
+            context_->log(log::xDEBUG, "FILE",
                     "Cannot open file: " + std::string(path));
             return false;
         }
@@ -697,7 +697,7 @@ private:
         {
             ifs.seekg(0, std::ios::beg).read(&buff[0], static_cast<std::streamsize>(buff.size()));
         }
-        context_->log(log::LogLevel::DEBUG, "FILE",
+        context_->log(log::xDEBUG, "FILE",
                 "Loaded file: " + std::string(path));
         return true;
     }
@@ -752,7 +752,7 @@ private:
             const std::string& idl_string) const
     {
         std::string args = "-H ";
-        for (const std::string inc_path : context_->include_paths)
+        for (const std::string& inc_path : context_->include_paths)
         {
             args += "-I " + inc_path + " ";
         }
@@ -761,7 +761,7 @@ private:
         replace_all_string(escaped_idl_string, "\"", "\\\"");
         replace_all_string(escaped_idl_string, "#include", "\n#include");
         std::string cmd = "echo \"" + escaped_idl_string + "\" | " + context_->preprocessor_exec + " " + args;
-        context_->log(log::LogLevel::DEBUG, "PREPROCESS",
+        context_->log(log::xDEBUG, "PREPROCESS",
                 "Calling preprocessor '" + context_->preprocessor_exec + "' for an IDL string.");
         return exec(cmd);
     }
@@ -771,12 +771,12 @@ private:
     {
         std::vector<std::string> includes;
         std::string args = "-H ";
-        for (const std::string inc_path : context_->include_paths)
+        for (const std::string& inc_path : context_->include_paths)
         {
             args += "-I " + inc_path + " ";
         }
         std::string cmd = context_->preprocessor_exec + " " + args + idl_file;
-        context_->log(log::LogLevel::DEBUG, "PREPROCESS",
+        context_->log(log::xDEBUG, "PREPROCESS",
                 "Calling preprocessor with command: " + cmd);
         std::string output = exec(cmd);
         return output;
