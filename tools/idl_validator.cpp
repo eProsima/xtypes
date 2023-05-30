@@ -1,6 +1,8 @@
 #include <xtypes/xtypes.hpp>
 #include <xtypes/idl/idl.hpp>
 
+#include <cstdlib>
+
 using namespace eprosima::xtypes;
 
 int main(
@@ -19,7 +21,19 @@ int main(
         idl::Context context;
         context.log_level(idl::log::LogLevel::xDEBUG);
         context.print_log(true);
-        context.include_paths.push_back("/opt/ros/foxy/share/");
+
+        // Introduce current ros2 paths
+        std::string distro(std::getenv("ROS_DISTRO"));
+        if (distro.empty())
+        {
+            std::cout << "There is no ROS2 overlay loaded or ros_environment package is missing" << std::endl;
+            return -1;
+        }
+        else
+        {
+            context.include_paths.push_back("/opt/ros/" + distro + "/share/");
+        }
+
         context.ignore_redefinition = true;
         context.allow_keyword_identifiers = true;
         context = idl::parse(idl_spec, context);
