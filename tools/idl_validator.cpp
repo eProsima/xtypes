@@ -23,15 +23,14 @@ int main(
         context.print_log(true);
 
         // Introduce current ros2 paths
-        std::string distro(std::getenv("ROS_DISTRO"));
-        if (distro.empty())
+        const char * distro = std::getenv("ROS_DISTRO");
+        if (nullptr == distro)
         {
             std::cout << "There is no ROS2 overlay loaded or ros_environment package is missing" << std::endl;
-            return -1;
         }
         else
         {
-            context.include_paths.push_back("/opt/ros/" + distro + "/share/");
+            context.include_paths.push_back("/opt/ros/" + std::string(distro) + "/share/");
         }
 
         context.ignore_redefinition = true;
