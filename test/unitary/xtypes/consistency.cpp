@@ -197,8 +197,11 @@ TEST (Consistency, testing_is_compatible_structure_of_primitive_type_float)
     EXPECT_EQ(TypeConsistency::EQUALS , the_str.is_compatible(other_str));
     EXPECT_EQ(TypeConsistency::EQUALS , other_str.is_compatible(the_str));
     EXPECT_EQ(TypeConsistency::IGNORE_TYPE_WIDTH, the_str.is_compatible(another_str));
-    EXPECT_EQ(TypeConsistency::IGNORE_TYPE_WIDTH, the_str.is_compatible(another_more_str));
     EXPECT_EQ(TypeConsistency::IGNORE_TYPE_WIDTH, another_str.is_compatible(another_more_str));
+#ifndef _MSC_VER
+    // on visual studio std::is_same<long double, double>::value == true
+    EXPECT_EQ(TypeConsistency::IGNORE_TYPE_WIDTH, the_str.is_compatible(another_more_str));
+#endif
 }
 
 TEST (Consistency, testing_is_compatible_structure_of_array_small_bound)

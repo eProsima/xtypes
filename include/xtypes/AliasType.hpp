@@ -177,9 +177,9 @@ public:
 
 protected:
 
-    virtual DynamicType* clone() const override
+    std::shared_ptr<DynamicType> clone() const override
     {
-        return new AliasType(*this);
+        return std::make_shared<AliasType>(*this);
     }
 
 private:

@@ -24,19 +24,19 @@
 using namespace std;
 using namespace eprosima::xtypes;
 
-static const uint8_t UINT8          = 250;
-static const int16_t INT16          = -32760;
-static const uint16_t UINT16        = 65530;
-static const int32_t INT32          = -2147483640;
-static const uint32_t UINT32        = 4294967290;
-static const int64_t INT64          = -9223372036854775800;
-static const uint64_t UINT64        = 18446744073709551610ULL;
-static const float FLOAT            = 3.1415927410125732421875f;
-static const double DOUBLE          = 3.1415926535897931159979631875;
-static const long double LDOUBLE    = 3.14159265358979321159979631875l;
-static const char CHAR              = 'f';
-static const char16_t CHAR16        = u'ñ';
-static const wchar_t WCHAR          = 34590;
+static const uint8_t xUINT8          = 250;
+static const int16_t xINT16          = -32760;
+static const uint16_t xUINT16        = 65530;
+static const int32_t xINT32          = -2147483640;
+static const uint32_t xUINT32        = 4294967290;
+static const int64_t xINT64          = -9223372036854775800;
+static const uint64_t xUINT64        = 18446744073709551610ULL;
+static const float xFLOAT            = 3.1415927410125732421875f;
+static const double xDOUBLE          = 3.1415926535897931159979631875;
+static const long double xLDOUBLE    = 3.14159265358979321159979631875l;
+static const char xCHAR              = 'f';
+static const char16_t xCHAR16        = u'\u00f1';
+static const wchar_t xWCHAR          = 34590;
 
 static const std::string INNER_STRING_VALUE = "lay_down_and_cry";
 static const std::string INNER_SEQUENCE_STRING = "another_prick_in_the_wall";
@@ -227,35 +227,35 @@ TEST (StructType, type_verify_test)
     DynamicData d(st);
 
     d["bool"].value<bool>(true);
-    d["uint8_t"].value<uint8_t>(UINT8);
-    d["int16_t"].value<int16_t>(INT16);
-    d["uint16_t"].value<uint16_t>(UINT16);
-    d["int32_t"].value<int32_t>(INT32);
-    d["uint32_t"].value<uint32_t>(UINT32);
-    d["int64_t"].value<int64_t>(INT64);
-    d["uint64_t"].value<uint64_t>(UINT64);
-    d["float"].value<float>(FLOAT);
-    d["double"].value<double>(DOUBLE);
-    d["long double"].value<long double>(LDOUBLE);
-    d["char"].value<char>(CHAR);
-    d["char16_t"].value<char16_t>(CHAR16);
-    d["wchar_t"].value<wchar_t>(WCHAR);
+    d["uint8_t"].value<uint8_t>(xUINT8);
+    d["int16_t"].value<int16_t>(xINT16);
+    d["uint16_t"].value<uint16_t>(xUINT16);
+    d["int32_t"].value<int32_t>(xINT32);
+    d["uint32_t"].value<uint32_t>(xUINT32);
+    d["int64_t"].value<int64_t>(xINT64);
+    d["uint64_t"].value<uint64_t>(xUINT64);
+    d["float"].value<float>(xFLOAT);
+    d["double"].value<double>(xDOUBLE);
+    d["long double"].value<long double>(xLDOUBLE);
+    d["char"].value<char>(xCHAR);
+    d["char16_t"].value<char16_t>(xCHAR16);
+    d["wchar_t"].value<wchar_t>(xWCHAR);
 
     EXPECT_EQ(true, d["bool"].value<bool>());
-    EXPECT_EQ(UINT8, d["uint8_t"].value<uint8_t>());
-    EXPECT_EQ(INT16, d["int16_t"].value<int16_t>());
-    EXPECT_EQ(UINT16, d["uint16_t"].value<uint16_t>());
-    EXPECT_EQ(INT32, d["int32_t"].value<int32_t>());
-    EXPECT_EQ(UINT32, d["uint32_t"].value<uint32_t>());
-    EXPECT_EQ(INT64, d["int64_t"].value<int64_t>());
-    EXPECT_EQ(UINT64, d["uint64_t"].value<uint64_t>());
-    EXPECT_EQ( float(FLOAT), d["float"].value<float>());
-    EXPECT_EQ( double(DOUBLE), d["double"].value<double>());
-    long double ld = LDOUBLE;
+    EXPECT_EQ(xUINT8, d["uint8_t"].value<uint8_t>());
+    EXPECT_EQ(xINT16, d["int16_t"].value<int16_t>());
+    EXPECT_EQ(xUINT16, d["uint16_t"].value<uint16_t>());
+    EXPECT_EQ(xINT32, d["int32_t"].value<int32_t>());
+    EXPECT_EQ(xUINT32, d["uint32_t"].value<uint32_t>());
+    EXPECT_EQ(xINT64, d["int64_t"].value<int64_t>());
+    EXPECT_EQ(xUINT64, d["uint64_t"].value<uint64_t>());
+    EXPECT_EQ( float(xFLOAT), d["float"].value<float>());
+    EXPECT_EQ( double(xDOUBLE), d["double"].value<double>());
+    long double ld = xLDOUBLE;
     EXPECT_EQ( ld, d["long double"].value<long double>());
-    EXPECT_EQ( CHAR, d["char"].value<char>());
-    EXPECT_EQ( CHAR16, d["char16_t"].value<char16_t>());
-    EXPECT_EQ( WCHAR, d["wchar_t"].value<wchar_t>());
+    EXPECT_EQ( xCHAR, d["char"].value<char>());
+    EXPECT_EQ( xCHAR16, d["char16_t"].value<char16_t>());
+    EXPECT_EQ( xWCHAR, d["wchar_t"].value<wchar_t>());
 
 }
 
@@ -334,35 +334,35 @@ DynamicData create_dynamic_data(
 
     DynamicData the_data(the_struct);
     the_data["bool"] = true;
-    the_data["uint8_t"] = UINT8;
-    the_data["int16_t"] = INT16;
-    the_data["uint16_t"] = UINT16;
-    the_data["int32_t"] = INT32;
-    the_data["uint32_t"] = UINT32;
-    the_data["int64_t"] = INT64;
-    the_data["uint64_t"] = UINT64;
-    the_data["float"] = FLOAT;
-    the_data["double"] = DOUBLE;
-    the_data["long_double"] = LDOUBLE;
+    the_data["uint8_t"] = xUINT8;
+    the_data["int16_t"] = xINT16;
+    the_data["uint16_t"] = xUINT16;
+    the_data["int32_t"] = xINT32;
+    the_data["uint32_t"] = xUINT32;
+    the_data["int64_t"] = xINT64;
+    the_data["uint64_t"] = xUINT64;
+    the_data["float"] = xFLOAT;
+    the_data["double"] = xDOUBLE;
+    the_data["long_double"] = xLDOUBLE;
 
     for (int i = 0; i < STRUCTS_SIZE; ++i) // creating "sequence"
     {
         DynamicData tmp_data(inner_struct);
         tmp_data["inner_string"] = INNER_STRING_VALUE;
-        tmp_data["inner_float"].value<float>(FLOAT);
+        tmp_data["inner_float"].value<float>(xFLOAT);
         add_seq_data(tmp_data["inner_sequence_string"], STRUCTS_SIZE, INNER_SEQUENCE_STRING);
 
         for (int j = 0; j < STRUCTS_SIZE; ++j) // creating "sequence.inner_sequence_struct"
         {
             DynamicData tmp_inner_data(second_inner_struct);
             tmp_inner_data["second_inner_string"] = SECOND_INNER_STRING;
-            tmp_inner_data["second_inner_uint32_t"] = UINT32;
-            add_array_data(tmp_inner_data["second_inner_array"], STRUCTS_SIZE, UINT8);
+            tmp_inner_data["second_inner_uint32_t"] = xUINT32;
+            add_array_data(tmp_inner_data["second_inner_array"], STRUCTS_SIZE, xUINT8);
             tmp_data["inner_sequence_struct"].push(tmp_inner_data);
         }
         for (int j = 0; j < STRUCTS_SIZE; ++j)
         {
-            add_array_data(the_data["array"][j], STRUCTS_SIZE, LDOUBLE);
+            add_array_data(the_data["array"][j], STRUCTS_SIZE, xLDOUBLE);
         }
         the_data["sequence"].push(tmp_data);
     }
@@ -378,36 +378,36 @@ TEST (StructType, complex_and_member_access)
 
     DynamicData the_data = create_dynamic_data(the_struct, inner_struct, second_inner_struct);
 
-    EXPECT_EQ(UINT32, the_data["uint32_t"].value<uint32_t>());
-    EXPECT_EQ(INT32, the_data["int32_t"].value<int32_t>());
-    EXPECT_EQ(UINT16, the_data["uint16_t"].value<uint16_t>());
-    EXPECT_EQ(INT16, the_data["int16_t"].value<int16_t>());
+    EXPECT_EQ(xUINT32, the_data["uint32_t"].value<uint32_t>());
+    EXPECT_EQ(xINT32, the_data["int32_t"].value<int32_t>());
+    EXPECT_EQ(xUINT16, the_data["uint16_t"].value<uint16_t>());
+    EXPECT_EQ(xINT16, the_data["int16_t"].value<int16_t>());
     EXPECT_EQ(true, the_data["bool"].value<bool>());
-    EXPECT_EQ(UINT8, the_data["uint8_t"].value<uint8_t>());
-    EXPECT_EQ(INT64, the_data["int64_t"].value<int64_t>());
-    EXPECT_EQ(UINT64, the_data["uint64_t"].value<uint64_t>());
-    EXPECT_EQ(FLOAT, the_data["float"].value<float>());
-    EXPECT_EQ(DOUBLE, the_data["double"].value<double>());
-    EXPECT_EQ(LDOUBLE, the_data["long_double"].value<long double>());
+    EXPECT_EQ(xUINT8, the_data["uint8_t"].value<uint8_t>());
+    EXPECT_EQ(xINT64, the_data["int64_t"].value<int64_t>());
+    EXPECT_EQ(xUINT64, the_data["uint64_t"].value<uint64_t>());
+    EXPECT_EQ(xFLOAT, the_data["float"].value<float>());
+    EXPECT_EQ(xDOUBLE, the_data["double"].value<double>());
+    EXPECT_EQ(xLDOUBLE, the_data["long_double"].value<long double>());
 
     EXPECT_EQ(true, the_data[0].value<bool>());
-    EXPECT_EQ(UINT8, the_data[1].value<uint8_t>());
-    EXPECT_EQ(INT16, the_data[2].value<int16_t>());
-    EXPECT_EQ(UINT16, the_data[3].value<uint16_t>());
-    EXPECT_EQ(INT32, the_data[4].value<int32_t>());
-    EXPECT_EQ(UINT32, the_data[5].value<uint32_t>());
-    EXPECT_EQ(INT64, the_data[6].value<int64_t>());
-    EXPECT_EQ(UINT64, the_data[7].value<uint64_t>());
-    EXPECT_EQ(FLOAT, the_data[8].value<float>());
-    EXPECT_EQ(DOUBLE, the_data[9].value<double>());
-    EXPECT_EQ(LDOUBLE, the_data[10].value<long double>());
+    EXPECT_EQ(xUINT8, the_data[1].value<uint8_t>());
+    EXPECT_EQ(xINT16, the_data[2].value<int16_t>());
+    EXPECT_EQ(xUINT16, the_data[3].value<uint16_t>());
+    EXPECT_EQ(xINT32, the_data[4].value<int32_t>());
+    EXPECT_EQ(xUINT32, the_data[5].value<uint32_t>());
+    EXPECT_EQ(xINT64, the_data[6].value<int64_t>());
+    EXPECT_EQ(xUINT64, the_data[7].value<uint64_t>());
+    EXPECT_EQ(xFLOAT, the_data[8].value<float>());
+    EXPECT_EQ(xDOUBLE, the_data[9].value<double>());
+    EXPECT_EQ(xLDOUBLE, the_data[10].value<long double>());
 
     for (size_t i = 0; i < STRUCTS_SIZE; ++i)
     {
         EXPECT_EQ(the_data["sequence"][i]["inner_string"].value<std::string>(), INNER_STRING_VALUE);
         EXPECT_EQ(the_data[12][i][0].value<std::string>(), INNER_STRING_VALUE);
-        EXPECT_EQ(the_data["sequence"][i]["inner_float"].value<float>(), FLOAT);
-        EXPECT_EQ(the_data[12][i][1].value<float>(), FLOAT);
+        EXPECT_EQ(the_data["sequence"][i]["inner_float"].value<float>(), xFLOAT);
+        EXPECT_EQ(the_data[12][i][1].value<float>(), xFLOAT);
 
         check_collection_data(the_data["sequence"][i]["inner_sequence_string"], STRUCTS_SIZE, INNER_SEQUENCE_STRING);
         check_collection_data(the_data[12][i][2], STRUCTS_SIZE, INNER_SEQUENCE_STRING);
@@ -419,21 +419,21 @@ TEST (StructType, complex_and_member_access)
                 SECOND_INNER_STRING);
             EXPECT_EQ(
                 the_data["sequence"][i]["inner_sequence_struct"][j]["second_inner_uint32_t"].value<uint32_t>(),
-                UINT32);
+                xUINT32);
             EXPECT_EQ(
                 the_data[12][i][3][j][0].value<std::string>(),
                 SECOND_INNER_STRING);
             EXPECT_EQ(
                 the_data[12][i][3][j][1].value<uint32_t>(),
-                UINT32);
+                xUINT32);
 
             check_collection_data(the_data["sequence"][i]["inner_sequence_struct"][j]["second_inner_array"],
-                    STRUCTS_SIZE, UINT8);
-            check_collection_data(the_data[12][i][3][j][2], STRUCTS_SIZE, UINT8);
+                    STRUCTS_SIZE, xUINT8);
+            check_collection_data(the_data[12][i][3][j][2], STRUCTS_SIZE, xUINT8);
         }
 
-        check_collection_data(the_data["array"][i], STRUCTS_SIZE, LDOUBLE);
-        check_collection_data(the_data[11][i], STRUCTS_SIZE, LDOUBLE);
+        check_collection_data(the_data["array"][i], STRUCTS_SIZE, xLDOUBLE);
+        check_collection_data(the_data[11][i], STRUCTS_SIZE, xLDOUBLE);
     }
 }
 
@@ -533,4 +533,27 @@ TEST (StructType, copying_a_single_value_structure)
     str = data;
     EXPECT_EQ(str.value<std::string>().compare("Hey!"), 0);
 
+}
+
+// References: https://github.com/eProsima/xtypes/pull/113#issuecomment-1430864724
+
+StructType PGN_64750()
+{
+    StructType msg("Msg");
+    msg.add_member("blade_elevation_deviation_left", primitive_type<uint16_t>());
+    msg.add_member("blade_elevation_deviation_right", primitive_type<uint16_t>());
+    msg.add_member("bld_reference_elevation_offset_left", primitive_type<uint16_t>());
+    msg.add_member("bld_rference_elevation_offset_right", primitive_type<uint16_t>());
+
+    return msg;
+}
+
+TEST (StructType, russkel_issue)
+{
+    DynamicData data(PGN_64750());
+
+    data["blade_elevation_deviation_left"] = uint16_t(42);
+    data["blade_elevation_deviation_right"] = data["blade_elevation_deviation_left"];
+    data["bld_reference_elevation_offset_left"] = data["blade_elevation_deviation_right"];
+    data["bld_rference_elevation_offset_right"] = data["bld_reference_elevation_offset_left"];
 }

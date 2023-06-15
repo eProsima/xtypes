@@ -14,6 +14,7 @@
 
 #include <gtest/gtest.h>
 #include <xtypes/xtypes.hpp>
+#include <xtypes/StringConversion.hpp>
 #include <iostream>
 
 #include <cmath>
@@ -194,8 +195,8 @@ TEST (UnionType, complex_union_and_default)
     EXPECT_NE(5000, data.get_member("array")[0].value<uint64_t>()); // Modified when accessing as bool.
 
     // Change to st
-    data["st"]["uint64"] = 5000ul;
-    data["st"]["int64"] = -756757623l;
+    data["st"]["uint64"] = UINT64_C(5000);
+    data["st"]["int64"] = INT64_C(-756757623);
     data["st"]["float"] = 445.322f;
     EXPECT_EQ('b', data.d().value<char>());
     data.d('e');

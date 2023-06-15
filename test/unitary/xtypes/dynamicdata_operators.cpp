@@ -39,8 +39,8 @@ inline void check_de_increment_operators(
 
     if (assert_fail)
     {
-        ASSERT_OR_EXCEPTION({ ASSERT_EQ_DYNAMICDATA(data++, value + 1); }, "Operator++()");
-        ASSERT_OR_EXCEPTION({ ASSERT_EQ_DYNAMICDATA(data--, value + 1); }, "Operator--()");
+        ASSERT_OR_EXCEPTION({ ASSERT_EQ_DYNAMICDATA(data++, value + 1); }, R"xtypes(Operator\+\+\(\))xtypes");
+        ASSERT_OR_EXCEPTION({ ASSERT_EQ_DYNAMICDATA(data--, value + 1); }, R"xtypes(Operator--\(\))xtypes");
     }
     else
     {
@@ -69,13 +69,18 @@ TEST (DynamicDataOperators, increment_decrement_operators)
     check_de_increment_operators<bool>(true, true);
     check_de_increment_operators<char>('a', true);
     check_de_increment_operators<wchar_t>('\n', true);
-    check_de_increment_operators<char16_t>(u'ñ', true);
+    check_de_increment_operators<char16_t>(u'\u00f1', true);
     check_de_increment_operators<float>(PI, true);
     check_de_increment_operators<double>(PI_D, true);
     check_de_increment_operators<long double>(PI_L, true);
 }
 
-#define CHECK_ARITHMETIC_UNARY_OPERATOR(value, assert_fail, OP) \
+#define GET_MACRO4(_1, _2, _3, _4, NAME, ...) NAME
+#define CHECK_ARITHMETIC_UNARY_OPERATOR(...) \
+    GET_MACRO4(__VA_ARGS__, CHECK_ARITHMETIC_UNARY_OPERATOR_COMPARE, \
+    CHECK_ARITHMETIC_UNARY_OPERATOR_EXECUTE_OP)(__VA_ARGS__)
+
+#define CHECK_ARITHMETIC_UNARY_OPERATOR_EXECUTE_OP(value, assert_fail, OP) \
 {\
     const DynamicType& type(primitive_type<T>());\
     DynamicData data(type);\
@@ -84,11 +89,28 @@ TEST (DynamicDataOperators, increment_decrement_operators)
     if (assert_fail)\
     {\
         ASSERT_OR_EXCEPTION({ ASSERT_EQ_DYNAMICDATA(OP(data), OP(value)); },\
-            std::string("Operator") + #OP + "()");\
+            std::string("Operator") + #OP + "\\(\\)");\
     }\
     else\
     {\
         ASSERT_EQ_DYNAMICDATA(OP(data), OP(value));\
+    }\
+}
+
+#define CHECK_ARITHMETIC_UNARY_OPERATOR_COMPARE(value, assert_fail, OP, result) \
+{\
+    const DynamicType& type(primitive_type<T>());\
+    DynamicData data(type);\
+    data = static_cast<T>(value);\
+\
+    if (assert_fail)\
+    {\
+        ASSERT_OR_EXCEPTION({ ASSERT_EQ_DYNAMICDATA(OP(data), (result)); },\
+            std::string("Operator") + #OP + "\\(\\)");\
+    }\
+    else\
+    {\
+        ASSERT_EQ_DYNAMICDATA(OP(data), (result));\
     }\
 }
 
@@ -100,12 +122,32 @@ inline void check_bitwise_complement_operator(
     CHECK_ARITHMETIC_UNARY_OPERATOR(value, assert_fail, ~);
 }
 
+// in order to avoid warning C4804: ~value == !value
+template<>
+inline void check_bitwise_complement_operator(
+        const bool& value,
+        bool assert_fail)
+{
+    using T = bool;
+    CHECK_ARITHMETIC_UNARY_OPERATOR(value, assert_fail, ~, !value);
+}
+
 template<typename T>
 inline void check_negate_operator(
         const T& value,
         bool assert_fail=false)
 {
     CHECK_ARITHMETIC_UNARY_OPERATOR(value, assert_fail, -);
+}
+
+// in order to avoid warning C4804: -value == !value
+template<>
+inline void check_negate_operator(
+        const bool& value,
+        bool assert_fail)
+{
+    using T = bool;
+    CHECK_ARITHMETIC_UNARY_OPERATOR(value, assert_fail, -, !value);
 }
 
 TEST (DynamicDataOperators, arithmetic_unary_operators)
@@ -119,7 +161,7 @@ TEST (DynamicDataOperators, arithmetic_unary_operators)
     check_bitwise_complement_operator<bool>(true, true);
     check_bitwise_complement_operator<char>('a', true);
     check_bitwise_complement_operator<wchar_t>('\n', true);
-    check_bitwise_complement_operator<char16_t>(u'ñ', true);
+    check_bitwise_complement_operator<char16_t>(u'\u00f1', true);
     check_bitwise_complement_operator<uint8_t>(7u, true);
     check_bitwise_complement_operator<uint16_t>(10u, true);
     check_bitwise_complement_operator<uint32_t>(20u, true);
@@ -137,7 +179,7 @@ TEST (DynamicDataOperators, arithmetic_unary_operators)
     check_negate_operator<bool>(true, true);
     check_negate_operator<char>('a', true);
     check_negate_operator<wchar_t>('\n', true);
-    check_negate_operator<char16_t>(u'ñ', true);
+    check_negate_operator<char16_t>(u'\u00f1', true);
     check_negate_operator<uint8_t>(7u, true);
     check_negate_operator<uint16_t>(10u, true);
     check_negate_operator<uint32_t>(20u, true);
@@ -165,10 +207,32 @@ inline void check_arithmetic_flt_binary_operators(
     ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP(data, /, _data, A / B);
 }
 
+// in order to avoid warning C4804: handle arithmetica as boolean algebra
+template<>
+inline void check_arithmetic_flt_binary_operators(
+        const bool& A,
+        const bool& B)
+{
+    const DynamicType& type(primitive_type<bool>());
+    DynamicData data(type), _data(type), res(type);
+    data = A;
+    _data = B;
+
+    using T = bool;
+    ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP(data, +, _data, A || B);
+    ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP(data, *, _data, A && B);
+}
+
 #define ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP_EXCEPT(OPERAND1, OPERATOR, OPERAND2, RES) \
 {\
     std::stringstream errmsg;\
-    errmsg << "Operator" << (#OPERATOR == "^" ? "\\^" : #OPERATOR) << "()";\
+    char op = #OPERATOR[0];\
+    errmsg << "Operator";\
+    if(op == '^' || op == '|')\
+    {\
+        errmsg << "\\";\
+    }\
+    errmsg << op;\
     ASSERT_OR_EXCEPTION(\
         { ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP(OPERAND1, OPERATOR, OPERAND2, RES);},\
         errmsg.str());\
@@ -212,6 +276,41 @@ inline void check_arithmetic_int_binary_operators(
     }
 }
 
+// in order to avoid warning C4804: handle arithmetica as boolean algebra
+template <>
+inline void check_arithmetic_int_binary_operators(
+        const bool& A,
+        const bool& B,
+        bool assert_fail)
+{
+    const DynamicType& type(primitive_type<bool>());
+    DynamicData data(type), _data(type), res(type);
+    data = A;
+    _data = B;
+
+    using T = bool;
+    if (assert_fail)
+    {
+        ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP_EXCEPT(data, +,  _data, A || B);
+        ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP_EXCEPT(data, *,  _data, A && B);
+        ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP_EXCEPT(data, <<, _data, A);
+        ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP_EXCEPT(data, >>, _data, A && !B);
+        ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP_EXCEPT(data, &,  _data, A & B);
+        ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP_EXCEPT(data, ^,  _data, A ^ B);
+        ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP_EXCEPT(data, |,  _data, A | B);
+    }
+    else
+    {
+        ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP(data, +,  _data, A || B);
+        ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP(data, *,  _data, A && B);
+        ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP(data, <<, _data, A);
+        ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP(data, >>, _data, A && !B);
+        ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP(data, &,  _data, A & B);
+        ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP(data, ^,  _data, A ^ B);
+        ASSERT_EQ_DYNAMICDATA_ARITHMETIC_OP(data, |,  _data, A | B);
+    }
+}
+
 TEST (DynamicDataOperators, arithmetic_binary_operators)
 {
     // Operators available (all)
@@ -223,11 +322,15 @@ TEST (DynamicDataOperators, arithmetic_binary_operators)
     check_arithmetic_int_binary_operators<uint32_t>(20u, 2u);
     check_arithmetic_int_binary_operators<int64_t>(-6, -2);
     check_arithmetic_int_binary_operators<uint64_t>(60u, 2u);
+
+#ifdef XTYPES_EXCEPTIONS
     // Operators not available
     check_arithmetic_int_binary_operators<bool>(true, false, true);
     check_arithmetic_int_binary_operators<char>('a', 'b', true);
     check_arithmetic_int_binary_operators<wchar_t>('\n', 'b', true);
-    check_arithmetic_int_binary_operators<char16_t>(u'ñ', 'b', true);
+    check_arithmetic_int_binary_operators<char16_t>(u'\u00f1', 'b', true);
+#endif
+
     // Operators available (only floating-point)
     check_arithmetic_flt_binary_operators<float>(PI, 1.5f);
     check_arithmetic_flt_binary_operators<double>(PI_D, 1.5);
@@ -243,7 +346,7 @@ inline void check_logical_not_operator(
     data = value;
     if (assert_fail)
     {
-        ASSERT_OR_EXCEPTION({ ASSERT_EQ(!data, !value); }, "Operator!()");
+        ASSERT_OR_EXCEPTION({ ASSERT_EQ(!data, !value); }, R"xtypes(Operator!\(\))xtypes");
     }
     else
     {
@@ -271,7 +374,7 @@ TEST (DynamicDataOperators, logical_operators)
     check_logical_not_operator<bool>(true);
     check_logical_not_operator<char>('a');
     check_logical_not_operator<wchar_t>('\0');
-    check_logical_not_operator<char16_t>(u'ñ');
+    check_logical_not_operator<char16_t>(u'\u00f1');
     check_logical_not_operator<int8_t>(1);
     check_logical_not_operator<uint8_t>(1u);
     check_logical_not_operator<int16_t>(0);
@@ -299,7 +402,7 @@ TEST (DynamicDataOperators, logical_operators)
     check_logical_binary_operator<bool>(true, false);
     check_logical_binary_operator<char>('a', 'b');
     check_logical_binary_operator<wchar_t>('\n', '\0');
-    check_logical_binary_operator<char16_t>(u'ñ', '\0');
+    check_logical_binary_operator<char16_t>(u'\u00f1', '\0');
     check_logical_binary_operator<int8_t>(1, -2);
     check_logical_binary_operator<uint8_t>(1u, 2u);
     check_logical_binary_operator<int16_t>(4, 23);
@@ -336,7 +439,7 @@ TEST (DynamicDataOperators, comparison_operators)
     check_comparison_binary_operator<bool>(true, false);
     check_comparison_binary_operator<char>('a', 'b');
     check_comparison_binary_operator<wchar_t>('\n', '\0');
-    check_comparison_binary_operator<char16_t>(u'ñ', '\0');
+    check_comparison_binary_operator<char16_t>(u'\u00f1', '\0');
     check_comparison_binary_operator<int8_t>(1, -2);
     check_comparison_binary_operator<uint8_t>(1u, 2u);
     check_comparison_binary_operator<int16_t>(4, 23);
@@ -383,7 +486,7 @@ inline void check_assignment_flt_operators(
 {\
     ASSERT_OR_EXCEPTION(\
         { ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP(OPERAND1, OPERATOR, OPERAND2, RES);},\
-        "Operator.*() cannot be used with non-arithmetic types");\
+        R"xtypes(Operator.*\(\) cannot be used with non-arithmetic types)xtypes");\
 }
 
 template <typename T>
@@ -435,6 +538,43 @@ inline void check_assignment_operators(
     }
 }
 
+// in order to avoid warning C4804: handle arithmetica as boolean algebra
+template <>
+inline void check_assignment_operators(
+        const bool& A,
+        const bool& B,
+        bool assert_fail)
+{
+    const DynamicType& type(primitive_type<bool>());
+    DynamicData data(type), _data(type), res(type);
+    data = A;
+    _data = B;
+
+    using T = bool;
+    if (assert_fail)
+    {
+        ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP_EXCEPT(data, +=,  B, A || B);
+        ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP_EXCEPT(data, *=,  B, A && B);
+        ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP_EXCEPT(data, &=,  B, A &  B);
+        ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP_EXCEPT(data, ^=,  B, A ^  B);
+        ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP_EXCEPT(data, |=,  B, A |  B);
+    }
+    else
+    {
+        ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP(data, +=,  _data, A || B);
+        ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP(data, *=,  _data, A && B);
+        ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP(data, &=,  _data, A &  B);
+        ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP(data, ^=,  _data, A ^  B);
+        ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP(data, |=,  _data, A |  B);
+
+        ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP(data, +=,  B, A || B);
+        ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP(data, *=,  B, A && B);
+        ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP(data, &=,  B, A &  B);
+        ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP(data, ^=,  B, A ^  B);
+        ASSERT_EQ_DYNAMICDATA_SELFASSIGN_OP(data, |=,  B, A |  B);
+    }
+}
+
 TEST (DynamicDataOperators, assignment_operators)
 {
     // Operators available (all)
@@ -450,7 +590,7 @@ TEST (DynamicDataOperators, assignment_operators)
     check_assignment_operators<bool>(true, false, true);
     check_assignment_operators<char>('a', 'b', true);
     check_assignment_operators<wchar_t>('\n', 'b', true);
-    check_assignment_operators<char16_t>(u'ñ', u'b', true);
+    check_assignment_operators<char16_t>(u'\u00f1', u'b', true);
     /*
     DynamicData a(primitive_type<char16_t>());
     DynamicData b(primitive_type<char16_t>());

@@ -18,17 +18,16 @@
 #define EPROSIMA_XTYPES_DYNAMIC_DATA_IMPL_HPP_
 
 #include <xtypes/DynamicData.hpp>
+#include <xtypes/StringConversion.hpp>
 
 #include <sstream>
-#include <locale>
-#include <codecvt>
 
 namespace eprosima {
 namespace xtypes {
 
 #define DYNAMIC_DATA_NUMERIC_SIGNED_INT_SWITCH(MACRO, OPERATOR) \
 {\
-    switch(type_.kind())\
+    switch(type_->kind())\
     {\
         case TypeKind::INT_8_TYPE:\
             MACRO(int8_t, OPERATOR);\
@@ -40,14 +39,14 @@ namespace xtypes {
             MACRO(int64_t, OPERATOR);\
         default:\
             xtypes_assert(false,\
-                "Operator" << #OPERATOR << "() isn't available for type '" << type_.name() << "'.");\
+                "Operator" << #OPERATOR << "() isn't available for type '" << type_->name() << "'.");\
             return *this;\
     }\
 }
 
 #define DYNAMIC_DATA_NUMERIC_INT_SWITCH(MACRO, OPERATOR) \
 {\
-    switch(type_.kind())\
+    switch(type_->kind())\
     {\
         case TypeKind::UINT_8_TYPE:\
             MACRO(uint8_t, OPERATOR);\
@@ -57,13 +56,14 @@ namespace xtypes {
             MACRO(uint32_t, OPERATOR);\
         case TypeKind::UINT_64_TYPE:\
             MACRO(uint64_t, OPERATOR);\
+        default:\
+            DYNAMIC_DATA_NUMERIC_SIGNED_INT_SWITCH(MACRO, OPERATOR);\
     }\
-    DYNAMIC_DATA_NUMERIC_SIGNED_INT_SWITCH(MACRO, OPERATOR);\
 }
 
 #define DYNAMIC_DATA_NUMERIC_FLT_SWITCH(MACRO, OPERATOR) \
 {\
-    switch(type_.kind())\
+    switch(type_->kind())\
     {\
         case TypeKind::FLOAT_32_TYPE:\
             MACRO(float, OPERATOR);\
@@ -71,6 +71,7 @@ namespace xtypes {
             MACRO(double, OPERATOR);\
         case TypeKind::FLOAT_128_TYPE:\
             MACRO(long double, OPERATOR);\
+        default:;\
     }\
 }
 
@@ -88,7 +89,7 @@ namespace xtypes {
 
 #define DYNAMIC_DATA_BASICTYPE_SWITCH(MACRO, OPERATOR) \
 {\
-    switch(type_.kind())\
+    switch(type_->kind())\
     {\
         case TypeKind::CHAR_8_TYPE:\
             MACRO(char, OPERATOR);\
@@ -98,13 +99,14 @@ namespace xtypes {
             MACRO(wchar_t, OPERATOR);\
         case TypeKind::BOOLEAN_TYPE:\
             MACRO(bool, OPERATOR);\
+        default:\
+            DYNAMIC_DATA_NUMERIC_SWITCH(MACRO, OPERATOR);\
     }\
-    DYNAMIC_DATA_NUMERIC_SWITCH(MACRO, OPERATOR);\
 }
 
 #define DYNAMIC_DATA_BASICTYPE_INT_SWITCH(MACRO, OPERATOR) \
 {\
-    switch(type_.kind())\
+    switch(type_->kind())\
     {\
         case TypeKind::CHAR_8_TYPE:\
             MACRO(char, OPERATOR);\
@@ -114,8 +116,9 @@ namespace xtypes {
             MACRO(wchar_t, OPERATOR);\
         case TypeKind::BOOLEAN_TYPE:\
             MACRO(bool, OPERATOR);\
+        default:\
+            DYNAMIC_DATA_NUMERIC_INT_SWITCH(MACRO, OPERATOR);\
     }\
-    DYNAMIC_DATA_NUMERIC_INT_SWITCH(MACRO, OPERATOR);\
 }
 
 inline std::string ReadableDynamicDataRef::to_string() const
@@ -142,11 +145,13 @@ inline std::string ReadableDynamicDataRef::to_string() const
                 ss << "<" << type_name << ">  " << node.data().value<char>();
                 break;
             case TypeKind::CHAR_16_TYPE:
-                ss << "<" << type_name << ">  " << node.data().value<char16_t>();
-                break;
             case TypeKind::WIDE_CHAR_TYPE:
-                ss << "<" << type_name << ">  " << node.data().value<wchar_t>();
-                break;
+                {
+                    ss << "<" << type_name << ">  ";
+                    auto aux = code_conversion_tool<XTYPES_CHAR>(std::u16string(1, node.data().value<char16_t>()));
+                    ss << std::string(aux.begin(), aux.end());
+                    break;
+                }
             case TypeKind::INT_8_TYPE:
                 ss << "<" << type_name << ">  " << node.data().value<int8_t>();
                 break;
@@ -184,26 +189,20 @@ inline std::string ReadableDynamicDataRef::to_string() const
                 ss << "<" << type_name << ">  " << node.data().value<std::string>();
                 break;
             case TypeKind::WSTRING_TYPE:
-            {
-                std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
-                ss << "<" << type_name << ">  " << converter.to_bytes(node.data().value<std::wstring>());
-                break;
-            }
-            case TypeKind::STRING16_TYPE:
-            {
-                std::string str = "";
-                char cstr[3] = "\0";
-                mbstate_t mbs;
-                for (const auto& it : node.data().value<std::u16string>())
                 {
-                    std::memset(&mbs, 0, sizeof(mbs));
-                    std::memmove(cstr, "\0\0\0", 3);
-                    std::c16rtomb(cstr, it, &mbs);
-                    str.append(std::string(cstr));
+                    ss << "<" << type_name << ">  ";
+                    auto aux = node.data().value<std::wstring>();
+                    auto aux2 = code_conversion_tool<XTYPES_CHAR>(std::u16string(aux.begin(), aux.end()));
+                    ss << std::string(aux2.begin(), aux2.end());
+                    break;
                 }
-                ss << "<" << type_name << ">  " << str;
-                break;
-            }
+            case TypeKind::STRING16_TYPE:
+                {
+                    ss << "<" << type_name << ">  ";
+                    auto aux = code_conversion_tool<XTYPES_CHAR>(node.data().value<std::u16string>());
+                    ss << std::string(aux.begin(), aux.end());
+                    break;
+                }
             case TypeKind::ARRAY_TYPE:
                 ss << "<" << type_name << ">";
                 break;
@@ -237,32 +236,37 @@ inline std::string ReadableDynamicDataRef::to_string() const
 template<>
 inline std::string ReadableDynamicDataRef::cast<std::string>() const
 {
-    xtypes_assert(type_.is_primitive_type() ||
-           type_.kind() == TypeKind::STRING_TYPE ||
-           type_.kind() == TypeKind::WSTRING_TYPE ||
-           type_.kind() == TypeKind::STRING16_TYPE ||
-           type_.is_enumerated_type(),
-        "Expected a primitive or string type but '" << type_.name() << "' received while casting data to 'std::string'.");
+    xtypes_assert(type_->is_primitive_type() ||
+           type_->kind() == TypeKind::STRING_TYPE ||
+           type_->kind() == TypeKind::WSTRING_TYPE ||
+           type_->kind() == TypeKind::STRING16_TYPE ||
+           type_->is_enumerated_type(),
+        "Expected a primitive or string type but '" << type_->name() << "' received while casting data to 'std::string'.");
     // Custom switch-case statement for types not contained in the macros
-    switch (type_.kind())
+    switch (type_->kind())
     {
         case TypeKind::ENUMERATION_TYPE:
         {
             // For checking the associated_type, check for its memory_size
-            if (type_.memory_size() == sizeof(uint8_t))
+            if (type_->memory_size() == sizeof(uint8_t))
             {
                 uint8_t temp = *this;
                 return std::to_string(temp);
             }
-            else if (type_.memory_size() == sizeof(uint16_t))
+            else if (type_->memory_size() == sizeof(uint16_t))
             {
                 uint16_t temp = *this;
                 return std::to_string(temp);
             }
-            else if (type_.memory_size() == sizeof(uint32_t))
+            else if (type_->memory_size() == sizeof(uint32_t))
             {
                 uint32_t temp = *this;
                 return std::to_string(temp);
+            }
+            else
+            {
+                xtypes_assert(false, "invalid enum size")
+                return "";
             }
         }
         case TypeKind::STRING_TYPE:
@@ -270,6 +274,8 @@ inline std::string ReadableDynamicDataRef::cast<std::string>() const
             std::string temp = *this;
             return temp;
         }
+        default:
+            DYNAMIC_DATA_BASICTYPE_SWITCH(DYNAMIC_DATA_CAST, );
         /* // TODO
         case TypeKind::WSTRING_TYPE:
         {
@@ -283,7 +289,6 @@ inline std::string ReadableDynamicDataRef::cast<std::string>() const
         }
         */
     }
-    DYNAMIC_DATA_BASICTYPE_SWITCH(DYNAMIC_DATA_CAST, );
     return std::string();
 }
 
@@ -342,7 +347,7 @@ inline DynamicData& DynamicData::operator -- ()
 
 inline bool DynamicData::operator ! () const
 {
-    switch(type_.kind())
+    switch(type_->kind())
     {
         case TypeKind::STRING_TYPE:
             return this->value<std::string>().empty();
@@ -350,8 +355,9 @@ inline bool DynamicData::operator ! () const
             return this->value<std::wstring>().empty();
         case TypeKind::STRING16_TYPE:
             return this->value<std::u16string>().empty();
+        default:
+            DYNAMIC_DATA_BASICTYPE_INT_SWITCH(DYNAMIC_DATA_NOT_OPERATOR_RESULT, !);
     }
-    DYNAMIC_DATA_BASICTYPE_INT_SWITCH(DYNAMIC_DATA_NOT_OPERATOR_RESULT, !);
 }
 
 #define DYNAMIC_DATA_LOGIC_OPERATION(TYPE, OPERATOR) \
@@ -410,13 +416,33 @@ inline DynamicData DynamicData::operator OPERATOR (const ReadableDynamicDataRef&
     DYNAMIC_DATA_NUMERIC_OPERATOR_RESULT(OPERATOR);\
 }
 
+#define DYNAMIC_DATA_NUMERIC_SAFE_OPERATOR_IMPLEMENTATION(OPERATOR)\
+inline DynamicData DynamicData::operator OPERATOR (const ReadableDynamicDataRef& other) const \
+{\
+    switch(type_->kind())\
+    {\
+        case TypeKind::CHAR_8_TYPE:\
+        case TypeKind::CHAR_16_TYPE:\
+        case TypeKind::WIDE_CHAR_TYPE:\
+        case TypeKind::BOOLEAN_TYPE:\
+        {\
+            std::ostringstream os;\
+            os << "Operator" << (#OPERATOR[0] == '^' ? "\\^" : #OPERATOR)\
+               << " is not supported for type " << type_->name();\
+            throw std::runtime_error(os.str());\
+        }\
+        default:\
+            DYNAMIC_DATA_NUMERIC_OPERATOR_RESULT(OPERATOR);\
+    }\
+}
+
 DYNAMIC_DATA_NUMERIC_OPERATOR_IMPLEMENTATION(*);
 
 DYNAMIC_DATA_NUMERIC_OPERATOR_IMPLEMENTATION(/);
 
 DYNAMIC_DATA_NUMERIC_INT_OPERATOR_IMPLEMENTATION(%);
 
-DYNAMIC_DATA_NUMERIC_OPERATOR_IMPLEMENTATION(+);
+DYNAMIC_DATA_NUMERIC_SAFE_OPERATOR_IMPLEMENTATION(+);
 
 DYNAMIC_DATA_NUMERIC_OPERATOR_IMPLEMENTATION(-);
 
@@ -437,7 +463,7 @@ DYNAMIC_DATA_NUMERIC_INT_OPERATOR_IMPLEMENTATION(|);
 }
 
 #define DYNAMIC_DATA_PRIMITIVE_SELF_ASSIGN_OPERATOR_RESULT(OPERATOR) { \
-    bool self_assign_valid = std::is_arithmetic<T>::value && !std::is_same<T, bool>::value &&\
+    [[maybe_unused]] bool self_assign_valid = std::is_arithmetic<T>::value && !std::is_same<T, bool>::value &&\
             !std::is_same<T, char>::value && !std::is_same<T, wchar_t>::value && !std::is_same<T, char16_t>::value;\
     xtypes_assert(self_assign_valid,\
         "Operator" << #OPERATOR << "=() cannot be used with non-arithmetic types");\
@@ -460,6 +486,14 @@ template <typename T, typename>\
 }
 
 DYNAMIC_DATA_SELF_ASSIGN_OPERATOR_IMPLEMENTATION(*);
+
+// Specialize for bool to avoid warning -Wint-in-bool-context
+template<>
+inline DynamicData& DynamicData::operator *=<bool>(const bool& other)
+{
+    using T = bool;
+    DYNAMIC_DATA_PRIMITIVE_SELF_ASSIGN_OPERATOR_RESULT(&&);
+}
 
 DYNAMIC_DATA_SELF_ASSIGN_OPERATOR_IMPLEMENTATION(/);
 

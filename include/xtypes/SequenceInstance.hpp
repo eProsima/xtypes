@@ -37,11 +37,21 @@ public:
     SequenceInstance(
             const DynamicType& content,
             uint32_t capacity = 0)
-        : content_(content)
-        , block_size_(content.memory_size())
+        : block_size_(content.memory_size())
         , capacity_(capacity)
         , size_(0)
     {
+        try
+        {
+            // is already associated to the DynamicData object
+            content_ = content.shared_from_this();
+        }
+        catch(const std::bad_weak_ptr&)
+        {
+            // make a copy (if type changes may blow the DynamicData object)
+            content_ = content.clone();
+        }
+
         init_memory(memory_, capacity_);
     }
 
@@ -69,11 +79,21 @@ public:
             const SequenceInstance& other,
             const DynamicType& content,
             uint32_t bounds)
-        : content_(content)
-        , block_size_(content.memory_size())
+        : block_size_(content.memory_size())
         , capacity_(bounds == 0 ? other.capacity_ : std::min(other.capacity_, bounds))
         , size_(bounds == 0 ? other.size_ : std::min(other.size_, bounds))
     {
+        try
+        {
+            // is already associated to the DynamicData object
+            content_ = content.shared_from_this();
+        }
+        catch(const std::bad_weak_ptr&)
+        {
+            // make a copy (if type changes may blow the DynamicData object)
+            content_ = content.clone();
+        }
+
         init_memory(memory_, capacity_);
 
         if (memory_ != nullptr)
@@ -102,12 +122,12 @@ public:
             return false;
         }
 
-        if (content_.is_constructed_type())
+        if (content_->is_constructed_type())
         {
             bool comp = true;
             for (uint32_t i = 0; i < size_; i++)
             {
-                comp &= content_.compare_instance(memory_ + i * block_size_, other.memory_ + i * block_size_);
+                comp &= content_->compare_instance(memory_ + i * block_size_, other.memory_ + i * block_size_);
             }
             return comp;
         }
@@ -136,7 +156,7 @@ public:
         }
 
         uint8_t* place = memory_ + size_ * block_size_;
-        content_.copy_instance(place, instance);
+        content_->copy_instance(place, instance);
 
         size_++;
 
@@ -160,7 +180,7 @@ public:
         for (size_t i = size_; i < new_size; i++)
         {
             uint8_t* place = memory_ + i * block_size_;
-            content_.construct_instance(place);
+            content_->construct_instance(place);
         }
 
         size_ = new_size;
@@ -188,11 +208,11 @@ private:
 
     friend class SequenceType;
 
-    const DynamicType& content_;
-    uint32_t block_size_;
-    uint32_t capacity_;
-    uint8_t* memory_;
-    uint32_t size_;
+    std::shared_ptr<const DynamicType> content_;
+    uint32_t block_size_ = 0;
+    uint32_t capacity_ = 0;
+    uint8_t* memory_ = nullptr;
+    uint32_t size_ = 0;
 
     void realloc(
             size_t desired_capacity,
@@ -225,7 +245,7 @@ private:
                 memset(memory, 0, size * block_size_);
                 for (uint32_t idx = 0; idx < size; ++idx)
                 {
-                    content_.construct_instance(memory + idx * block_size_);
+                    content_->construct_instance(memory + idx * block_size_);
                 }
             }
         }
@@ -235,7 +255,7 @@ private:
             const SequenceInstance& other,
             uint32_t bounds)
     {
-        size_t other_block_size = other.content_.memory_size();
+        size_t other_block_size = other.content_->memory_size();
 
         // Check bytes to copy
         uint32_t min_capacity = std::min(capacity_, other.capacity_);
@@ -257,14 +277,14 @@ private:
             realloc(min_size, bounds);
         }
 
-        if (content_.is_constructed_type() || block_size_ != other_block_size)
+        if (content_->is_constructed_type() || block_size_ != other_block_size)
         {
             for (uint32_t i = 0; i < min_size; i++)
             {
-                content_.copy_instance_from_type(
+                content_->copy_instance_from_type(
                     memory_ + i * block_size_,
                     other.memory_ + i * other_block_size,
-                    other.content_);
+                    *other.content_);
             }
         }
         else //optimization when the type is primitive with same block_size
@@ -280,11 +300,11 @@ private:
     {
         if (source != nullptr)
         {
-            if (content_.is_constructed_type())
+            if (content_->is_constructed_type())
             {
                 for (uint32_t i = 0; i < size_; i++)
                 {
-                    content_.move_instance(target + i * block_size_, source + i * block_size_, true);
+                    content_->move_instance(target + i * block_size_, source + i * block_size_, true);
                 }
             }
             else //optimization when the type is primitive
@@ -298,11 +318,11 @@ private:
     {
         if (memory_ != nullptr)
         {
-            if (content_.is_constructed_type())
+            if (content_->is_constructed_type())
             {
                 for (int32_t i = capacity_ - 1; i >= 0; i--)
                 {
-                    content_.destroy_instance(memory_ + i * block_size_);
+                    content_->destroy_instance(memory_ + i * block_size_);
                 }
             }
 

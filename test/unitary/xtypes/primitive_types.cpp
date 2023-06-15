@@ -19,18 +19,18 @@
 
 using namespace eprosima::xtypes;
 
-static const uint8_t UINT8          = 250;
-static const int16_t INT16          = -32760;
-static const uint16_t UINT16        = 65530;
-static const int32_t INT32          = -2147483640;
-static const uint32_t UINT32        = 4294967290;
-static const int64_t INT64          = -9223372036854775800;
-static const uint64_t UINT64        = 18446744073709551610ULL;
-static const float FLOAT            = 3.1415927410125732421875f;
-static const double DOUBLE          = 3.1415926535897931159979631875;
-static const char CHAR              = 'f';
-static const char16_t CHAR16        = u'ñ';
-static const wchar_t WCHAR          = 34590;
+static const uint8_t xUINT8          = 250;
+static const int16_t xINT16          = -32760;
+static const uint16_t xUINT16        = 65530;
+static const int32_t xINT32          = -2147483640;
+static const uint32_t xUINT32        = 4294967290;
+static const int64_t xINT64          = -9223372036854775800;
+static const uint64_t xUINT64        = 18446744073709551610ULL;
+static const float xFLOAT            = 3.1415927410125732421875f;
+static const double xDOUBLE          = 3.1415926535897931159979631875;
+static const char xCHAR              = 'f';
+static const char16_t xCHAR16        = u'\u00f1';
+static const wchar_t xWCHAR          = 34590;
 
 /*********************************************
  *        DynamicType Primitive Tests        *
@@ -80,7 +80,7 @@ TEST (PrimitiveTypes, primitive_type_uint8)
     EXPECT_TRUE(singleCheck<uint8_t>(15, 15));
     EXPECT_FALSE(singleCheck<uint8_t>(15, 16));
     EXPECT_TRUE(singleCheck<uint8_t>(-1, 255));
-    assignCheck<uint8_t>(UINT8);
+    assignCheck<uint8_t>(xUINT8);
 }
 
 TEST (PrimitiveTypes, primitive_type_uint16)
@@ -88,7 +88,7 @@ TEST (PrimitiveTypes, primitive_type_uint16)
     EXPECT_TRUE(singleCheck<uint16_t>(1500, 1500));
     EXPECT_FALSE(singleCheck<uint16_t>(1500, 1501));
     EXPECT_TRUE(singleCheck<uint16_t>(-1, 0xFFFF));
-    assignCheck<uint16_t>(UINT16);
+    assignCheck<uint16_t>(xUINT16);
 }
 
 TEST (PrimitiveTypes, primitive_type_int16)
@@ -97,15 +97,15 @@ TEST (PrimitiveTypes, primitive_type_int16)
     EXPECT_FALSE(singleCheck<int16_t>(1500, -1500));
     EXPECT_FALSE(singleCheck<int16_t>(1500, 1501));
     EXPECT_TRUE(singleCheck<int16_t>(-1, int16_t(0xFFFF)));
-    assignCheck<int16_t>(INT16);
+    assignCheck<int16_t>(xINT16);
 }
 
 TEST (PrimitiveTypes, primitive_type_uint32)
 {
     EXPECT_TRUE(singleCheck<uint32_t>(150000, 150000));
     EXPECT_FALSE(singleCheck<uint32_t>(150000, 150001));
-    EXPECT_TRUE(singleCheck<uint32_t>(-1, 0xFFFFFFFF));
-    assignCheck<uint32_t>(UINT32);
+    EXPECT_TRUE(singleCheck<uint32_t>(std::numeric_limits<uint32_t>::max(), 0xFFFFFFFF));
+    assignCheck<uint32_t>(xUINT32);
 }
 
 TEST (PrimitiveTypes, primitive_type_int32)
@@ -114,7 +114,7 @@ TEST (PrimitiveTypes, primitive_type_int32)
     EXPECT_FALSE(singleCheck<int32_t>(-150000, 150000));
     EXPECT_FALSE(singleCheck<int32_t>(150000, 150001));
     EXPECT_TRUE(singleCheck<int32_t>(-1, 0xFFFFFFFF));
-    assignCheck<int32_t>(INT32);
+    assignCheck<int32_t>(xINT32);
 }
 
 TEST (PrimitiveTypes, primitive_type_uint64)
@@ -122,7 +122,7 @@ TEST (PrimitiveTypes, primitive_type_uint64)
     EXPECT_TRUE(singleCheck<uint64_t>(15000000000, 15000000000));
     EXPECT_FALSE(singleCheck<uint64_t>(15000000000, 15000000001));
     EXPECT_TRUE(singleCheck<uint64_t>(-1, 0xFFFFFFFFFFFFFFFF));
-    assignCheck<uint64_t>(UINT64);
+    assignCheck<uint64_t>(xUINT64);
 }
 
 TEST (PrimitiveTypes, primitive_type_int64)
@@ -131,21 +131,21 @@ TEST (PrimitiveTypes, primitive_type_int64)
     EXPECT_FALSE(singleCheck<uint64_t>(-15000000000, 15000000000));
     EXPECT_FALSE(singleCheck<uint64_t>(15000000000, 15000000001));
     EXPECT_TRUE(singleCheck<uint64_t>(-1, 0xFFFFFFFFFFFFFFFF));
-    assignCheck<int64_t>(INT64);
+    assignCheck<int64_t>(xINT64);
 }
 
 TEST (PrimitiveTypes, primitive_type_float)
 {
     EXPECT_TRUE(singleCheck(54.5f, 54.5f));
     EXPECT_FALSE(singleCheck(5.56f, 5.55f));
-    assignCheck<float>(FLOAT);
+    assignCheck<float>(xFLOAT);
 }
 
 TEST (PrimitiveTypes, primitive_type_double)
 {
     EXPECT_TRUE(singleCheck<double>(5.55e40, 5.55e40));
     EXPECT_FALSE(singleCheck<double>(5.550000001e40, 5.55e40));
-    assignCheck<double>(DOUBLE);
+    assignCheck<double>(xDOUBLE);
 }
 
 // TEST (PrimitiveTypes, primitive_type_longdouble) moved to no_memcheck_tests.cpp
@@ -155,21 +155,21 @@ TEST (PrimitiveTypes, primitive_type_char)
     EXPECT_TRUE(singleCheck<char>('a', 'a'));
     EXPECT_FALSE(singleCheck<char>('a', 'b'));
     EXPECT_TRUE((singleCheck<char, uint8_t>('a', 'a')));
-    assignCheck<char>(CHAR);
+    assignCheck<char>(xCHAR);
 }
 
 TEST (PrimitiveTypes, primitive_type_wchar)
 {
     EXPECT_TRUE(singleCheck<wchar_t>(L'a', L'a'));
     EXPECT_FALSE(singleCheck<wchar_t>(L'a', L'b'));
-    assignCheck<wchar_t>(WCHAR);
+    assignCheck<wchar_t>(xWCHAR);
 }
 
 TEST (PrimitiveTypes, primitive_type_char16)
 {
     EXPECT_TRUE(singleCheck<char16_t>(u'a', u'a'));
     EXPECT_FALSE(singleCheck<char16_t>(u'a', u'b'));
-    assignCheck<char16_t>(CHAR16);
+    assignCheck<char16_t>(xCHAR16);
 }
 
 TEST (PrimitiveTypes, primitive_type_double_longdouble)
@@ -191,6 +191,29 @@ TEST (PrimitiveTypes, primitive_type_double_uint8)
 TEST (PrimitiveTypes, primitive_type_int32_uint16)
 {
     EXPECT_TRUE((singleCheck<int32_t, uint16_t>(55, 55)));
+}
+
+// Comes from issue #105
+TEST(EnumerationType, stack_datatype_deleted)
+{
+    auto getTestEnum = []
+    {
+        EnumerationType<uint32_t> testEnum("TestEnum");
+        testEnum.add_enumerator("item0");
+        testEnum.add_enumerator("item1");
+        testEnum.add_enumerator("item2");
+
+        DynamicData test(testEnum);
+        EXPECT_NO_THROW({test.to_string();});
+
+        DynamicData test2(test);
+        EXPECT_NO_THROW({test2.to_string();});
+
+        return test;
+    };
+
+    DynamicData testData(getTestEnum());
+    EXPECT_NO_THROW({testData.to_string();});
 }
 
 TEST(EnumerationType, enumeration_tests)

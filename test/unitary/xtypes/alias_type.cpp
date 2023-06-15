@@ -37,7 +37,7 @@ TEST (AliasType, alias_casting)
 {
     AliasType at(StringType(100), "str100");
 
-    ASSERT_OR_EXCEPTION({ static_cast<const StructType&>(at); },
+    ASSERT_OR_EXCEPTION({ (void)static_cast<const StructType&>(at); },
             "cannot be cast to the specified type");
 }
 

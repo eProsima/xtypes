@@ -256,9 +256,9 @@ public:
 
 protected:
 
-    virtual DynamicType* clone() const override
+    std::shared_ptr<DynamicType> clone() const override
     {
-        return new SequenceType(*this);
+        return std::make_shared<SequenceType>(*this);
     }
 
 };

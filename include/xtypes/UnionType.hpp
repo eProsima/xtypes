@@ -21,14 +21,13 @@
 #include <xtypes/AggregationType.hpp>
 #include <xtypes/AliasType.hpp>
 #include <xtypes/EnumerationType.hpp>
+#include <xtypes/StringConversion.hpp>
 
 #include <string>
 #include <map>
 #include <vector>
 #include <regex>
-#include <codecvt>
 #include <cwchar>
-#include <cuchar>
 #include <limits>
 
 namespace eprosima {
@@ -288,7 +287,7 @@ public:
     {
         if (other.kind() == TypeKind::ALIAS_TYPE)
         {
-            const AliasType& alias = static_cast<const AliasType&>(other);
+            [[maybe_unused]] const AliasType& alias = static_cast<const AliasType&>(other);
 
             xtypes_assert(alias.rget().kind() == TypeKind::UNION_TYPE,
                     "Cannot copy data from different types: From '" << alias.rget().name() << "' to '" << name() <<
@@ -466,9 +465,9 @@ protected:
     friend ReadableDynamicDataRef;
     friend WritableDynamicDataRef;
 
-    virtual DynamicType* clone() const override
+    std::shared_ptr<DynamicType> clone() const override
     {
-        return new UnionType(*this);
+        return std::make_shared<UnionType>(*this);
     }
 
     /// \brief This method adds the discriminator has the first member of the aggregation.
@@ -503,7 +502,7 @@ protected:
 
     /// \brief This method verifies the validity of a given label.
     void check_label_value(
-            int64_t label)
+         [[maybe_unused]] int64_t label)
     {
         xtypes_assert(label != default_value_, "Label '" << label << "' is reserved.");
         DynamicType* type = &const_cast<DynamicType&>(disc()->type());
@@ -516,7 +515,7 @@ protected:
 
         if (type->kind() == TypeKind::ENUMERATION_TYPE)
         {
-            EnumerationType<uint32_t>* enum_type = static_cast<EnumerationType<uint32_t>*>(type);
+            [[maybe_unused]] EnumerationType<uint32_t>* enum_type = static_cast<EnumerationType<uint32_t>*>(type);
             xtypes_assert(
                 enum_type->is_allowed_value(label),
                 "Value '" << label << "' isn't allowed by the discriminator enumeration '" << type->name() << "'");
@@ -1067,18 +1066,8 @@ protected:
                     break;
                     case TypeKind::CHAR_16_TYPE:
                     {
-                        std::u16string wstr = u"";
-                        char16_t c16str[3] = u"\0";
-                        mbstate_t mbs;
-
-                        for (const auto& it : label)
-                        {
-                            std::memset(&mbs, 0, sizeof(mbs));
-                            std::memmove(c16str, u"\0\0\0", 3);
-                            std::mbrtoc16(c16str, &it, 3, &mbs);
-                            wstr.append(std::u16string(c16str));
-                        }
-
+                        std::basic_string<XTYPES_CHAR> aux(label.begin(), label.end());
+                        auto wstr = code_conversion_tool<char16_t>(aux);
                         char16_t value;
                         // Check if comes with "'"
                         if (label.size() == 1)
@@ -1094,9 +1083,9 @@ protected:
                     break;
                     case TypeKind::WIDE_CHAR_TYPE:
                     {
-                        using convert_type = std::codecvt_utf8<wchar_t>;
-                        std::wstring_convert<convert_type, wchar_t> converter;
-                        std::wstring temp = converter.from_bytes(label);
+                        std::basic_string<XTYPES_CHAR> aux(label.begin(), label.end());
+                        auto aux2 = code_conversion_tool<char16_t>(aux);
+                        std::wstring temp(aux2.begin(), aux2.end());
                         wchar_t value;
                         // Check if comes with "'"
                         if (label.size() == 1)

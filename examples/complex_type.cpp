@@ -101,7 +101,7 @@ int main()
     submod_b.enum_32(std::move(my_enum));
     root.create_constant("MyConstEnum", enum_data);
     DynamicData my_const(primitive_type<uint64_t>());
-    my_const = 555ul;
+    my_const = UINT64_C(555);
     root.create_constant("MyConst", my_const);
     root.add_alias(abool);
     std::cout << idl::generate(root) << std::endl;

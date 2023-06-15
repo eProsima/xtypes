@@ -71,7 +71,7 @@ public:
     MapType(
             MapType&& other) = default;
 
-    virtual size_t memory_size() const override
+    size_t memory_size() const override
     {
         return sizeof(MapInstance);
     }
@@ -250,9 +250,9 @@ public:
 
 protected:
 
-    virtual DynamicType* clone() const override
+    std::shared_ptr<DynamicType> clone() const override
     {
-        return new MapType(*this);
+        return std::make_shared<MapType>(*this);
     }
 
 };

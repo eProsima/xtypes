@@ -18,7 +18,6 @@
 #ifndef EPROSIMA_XTYPES_ASSERT_HPP_
 #define EPROSIMA_XTYPES_ASSERT_HPP_
 
-#include <execinfo.h>
 #include <iostream>
 #include <sstream>
 
@@ -26,6 +25,90 @@
 #if !defined(NDEBUG)
 
 #define xtypes_assert2_(cond, msg) xtypes_assert3_(cond, msg, false)
+
+#ifdef WIN32
+
+#ifndef _WINDOWS_
+#   define NOMINMAX
+#   define WIN32_LEAN_AND_MEAN
+#   include <windows.h>
+#endif
+
+#include <dbghelp.h>
+
+#include <vector>
+#include <iomanip>
+
+namespace {
+    // auxiliary structure
+    struct symbol_desc : SYMBOL_INFO
+    {
+        CHAR _[1023]; // name buffer
+
+        symbol_desc()
+        {
+            SizeOfStruct = sizeof(SYMBOL_INFO);
+            MaxNameLen = 1024;
+        }
+    };
+}
+
+#define xtypes_assert3_(cond, msg, bt)                                                                              \
+    {                                                                                                               \
+        if (!(cond))                                                                                                \
+        {                                                                                                           \
+            using namespace std;                                                                                    \
+            using tstring = basic_string<CHAR>;                                                                     \
+                                                                                                                    \
+            stringstream ss__;                                                                                      \
+            ss__ << "[XTYPES]: ";                                                                                   \
+            ss__ << __FILE__ << ":" << __LINE__ << " - ";                                                           \
+            ss__ << "Assertion failed with message: ";                                                              \
+            ss__ << msg << endl;                                                                                    \
+            if (bt)                                                                                                 \
+            {                                                                                                       \
+                HANDLE hProcess = GetCurrentProcess();                                                              \
+                                                                                                                    \
+                if (SymInitialize(hProcess, NULL, TRUE))                                                            \
+                {                                                                                                   \
+                    symbol_desc symbol;                                                                             \
+                    void* callstack[128];                                                                           \
+                                                                                                                    \
+                    int frames = CaptureStackBackTrace(0, 128, callstack, NULL);                                    \
+                                                                                                                    \
+                    for( int i = 0; i < frames; ++i)                                                                \
+                    {                                                                                               \
+                        SymFromAddr( hProcess, reinterpret_cast<DWORD64>(callstack[i]), 0, &symbol);                \
+                        tstring name = symbol.Name;                                                                 \
+                        if (name.empty())                                                                           \
+                        {                                                                                           \
+                            name = "unknown symbol";                                                                \
+                        }                                                                                           \
+                                                                                                                    \
+                        ss__ << left << setw(4) << (frames -i -1) << showbase << hex                                \
+                             << setw(19) << symbol.Address << right << name << dec << endl;                         \
+                    }                                                                                               \
+                                                                                                                    \
+                    if (!SymCleanup(hProcess))                                                                      \
+                    {                                                                                               \
+                        DWORD error = GetLastError();                                                               \
+                        ss__ << "SymCleanup returned error : " << error << endl;                                    \
+                    }                                                                                               \
+                }                                                                                                   \
+                else                                                                                                \
+                {                                                                                                   \
+                    DWORD error = GetLastError();                                                                   \
+                    ss__ << "SymInitialize returned error : " << error << endl;                                     \
+                }                                                                                                   \
+            }                                                                                                       \
+            cerr << ss__.str() << endl;                                                                             \
+            abort();                                                                                                \
+        }                                                                                                           \
+    }                                                                                                               \
+
+#else // WIN32
+
+#include <execinfo.h>
 
 #define xtypes_assert3_(cond, msg, bt)                                                                              \
     {                                                                                                               \
@@ -52,6 +135,8 @@
             std::abort();                                                                                           \
         }                                                                                                           \
     }                                                                                                               \
+
+#endif // WIN32
 
 #else // NDEBUG
 
@@ -82,5 +167,22 @@
 #define GET_MACRO(_1, _2, _3, NAME, ...) NAME
 #define xtypes_assert(...) GET_MACRO(__VA_ARGS__, xtypes_assert3_, xtypes_assert2_)(__VA_ARGS__)
 
+namespace {
+#if __has_include(<version>)
+#   include<version>
+#   ifdef __cpp_lib_unreachable
+using std::unreachable;
+#   else
+[[noreturn]] inline void unreachable()
+{
+#    ifdef __GNUC__ // GCC, Clang, ICC
+    __builtin_unreachable();
+#    elif defined(_MSC_VER) // MSVC
+    __assume(false);
+#     endif
+}
+#   endif
+#endif // version
+} // namespace
 
 #endif // EPROSIMA_XTYPES_ASSERT_HPP_

@@ -319,9 +319,9 @@ public:
 
 protected:
 
-    virtual DynamicType* clone() const override
+    std::shared_ptr<DynamicType> clone() const override
     {
-        return new ArrayType(*this);
+        return std::make_shared<ArrayType>(*this);
     }
 
 private:

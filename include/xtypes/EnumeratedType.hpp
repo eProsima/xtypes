@@ -121,19 +121,20 @@ public:
         return consistency;
     }
 
-protected:
-    virtual DynamicType* clone() const override
-    {
-        EnumeratedType* result = new EnumeratedType<T>(PrimitiveType<T>::kind(), PrimitiveType<T>::name());
-        result->values_ = values_;
-        return result;
-    }
-
     EnumeratedType(
             TypeKind kind,
             const std::string& name)
-        : PrimitiveType<T>(kind, name)
+        : PrimitiveType<T>(typename PrimitiveType<T>::use_function_primitive_type{}, kind, name)
     {
+    }
+
+protected:
+
+    std::shared_ptr<DynamicType> clone() const override
+    {
+        auto clon = std::make_shared<EnumeratedType>(this->kind(), this->name());
+        clon->values_ = values_;
+        return clon;
     }
 
     /// \brief Insert a enumerator into the enumerated.

@@ -24,8 +24,8 @@
 #include <xtypes/SequenceType.hpp>
 #include <xtypes/EnumerationType.hpp>
 #include <xtypes/AliasType.hpp>
-#include <xtypes/idl/generator_deptree.hpp>
 
+#include <xtypes/idl/generator_deptree.hpp>
 #include <xtypes/idl/Module.hpp>
 
 #include <sstream>
@@ -133,7 +133,8 @@ inline std::string type_scope(
 
 inline std::string type_name(
         dependencytree::DependencyNode* node,
-        const DynamicType& type)
+        const DynamicType& type,
+        bool scoped)
 {
     static const std::map<TypeKind, std::string> mapping =
     {
@@ -196,7 +197,7 @@ inline std::string type_name(
             {
                 size_t scope_end = type_name.rfind("::");
                 std::string scope = type_name.substr(0, scope_end);
-                if (scope == node->module().scope()) // Redundant scope: get rid of it
+                if (node && (scope == node->module().scope()) && !scoped) // Redundant scope: get rid of it
                 {
                     ss << type_name.substr(scope_end + 2);
                 }
@@ -239,17 +240,12 @@ inline std::string label_value(
             return ss.str();
         }
         case TypeKind::CHAR_16_TYPE:
+        case TypeKind::WIDE_CHAR_TYPE:
         {
             char16_t temp = static_cast<char16_t>(value);
             std::stringstream ss;
-            ss << "L'" << temp << "'";
-            return ss.str();
-        }
-        case TypeKind::WIDE_CHAR_TYPE:
-        {
-            wchar_t temp = static_cast<wchar_t>(value);
-            std::stringstream ss;
-            ss << "L'" << temp << "'";
+            auto aux = code_conversion_tool<XTYPES_CHAR>(std::u16string(1, temp));
+            ss << "L'" << std::string(aux.begin(), aux.end()) << "'";
             return ss.str();
         }
         case TypeKind::INT_8_TYPE:
@@ -287,11 +283,12 @@ inline std::string structure(
         const std::string& name,
         const StructType& type,
         dependencytree::DependencyNode* struct_node,
-        size_t tabs)
+        size_t tabs,
+        std::map<std::string, std::string>* struct_idl)
 {
     if (struct_node != nullptr)
     {
-        dependencynode_assert(struct_node, STRUCT);
+        dependencynode_assert(struct_node, xSTRUCT);
     }
 
     std::stringstream ss;
@@ -312,7 +309,15 @@ inline std::string structure(
         }
         else
         {
-            ss << generator::type_name(struct_node, member.type()) << " " << member.name() << ";";
+            if (member.type().kind() == TypeKind::STRUCTURE_TYPE && struct_idl != nullptr)
+            {
+                if (struct_idl->find(struct_node->type().name() + ":dependencies") != struct_idl->end())
+                {
+                    (*struct_idl)[struct_node->type().name() + ":dependencies"] += ",";
+                }
+                (*struct_idl)[struct_node->type().name() + ":dependencies"] += member.type().name();
+            }
+            ss << generator::type_name(struct_node, member.type(), true) << " " << member.name() << ";";
         }
         ss << std::endl;
     }
@@ -326,7 +331,7 @@ inline std::string generate_union(
         dependencytree::DependencyNode* union_node,
         size_t tabs)
 {
-    dependencynode_assert(union_node, UNION);
+    dependencynode_assert(union_node, xUNION);
 
     std::stringstream ss;
     ss << std::string(tabs * 4, ' ') << "union " << name
@@ -369,7 +374,7 @@ inline std::string aliase(
         const DynamicType& type,
         dependencytree::DependencyNode* alias_node)
 {
-    dependencynode_assert(alias_node, ALIAS);
+    dependencynode_assert(alias_node, xALIAS);
 
     std::stringstream ss;
     ss << "typedef " << generator::type_name(alias_node, type) << " " << name;

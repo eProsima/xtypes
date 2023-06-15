@@ -22,6 +22,17 @@
 using namespace eprosima::xtypes;
 using namespace eprosima::xtypes::idl;
 
+TEST (IDLParser, check_grammar)
+{
+    peg::parser parser;
+
+    parser.set_logger([](size_t line, size_t col, const std::string& msg, const std::string &) {
+            std::cerr << line << ":" << col << ": " << msg << std::endl;
+            });
+
+    ASSERT_TRUE(parser.load_grammar(eprosima::xtypes::idl::idl_grammar())) << "grammar cannot be parsed";
+}
+
 TEST (IDLParser, simple_struct_test)
 {
     Context context = parse(
@@ -353,11 +364,12 @@ TEST (IDLParser, name_collision)
     {
         // Test that the parser accepts a keyword prefixed by an underscore even ignoring case, and
         // the resulting identifier doesn't have the prefixed underscore.
-        Context context = parse(R"(
+        Context context;
+        parse(R"(
             struct MyStruct
             {
                 string _struct;
-            };)");
+            };)", context);
 
         std::map<std::string, DynamicType::Ptr> result = context.module().get_all_types();
         EXPECT_EQ(1, result.size());
@@ -728,6 +740,7 @@ TEST (IDLParser, const_value_parser)
 TEST (IDLParser, parse_file)
 {
     Context context = parse_file("idl/test01.idl");
+    ASSERT_TRUE(context.success);
     std::map<std::string, DynamicType::Ptr> result = context.module().get_all_types();
     EXPECT_EQ(1, result.size());
     const DynamicType* my_struct = result["Test01"].get();
@@ -752,7 +765,7 @@ TEST (IDLParser, include_from_string)
         };
         )");
     std::map<std::string, DynamicType::Ptr> result = context.module().get_all_types();
-    EXPECT_EQ(2, result.size());
+    ASSERT_EQ(2, result.size());
     const DynamicType* my_struct = result["Test00"].get();
     DynamicData data(*my_struct);
     ASSERT_EQ(data["incl"]["my_string"].type().name(), "std::string");
@@ -988,7 +1001,7 @@ TEST (IDLParser, enumerations_test)
 TEST (IDLParser, bad_idl_logging)
 {
     Context context;
-    context.log_level(log::LogLevel::DEBUG);
+    context.log_level(log::LogLevel::xDEBUG);
     // context.print_log(true); // Useful for debbuging
     context.preprocess = false;
     parse(R"~~(
@@ -1043,7 +1056,7 @@ TEST (IDLParser, bad_idl_logging)
 TEST (IDLParser, logging)
 {
     Context context;
-    context.log_level(log::LogLevel::INFO);
+    context.log_level(log::LogLevel::xINFO);
     // context.print_log(true); // Useful for debbuging
     context.preprocess = false;
     context.allow_keyword_identifiers = true;
@@ -1151,7 +1164,7 @@ TEST (IDLParser, logging)
 #define EXPECTED_LOG_RESULTS_FILTERED(LOG_LEVEL, N_ENTRIES, ASSERT, PRINT)                                          \
     {                                                                                                                   \
         Context context;                                                                                                \
-        context.log_level(log::LogLevel::DEBUG);                                                                        \
+        context.log_level(log::LogLevel::xDEBUG);                                                                        \
         if (PRINT)                                                                                                       \
         {                                                                                                               \
             context.print_log(true);                                                                                    \
@@ -1178,14 +1191,14 @@ TEST (IDLParser, severity_logging)
         const boolean BAD_LITERAL = 55; // DEBUG + WARNING + WARNING + DEBUG (result)
         )~~";
 
-    EXPECTED_LOG_RESULTS(ERROR, 1, ASSERT_EQ, false);
-    EXPECTED_LOG_RESULTS(WARNING, 3, ASSERT_EQ, false);
-    EXPECTED_LOG_RESULTS(INFO, 4, ASSERT_EQ, false);
-    EXPECTED_LOG_RESULTS(DEBUG, 11, ASSERT_EQ, false);
-    EXPECTED_LOG_RESULTS_FILTERED(ERROR, 1, ASSERT_EQ, false);
-    EXPECTED_LOG_RESULTS_FILTERED(WARNING, 2, ASSERT_EQ, false);
-    EXPECTED_LOG_RESULTS_FILTERED(INFO, 1, ASSERT_EQ, false);
-    EXPECTED_LOG_RESULTS_FILTERED(DEBUG, 7, ASSERT_EQ, false);
+    EXPECTED_LOG_RESULTS(xERROR, 1, ASSERT_EQ, false);
+    EXPECTED_LOG_RESULTS(xWARNING, 3, ASSERT_EQ, false);
+    EXPECTED_LOG_RESULTS(xINFO, 4, ASSERT_EQ, false);
+    EXPECTED_LOG_RESULTS(xDEBUG, 11, ASSERT_EQ, false);
+    EXPECTED_LOG_RESULTS_FILTERED(xERROR, 1, ASSERT_EQ, false);
+    EXPECTED_LOG_RESULTS_FILTERED(xWARNING, 2, ASSERT_EQ, false);
+    EXPECTED_LOG_RESULTS_FILTERED(xINFO, 1, ASSERT_EQ, false);
+    EXPECTED_LOG_RESULTS_FILTERED(xDEBUG, 7, ASSERT_EQ, false);
 }
 
 TEST(IDLParser, alias_test)
@@ -1305,16 +1318,20 @@ TEST (IDLParser, union_tests)
     data["wstr_b"] = L"Testing Wstring";
     EXPECT_EQ(data.d().value<uint32_t>(), 1);
 
-    EXPECT_EQ(data["union_c"].d().value<size_t>(), static_cast<size_t>(default_union_label(sizeof(uint64_t))));
+    EXPECT_EQ(data["union_c"].d().value<uint64_t>(), static_cast<uint64_t>(default_union_label(sizeof(uint64_t))));
     data["union_c"]["my_string"] = "Correct";
+
     data["union_c"]["my_float"] = 3.14f;
-    EXPECT_EQ(data["union_c"].d().value<size_t>(), 2);
+    EXPECT_EQ(data["union_c"].d().value<uint64_t>(), 2);
+
     data["union_c"].d(3);
-    EXPECT_EQ(data["union_c"].d().value<size_t>(), 3);
-    data["union_c"]["my_uint64"] = 314ul;
-    EXPECT_EQ(data["union_c"].d().value<size_t>(), 1);
-    data["union_c"]["my_int32"] = 314;
-    EXPECT_EQ(data["union_c"].d().value<size_t>(), 0);
+    EXPECT_EQ(data["union_c"].d().value<uint64_t>(), 3);
+
+    data["union_c"]["my_uint64"] = UINT64_C(314);
+    EXPECT_EQ(data["union_c"].d().value<uint64_t>(), 1);
+
+    data["union_c"]["my_int32"] = INT32_C(314);
+    EXPECT_EQ(data["union_c"].d().value<uint64_t>(), 0);
 
     const UnionType& test_union = context.module().union_switch("TestUnion");
     DynamicData data_2(test_union);

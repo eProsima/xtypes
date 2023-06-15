@@ -34,8 +34,8 @@ namespace idl {
 inline Context parse(
         const std::string& idl)
 {
-    Parser* parser = Parser::instance();
-    return parser->parse(idl);
+    std::shared_ptr<Parser> parser = Parser::instance();
+    return parser->parse_string(idl);
 }
 
 /// \brief Same as parse() but it receives an existant context.
@@ -44,8 +44,8 @@ inline Context& parse(
         const std::string& idl,
         Context& context)
 {
-    Parser* parser = Parser::instance();
-    parser->parse(idl.c_str(), context);
+    std::shared_ptr<Parser> parser = Parser::instance();
+    parser->parse_string(idl.c_str(), context);
     return context;
 }
 
@@ -54,7 +54,7 @@ inline Context& parse(
 inline Context parse_file(
         const std::string& idl_file)
 {
-    Parser* parser = Parser::instance();
+    std::shared_ptr<Parser> parser = Parser::instance();
     return parser->parse_file(idl_file);
 }
 
@@ -64,7 +64,7 @@ inline Context& parse_file(
         const std::string& idl_file,
         Context& context)
 {
-    Parser* parser = Parser::instance();
+    std::shared_ptr<Parser> parser = Parser::instance();
     parser->parse_file(idl_file.c_str(), context);
     return context;
 }
@@ -74,7 +74,7 @@ inline std::string preprocess(
         const std::string& idl_file,
         const std::vector<std::string>& includes)
 {
-    return Parser::preprocess("cpp", idl_file, includes);
+    return Parser::preprocess(idl_file, includes);
 }
 
 /// \brief Generates the IDL that represents an StructType
@@ -90,9 +90,10 @@ inline std::string generate(
 /// \param[in] module Module to represent into IDL
 /// \return An IDL that represents the Module given.
 inline std::string generate(
-        const Module& module)
+        const Module& module,
+        std::map<std::string, std::string>* module_idl = nullptr)
 {
-    return generator::module(module);
+    return generator::module(module, module_idl);
 }
 
 } //namespace idl

@@ -24,12 +24,17 @@
 #include <xtypes/TypeConsistency.hpp>
 
 #include <string>
+#include <memory>
 
 namespace eprosima {
 namespace xtypes {
 
+class ReadableDynamicDataRef;
+class SequenceInstance;
+
 /// \brief Abstract base class for all dynamic types.
-class DynamicType : public Instanceable
+class DynamicType : public Instanceable,
+                    public std::enable_shared_from_this<DynamicType>
 {
 public:
 
@@ -214,10 +219,13 @@ protected:
 
     /// \brief Deep clone of the DynamicType.
     /// \returns a new DynamicType without managing.
-    virtual DynamicType* clone() const = 0;
+    virtual std::shared_ptr<DynamicType> clone() const = 0;
 
     TypeKind kind_;
     std::string name_;
+
+    friend class ReadableDynamicDataRef;
+    friend class SequenceInstance;
 
 public:
 
@@ -228,34 +236,38 @@ public:
 public:
 
         /// \brief Default initialization without pointer any type.
-        Ptr()
-            : type_(nullptr)
-        {
-        }
+        Ptr() = default;
 
         /// \brief Creates a copy of a DynamicType that will be managed.
         /// The copy is avoid if DynamnicType is primitive.
-        Ptr(
-                const DynamicType& type)
-            : type_(dont_clone_type(&type) ? &type : type.clone())
+        Ptr(const DynamicType& type)
         {
+            try
+            {
+                if(dont_clone_type(&type))
+                {
+                    type_ = type.shared_from_this();
+                    return;
+                }
+            }
+            catch(const std::bad_weak_ptr&) {}
+
+            // make a copy
+            type_ = type.clone();
         }
 
         /// \brief Copy constructor.
         /// Makes an internal copy of the managed DynamicType.
-        /// The copy is avoid if DynamnicType is primitive.
-        Ptr(
-                const Ptr& ptr)
-            : type_(dont_clone_type(ptr.type_) ? ptr.type_ : ptr.type_->clone())
+        /// The copy is avoid if DynamicType is primitive.
+        Ptr(const Ptr& ptr)
         {
+            if(!ptr.type_)
+                return;
+
+            new (this) Ptr(*ptr.type_);
         }
 
-        Ptr(
-                Ptr&& ptr)
-            : type_(ptr.type_)
-        {
-            ptr.type_ = nullptr;
-        }
+        Ptr(Ptr&& ptr) = default;
 
         Ptr& operator = (
                 const Ptr& ptr)
@@ -265,24 +277,11 @@ public:
                 return *this;
             }
 
-            reset();
-            type_ = dont_clone_type(ptr.type_) ? ptr.type_ : ptr.type_->clone();
+            type_ = dont_clone_type(ptr.type_.get()) ? ptr.type_ : ptr.type_->clone();
             return *this;
         }
 
-        Ptr& operator = (
-                Ptr&& ptr)
-        {
-            if (type_ == ptr.type_)
-            {
-                return *this;
-            }
-
-            reset();
-            type_ = ptr.type_;
-            ptr.type_ = nullptr;
-            return *this;
-        }
+        Ptr& operator = ( Ptr&& ptr) = default;
 
         bool operator == (
                 const DynamicType::Ptr& ptr) const
@@ -290,26 +289,11 @@ public:
             return ptr.type_ == type_;
         }
 
-        virtual ~Ptr()
-        {
-            reset();
-        }
-
-        /// \brief Remove the managed DynamicType and points to nothing.
-        void reset()
-        {
-            if (!dont_clone_type(type_))
-            {
-                delete type_;
-            }
-            type_ = nullptr;
-        }
-
         /// \brief Free the internal managed DynamicType and points to nothing.
-        const DynamicType* free()
+        std::shared_ptr<const DynamicType> free()
         {
-            const DynamicType* freed = type_;
-            type_ = nullptr;
+            std::shared_ptr<const DynamicType> freed;
+            type_.swap(freed);
             return freed;
         }
 
@@ -317,21 +301,21 @@ public:
         /// \returns A pointer of the internal managed DynamicType.
         const DynamicType* get() const
         {
-            return type_;
+            return type_.get();
         }
 
         /// \brief Returns a pointer of the internal managed DynamicType.
         /// \returns A pointer of the internal managed DynamicType.
         const DynamicType* operator ->() const
         {
-            return type_;
+            return type_.get();
         }
 
         /// \brief Get a non-const pointer of the internal managed DynamicType.
         /// \returns A non-const pointer of the interal managed DynamicType
         DynamicType* operator ->()
         {
-            return const_cast<DynamicType*>(type_);
+            return const_cast<DynamicType*>(type_.get());
         }
 
         /// \brief Returns a reference of the intenral managed DynamicType.
@@ -343,7 +327,7 @@ public:
 
 private:
 
-        const DynamicType* type_;
+        std::shared_ptr<const DynamicType> type_;
 
         static bool dont_clone_type(
                 const DynamicType* type)

@@ -315,9 +315,6 @@ TEST (IDLGenerator, roundtrip)
     // Generate another IDL from the parsed root module.
     std::string gen_idl = generator::module(context.module());
 
-    // Debug
-    // std::cout << gen_idl << std::endl;
-
     // Parse the generated IDL and check again.
     Context result = parse(gen_idl);
     check_result(result.module());
