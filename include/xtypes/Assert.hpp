@@ -20,6 +20,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <utility>
 
 #if !defined(XTYPES_EXCEPTIONS)
 #if !defined(NDEBUG)
